@@ -6,7 +6,7 @@ use crate::{
     lex::{Token, TokenStream},
 };
 
-fn parse_named_value_or_function_call(stream: &mut TokenStream) -> Result<AstNode, ParseError> {
+fn parse_identifier_or_call(stream: &mut TokenStream) -> Result<AstNode, ParseError> {
     // <named_value_or_function_call> ::= <identifier>
     //    | <identifier> "(" ")"
     //    | <identifier> "(" <block> { "," <block> }* ")"
@@ -78,7 +78,7 @@ fn parse_atom(stream: &mut TokenStream) -> Result<AstNode, ParseError> {
         })?;
         Ok(AstNode::Number(scalar))
     } else {
-        parse_named_value_or_function_call(stream)
+        parse_identifier_or_call(stream)
     }
 }
 
