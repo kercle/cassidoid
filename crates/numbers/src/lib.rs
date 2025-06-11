@@ -1,5 +1,7 @@
 use std::fmt;
 
+use crate::integer::BigInteger;
+
 pub mod ops;
 
 pub mod integer;
@@ -21,6 +23,16 @@ pub enum Scalar {
 impl RealScalar {
     pub fn from_f64(_value: f64) -> Self {
         todo!()
+    }
+
+    pub fn from_str(s: &str) -> Result<Self, String> {
+        if let Ok(i) = BigInteger::from_str_radix(s, 10) {
+            Ok(RealScalar::Integer(i))
+        } else if let Ok(r) = rational::Rational::from_decimal_str(s) {
+            Ok(RealScalar::Rational(r))
+        } else {
+            Err(format!("Invalid real scalar: {}", s))
+        }
     }
 }
 

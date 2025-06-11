@@ -386,76 +386,66 @@ impl TokenStream {
         Ok(Self { tokens, current: 0 })
     }
 
-    pub fn advance(&mut self) -> Result<(), LexError> {
+    pub fn next(&mut self) -> Option<&Token> {
         if self.current < self.tokens.len() {
             self.current += 1;
-            Ok(())
+            Some(&self.tokens[self.current - 1].0)
         } else {
-            Err(LexError {
-                message: "No more tokens to advance".to_string(),
-                line: 0,
-                column: 0,
-            })
+            None
         }
     }
 
-    pub fn current_token(&self) -> Result<&Token, LexError> {
+    pub fn peek(&self) -> Option<&(Token, TokenPos)> {
         if self.current < self.tokens.len() {
-            Ok(&self.tokens[self.current].0)
+            Some(&self.tokens[self.current])
         } else {
-            Err(LexError {
-                message: "No more tokens available".to_string(),
-                line: 0,
-                column: 0,
-            })
+            None
         }
     }
 
-    pub fn consume_if_matches<F>(&mut self, matcher: F) -> Result<Option<Token>, LexError>
+    pub fn peek_token(&self) -> Option<&Token> {
+        self.peek().map(|(token, _)| token)
+    }
+
+    pub fn next_if_matches<F>(&mut self, matcher: F) -> Option<&Token>
     where
         F: Fn(&Token) -> bool,
     {
-        let current_token = self.current_token()?;
+        let current_token = self.peek_token()?;
 
         if matcher(current_token) {
-            let token = Some(current_token.to_owned());
-            self.advance()?;
-            Ok(token)
+            self.next()
         } else {
-            Ok(None)
+            None
         }
     }
 
-    pub fn consume_if_matches_token(&mut self, token: &Token) -> Result<Option<Token>, LexError> {
-        self.consume_if_matches(|t| t == token)
+    pub fn next_if_matches_token(&mut self, token: &Token) -> Option<&Token> {
+        self.next_if_matches(|t| t == token)
     }
 
-    pub fn consume_if_identifier(&mut self) -> Result<String, LexError> {
-        let token = self.consume_if_matches(|t| matches!(t, Token::Identifier(_)))?;
+    pub fn next_if_identifier(&mut self) -> Option<&str> {
+        let token = self.next_if_matches(|t| matches!(t, Token::Identifier(_)))?;
 
-        if let Some(Token::Identifier(name)) = token {
-            Ok(name)
+        if let Token::Identifier(name) = token {
+            Some(name.as_str())
         } else {
-            Err(LexError {
-                message: "Expected identifier".to_string(),
-                line: 0,
-                column: 0,
-            })
+            None
         }
     }
 
-    pub fn consume_if_number(&mut self) -> Result<String, LexError> {
-        let token = self.consume_if_matches(|t| matches!(t, Token::Number(_)))?;
+    pub fn next_if_number(&mut self) -> Option<&str> {
+        let token = self.next_if_matches(|t| matches!(t, Token::Number(_)))?;
 
-        if let Some(Token::Number(value)) = token {
-            Ok(value)
+        if let Token::Number(value) = token {
+            Some(value)
         } else {
-            Err(LexError {
-                message: "Expected number".to_string(),
-                line: 0,
-                column: 0,
-            })
+            None
         }
+    }
+
+    pub fn end_of_stream(&self) -> bool {
+        self.current >= self.tokens.len()
     }
 }
 
