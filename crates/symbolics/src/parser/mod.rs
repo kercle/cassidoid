@@ -26,11 +26,11 @@ fn parse_identifier_or_call(stream: &mut TokenStream) -> Result<AstNode, ParseEr
 
     let identifier = identifier.unwrap().to_owned();
 
-    if stream.next_if_matches_token(&Token::LeftParen).is_none() {
+    if stream.next_if_matches_token(&Token::LeftBracket).is_none() {
         return Ok(AstNode::NamedValue(identifier.to_string()));
     }
 
-    if stream.next_if_matches_token(&Token::RightParen).is_some() {
+    if stream.next_if_matches_token(&Token::RightBracket).is_some() {
         return Ok(AstNode::FunctionCall {
             name: identifier.to_string(),
             args: Vec::new(),
@@ -46,7 +46,7 @@ fn parse_identifier_or_call(stream: &mut TokenStream) -> Result<AstNode, ParseEr
         args.push(parse_block(stream)?);
     }
 
-    if stream.next_if_matches_token(&Token::RightParen).is_none() {
+    if stream.next_if_matches_token(&Token::RightBracket).is_none() {
         return Err(ParseError {
             message: "Expected closing parenthesis ')' after function arguments".to_string(),
             at_token: stream.peek().cloned(),
@@ -422,7 +422,7 @@ mod tests {
 
     #[test]
     fn test_parse_expression_with_function_call() {
-        let input = "5*pi^2/4*cos(pi*x/2)*sin(pi*y/2)";
+        let input = "5*pi^2/4*cos[pi*x/2]*sin[pi*y/2]";
         let ast = parse(input).expect("Failed to parse expression");
 
         assert_eq!(

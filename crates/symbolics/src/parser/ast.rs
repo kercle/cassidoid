@@ -213,7 +213,7 @@ mod tests {
 
     #[test]
     fn test_ast_to_latex_with_function_call() {
-        let ast = parse("5*pi^2/4*cos(pi*x/2)*sin(pi*y/2)").unwrap();
+        let ast = parse("5*pi^2/4*cos[pi*x/2]*sin[pi*y/2]").unwrap();
         assert_eq!(
             ast.to_latex(),
             "\\frac{5 \\pi^{2}}{4} \\cos\\left(\\frac{\\pi x}{2}\\right) \\sin\\left(\\frac{\\pi y}{2}\\right)"
