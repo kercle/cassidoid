@@ -1,4 +1,4 @@
-use std::fmt;
+use std::{cmp, fmt};
 
 use crate::integer::BigInteger;
 
@@ -12,7 +12,6 @@ pub mod rational;
 pub enum RealScalar {
     Integer(integer::BigInteger),
     Rational(rational::Rational),
-    PiMultiple(rational::Rational),
 }
 
 pub enum Scalar {
@@ -27,6 +26,10 @@ impl RealScalar {
 
     pub fn one() -> Self {
         RealScalar::Integer(BigInteger::from_u64(1))
+    }
+
+    pub fn minus_one() -> Self {
+        RealScalar::Integer(BigInteger::from_i64(-1))
     }
 
     pub fn from_f64(_value: f64) -> Self {
@@ -47,7 +50,6 @@ impl RealScalar {
         match self {
             RealScalar::Integer(i) => i.is_zero(),
             RealScalar::Rational(r) => r.is_zero(),
-            RealScalar::PiMultiple(r) => r.is_zero(),
         }
     }
 
@@ -55,7 +57,18 @@ impl RealScalar {
         match self {
             RealScalar::Integer(i) => i.is_one(),
             RealScalar::Rational(r) => r.is_one(),
-            RealScalar::PiMultiple(_) => false,
+        }
+    }
+}
+
+impl cmp::PartialOrd for RealScalar {
+    fn partial_cmp(&self, other: &Self) -> Option<cmp::Ordering> {
+        match (self, other) {
+            (RealScalar::Integer(i1), RealScalar::Integer(i2)) => i1.partial_cmp(i2),
+            (RealScalar::Rational(_r1), RealScalar::Rational(_r2)) => {
+                todo!("Implement comparison for Rational")
+            }
+            _ => None, // Different types cannot be compared
         }
     }
 }
@@ -65,7 +78,6 @@ impl fmt::Display for RealScalar {
         match self {
             RealScalar::Integer(i) => write!(f, "{}", i),
             RealScalar::Rational(r) => write!(f, "{}/{}", r.numerator(), r.denominator()),
-            RealScalar::PiMultiple(r) => write!(f, "{}π/{}", r.numerator(), r.denominator()),
         }
     }
 }

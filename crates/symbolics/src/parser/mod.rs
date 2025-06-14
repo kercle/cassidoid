@@ -29,7 +29,7 @@ fn parse_identifier_or_call(stream: &mut TokenStream) -> Result<AstNode, ParseEr
     let identifier = identifier.unwrap().to_owned();
 
     if stream.next_if_matches_token(&Token::LeftBracket).is_none() {
-        return Ok(AstNode::from_named_value(identifier));
+        return Ok(AstNode::NamedValue(identifier));
     }
 
     if stream.next_if_matches_token(&Token::RightBracket).is_some() {

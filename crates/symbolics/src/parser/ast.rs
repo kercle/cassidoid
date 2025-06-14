@@ -1,4 +1,6 @@
-use numbers::{RealScalar, rational::Rational};
+use std::cmp::{self, Ordering};
+
+use numbers::RealScalar;
 
 pub trait Operator {
     fn precedence(&self) -> u8;
@@ -67,13 +69,6 @@ pub enum AstNode {
 }
 
 impl AstNode {
-    pub fn from_named_value(name: String) -> Self {
-        match name.as_str() {
-            "pi" | "π" => AstNode::Constant(RealScalar::PiMultiple(Rational::one())),
-            _ => AstNode::NamedValue(name),
-        }
-    }
-
     pub fn from_function_call(name: String, mut args: Vec<AstNode>) -> Result<Self, String> {
         let initial_args_len = args.len();
 
@@ -159,6 +154,20 @@ impl AstNode {
 
     pub fn is_constant(&self) -> bool {
         matches!(self, AstNode::Constant(_))
+    }
+}
+
+impl cmp::PartialOrd for AstNode {
+    fn partial_cmp(&self, other: &Self) -> Option<cmp::Ordering> {
+        use AstNode::*;
+        match (self, other) {
+            (Constant(a), Constant(b)) => a.partial_cmp(b),
+            (Constant(_), _) => Some(Ordering::Less),
+            (_, Constant(_)) => Some(Ordering::Greater),
+            (NamedValue(a), NamedValue(b)) => a.partial_cmp(b),
+            (Negate(x), Negate(y)) => x.partial_cmp(y),
+            _ => None,
+        }
     }
 }
 

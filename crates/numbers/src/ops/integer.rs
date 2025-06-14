@@ -113,3 +113,15 @@ impl cmp::PartialEq for BigInteger {
         self.eq(other)
     }
 }
+
+impl cmp::PartialOrd for BigInteger {
+    fn partial_cmp(&self, other: &Self) -> Option<cmp::Ordering> {
+        if self.eq(other) {
+            Some(cmp::Ordering::Equal)
+        } else if self.lt(other) {
+            Some(cmp::Ordering::Less)
+        } else {
+            Some(cmp::Ordering::Greater)
+        }
+    }
+}

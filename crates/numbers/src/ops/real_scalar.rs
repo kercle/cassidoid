@@ -2,21 +2,23 @@ use crate::RealScalar;
 use std::ops;
 
 impl ops::Add for &RealScalar {
-    type Output = Option<RealScalar>;
+    type Output = RealScalar;
 
     fn add(self, other: Self) -> Self::Output {
         match (self, other) {
-            (RealScalar::Integer(a), RealScalar::Integer(b)) => Some(RealScalar::Integer(a + b)),
+            (RealScalar::Integer(a), RealScalar::Integer(b)) => RealScalar::Integer(a + b),
             (RealScalar::Rational(_a), RealScalar::Rational(_b)) => {
                 todo!("Implement addition for Rational")
             }
-            _ => None, // Handle mixed types or unsupported operations
+            _ => {
+                todo!("Handle mixed types or unsupported operations")
+            }
         }
     }
 }
 
 impl ops::Add for RealScalar {
-    type Output = Option<Self>;
+    type Output = Self;
 
     fn add(self, other: Self) -> Self::Output {
         &self + &other
@@ -74,7 +76,6 @@ impl ops::Neg for &RealScalar {
         match self {
             RealScalar::Integer(a) => RealScalar::Integer(-a),
             RealScalar::Rational(_a) => todo!("Implement negation for Rational"),
-            RealScalar::PiMultiple(_a) => todo!("Implement negation for Rational"),
         }
     }
 }
