@@ -129,8 +129,8 @@ mod tests {
     #[test]
     fn test_from_decimal_str() {
         let r = Rational::from_decimal_str("3.14").unwrap();
-        assert_eq!(r.numerator, BigInteger::from_u64(314));
-        assert_eq!(r.denominator, BigInteger::from_u64(100));
+        assert_eq!(r.numerator, BigInteger::from_u64(157));
+        assert_eq!(r.denominator, BigInteger::from_u64(50));
     }
 
     #[test]
