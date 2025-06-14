@@ -1,5 +1,5 @@
 use clap::Parser;
-use format::LatexDisplay;
+use symbolics::format::MathDisplay;
 use symbolics::{parser::parse, simplify::simplify_ast};
 
 #[derive(Parser, Debug)]

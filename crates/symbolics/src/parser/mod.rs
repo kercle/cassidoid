@@ -116,7 +116,7 @@ fn parse_signed_power(stream: &mut TokenStream) -> Result<AstNode, ParseError> {
     let ast = parse_power(stream)?;
 
     if negate_count % 2 == 1 {
-        Ok(AstNode::Negate(Box::new(ast)))
+        Ok(AstNode::Negation(Box::new(ast)))
     } else {
         Ok(ast)
     }

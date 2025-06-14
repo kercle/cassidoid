@@ -1,63 +1,19 @@
 use std::cmp::{self, Ordering};
 
+use crate::format::MathDisplay;
 use numbers::RealScalar;
-
-pub trait Operator {
-    fn precedence(&self) -> u8;
-    fn is_left_associative(&self) -> bool;
-}
-
-#[derive(Debug, Clone, PartialEq)]
-pub enum UnaryOp {
-    Negate,
-}
-
-impl Operator for UnaryOp {
-    fn precedence(&self) -> u8 {
-        3
-    }
-
-    fn is_left_associative(&self) -> bool {
-        false
-    }
-}
-
-#[derive(Debug, Clone, PartialEq)]
-pub enum BinaryOp {
-    Add,
-    Sub,
-    Mul,
-    Div,
-    Pow,
-}
-
-impl Operator for BinaryOp {
-    fn precedence(&self) -> u8 {
-        match self {
-            BinaryOp::Add | BinaryOp::Sub => 1,
-            BinaryOp::Mul | BinaryOp::Div => 2,
-            BinaryOp::Pow => 4,
-        }
-    }
-
-    fn is_left_associative(&self) -> bool {
-        match self {
-            BinaryOp::Add | BinaryOp::Sub | BinaryOp::Mul | BinaryOp::Div => true,
-            BinaryOp::Pow => false,
-        }
-    }
-}
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum AstNode {
     Constant(RealScalar),
     NamedValue(String),
-    Negate(Box<AstNode>),
     Add(Box<AstNode>, Box<AstNode>),
     AddSeq(Vec<AstNode>),
+    Negation(Box<AstNode>),
     Sub(Box<AstNode>, Box<AstNode>),
     Mul(Box<AstNode>, Box<AstNode>),
     MulSeq(Vec<AstNode>),
+    Reciprocal(Box<AstNode>),
     Div(Box<AstNode>, Box<AstNode>),
     Pow(Box<AstNode>, Box<AstNode>),
     Sin(Box<AstNode>),
@@ -126,12 +82,13 @@ impl AstNode {
     {
         use AstNode::*;
         let mapped = match self {
-            Negate(x) => Negate(Box::new(x.map_inner(f))),
             Add(l, r) => Add(Box::new(l.map_inner(f)), Box::new(r.map_inner(f))),
             AddSeq(nodes) => AddSeq(nodes.into_iter().map(|n| n.map_inner(f)).collect()),
+            Negation(x) => Negation(Box::new(x.map_inner(f))),
             Sub(l, r) => Sub(Box::new(l.map_inner(f)), Box::new(r.map_inner(f))),
             Mul(l, r) => Mul(Box::new(l.map_inner(f)), Box::new(r.map_inner(f))),
             MulSeq(nodes) => MulSeq(nodes.into_iter().map(|n| n.map_inner(f)).collect()),
+            Reciprocal(x) => Reciprocal(Box::new(x.map_inner(f))),
             Div(l, r) => Div(Box::new(l.map_inner(f)), Box::new(r.map_inner(f))),
             Pow(l, r) => Pow(Box::new(l.map_inner(f)), Box::new(r.map_inner(f))),
             Sin(x) => Sin(Box::new(x.map_inner(f))),
@@ -164,9 +121,7 @@ impl cmp::PartialOrd for AstNode {
             (Constant(a), Constant(b)) => a.partial_cmp(b),
             (Constant(_), _) => Some(Ordering::Less),
             (_, Constant(_)) => Some(Ordering::Greater),
-            (NamedValue(a), NamedValue(b)) => a.partial_cmp(b),
-            (Negate(x), Negate(y)) => x.partial_cmp(y),
-            _ => None,
+            (a, b) => a.to_yasc().partial_cmp(&b.to_yasc()),
         }
     }
 }
@@ -189,7 +144,7 @@ impl<'a> Iterator for AstNodeIter<'a> {
 
         use AstNode::*;
         match node {
-            Negate(x) | Sin(x) | Cos(x) | Tan(x) | Sqrt(x) => {
+            Negation(x) | Reciprocal(x) | Sin(x) | Cos(x) | Tan(x) | Sqrt(x) => {
                 self.stack.push(x);
             }
             Add(lhs, rhs) | Sub(lhs, rhs) | Mul(lhs, rhs) | Div(lhs, rhs) | Pow(lhs, rhs) => {

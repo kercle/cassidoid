@@ -1,12 +1,5 @@
-use crate::LatexDisplay;
 use numbers::RealScalar;
-use symbolics::parser::ast::AstNode;
-
-impl LatexDisplay for AstNode {
-    fn to_latex(&self) -> String {
-        ast_to_latex(self, None)
-    }
-}
+use crate::parser::ast::AstNode;
 
 fn greek_letter(name: &str) -> String {
     match name {
@@ -40,7 +33,8 @@ fn greek_letter(name: &str) -> String {
 
 fn operator_precedence(ast: &AstNode) -> Option<u32> {
     match ast {
-        AstNode::Negate(_) => Some(3),
+        AstNode::Negation(_) => Some(3),
+        AstNode::Reciprocal(_) => Some(3),
         AstNode::Add(_, _) => Some(1),
         AstNode::Sub(_, _) => Some(1),
         AstNode::Mul(_, _) => Some(2),
@@ -62,7 +56,7 @@ fn wrap_with_parentheses(
     }
 }
 
-fn ast_to_latex(ast: &AstNode, parent_precedence: Option<u32>) -> String {
+pub fn ast_to_latex(ast: &AstNode, parent_precedence: Option<u32>) -> String {
     let precedence = operator_precedence(ast);
 
     use AstNode::*;
@@ -85,8 +79,11 @@ fn ast_to_latex(ast: &AstNode, parent_precedence: Option<u32>) -> String {
             }
         }
         NamedValue(name) => greek_letter(name),
-        Negate(node) => {
+        Negation(node) => {
             format!("-{}", ast_to_latex(node, precedence))
+        }
+        Reciprocal(node) => {
+            format!("\\frac{{1}}{{{}}}", ast_to_latex(node, precedence))
         }
         Add(lhs, rhs) => wrap_with_parentheses(
             format!(
@@ -187,8 +184,8 @@ fn ast_to_latex(ast: &AstNode, parent_precedence: Option<u32>) -> String {
 
 #[cfg(test)]
 mod tests {
-    use super::LatexDisplay;
-    use symbolics::parser::parse;
+    use crate::format::MathDisplay;
+    use crate::parser::parse;
 
     #[test]
     fn test_ast_to_latex() {

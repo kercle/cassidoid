@@ -106,7 +106,7 @@ fn fold_constants(node: AstNode) -> AstNode {
                 }
             }
         }
-        Negate(node) => {
+        Negation(node) => {
             if let Constant(val) = node.as_ref() {
                 return Constant(-val.clone());
             }
@@ -181,7 +181,7 @@ fn expand_subtraction(node: AstNode) -> AstNode {
             let lhs = Box::new(expand_subtraction(*lhs.to_owned()));
             let rhs = Box::new(expand_subtraction(*rhs.to_owned()));
 
-            return Add(lhs, Box::new(Negate(rhs)));
+            return Add(lhs, Box::new(Negation(rhs)));
         }
         _ => {}
     }
@@ -231,7 +231,7 @@ fn flatten_commutative(node: AstNode) -> AstNode {
                 return AddSeq(flattened_nodes);
             }
         }
-        Negate(node) => {
+        Negation(node) => {
             return flatten_commutative(MulSeq(vec![
                 Constant(RealScalar::minus_one()),
                 *node.to_owned(),
@@ -322,18 +322,18 @@ fn simplify_add_neg_to_sub(node: AstNode) -> AstNode {
             let lhs = simplify_add_neg_to_sub(*lhs.clone());
             let rhs = simplify_add_neg_to_sub(*rhs.clone());
 
-            if let (Negate(neg_lhs), Negate(neg_rhs)) = (&lhs, &rhs) {
-                return Negate(Box::new(Add(neg_lhs.to_owned(), neg_rhs.to_owned())));
-            } else if let Negate(neg_rhs) = rhs {
+            if let (Negation(neg_lhs), Negation(neg_rhs)) = (&lhs, &rhs) {
+                return Negation(Box::new(Add(neg_lhs.to_owned(), neg_rhs.to_owned())));
+            } else if let Negation(neg_rhs) = rhs {
                 return Sub(Box::new(lhs), neg_rhs);
-            } else if let Negate(neg_lhs) = lhs {
+            } else if let Negation(neg_lhs) = lhs {
                 return Sub(Box::new(rhs), neg_lhs);
             }
         }
         Mul(lhs, rhs) => {
             if let Constant(value) = *lhs.clone() {
                 if value < RealScalar::zero() {
-                    return Negate(Box::new(Mul(
+                    return Negation(Box::new(Mul(
                         Box::new(Constant(-value.clone())),
                         Box::new(simplify_add_neg_to_sub(*rhs.to_owned())),
                     )));
