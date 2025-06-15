@@ -5,7 +5,7 @@ use crate::parser::ast::AstNode;
 fn fold_constants(node: AstNode) -> AstNode {
     use AstNode::*;
     match &node {
-        Add(lhs, rhs) => {
+        Add { lhs, rhs, .. } => {
             return fold_constants(AddSeq(vec![*lhs.to_owned(), *rhs.to_owned()]));
         }
         Sub(lhs, rhs) => {
@@ -196,10 +196,10 @@ fn expand_subtraction(node: AstNode) -> AstNode {
     use AstNode::*;
     match &node {
         Sub(lhs, rhs) => {
-            let lhs = Box::new(expand_subtraction(*lhs.to_owned()));
-            let rhs = Box::new(expand_subtraction(*rhs.to_owned()));
+            let lhs = expand_subtraction(*lhs.to_owned());
+            let rhs = expand_subtraction(*rhs.to_owned());
 
-            return Add(lhs, Box::new(Negation(rhs)));
+            return AstNode::add(lhs, Negation(Box::new(rhs)));
         }
         _ => {}
     }
@@ -229,7 +229,7 @@ fn flatten_commutative(node: AstNode) -> AstNode {
     }
 
     match &node {
-        Add(lhs, rhs) => {
+        Add { lhs, rhs, .. } => {
             return flatten_commutative(AddSeq(vec![*lhs.to_owned(), *rhs.to_owned()]));
         }
         AddSeq(nodes) => {
@@ -308,10 +308,10 @@ fn unflatten_commutative(node: AstNode) -> AstNode {
         AddSeq(nodes) => Some(if nodes.len() == 1 {
             nodes[0].clone()
         } else if nodes.len() == 2 {
-            Add(Box::new(nodes[0].clone()), Box::new(nodes[1].clone()))
+            AstNode::add(nodes[0].clone(), nodes[1].clone())
         } else {
             AddSeq(vec![
-                Add(Box::new(nodes[0].clone()), Box::new(nodes[1].clone())),
+                AstNode::add(nodes[0].clone(), nodes[1].clone()),
                 AddSeq(nodes[2..].to_vec()),
             ])
         }),
@@ -336,12 +336,15 @@ fn simplify_add_neg_to_sub(node: AstNode) -> AstNode {
 
     use AstNode::*;
     match &node {
-        Add(lhs, rhs) => {
+        Add { lhs, rhs, .. } => {
             let lhs = simplify_add_neg_to_sub(*lhs.clone());
             let rhs = simplify_add_neg_to_sub(*rhs.clone());
 
             if let (Negation(neg_lhs), Negation(neg_rhs)) = (&lhs, &rhs) {
-                return Negation(Box::new(Add(neg_lhs.to_owned(), neg_rhs.to_owned())));
+                return Negation(Box::new(AstNode::add(
+                    *neg_lhs.to_owned(),
+                    *neg_rhs.to_owned(),
+                )));
             } else if let Negation(neg_rhs) = rhs {
                 return Sub(Box::new(lhs), neg_rhs);
             } else if let Negation(neg_lhs) = lhs {

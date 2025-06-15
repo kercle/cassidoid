@@ -5,7 +5,7 @@ fn operator_precedence(ast: &AstNode) -> Option<u32> {
     match ast {
         AstNode::Negation(_) => Some(3),
         AstNode::Reciprocal(_) => Some(3),
-        AstNode::Add(_, _) => Some(1),
+        AstNode::Add { .. } => Some(1),
         AstNode::Sub(_, _) => Some(1),
         AstNode::Mul(_, _) => Some(2),
         AstNode::Div(_, _) => Some(2),
@@ -56,9 +56,9 @@ pub fn ast_to_yasc(ast: &AstNode, parent_precedence: Option<u32>) -> String {
             precedence,
             parent_precedence,
         ),
-        Add(lhs, rhs) | Mul(lhs, rhs) | Div(lhs, rhs) | Pow(lhs, rhs) => {
+        Add { lhs, rhs, .. } | Mul(lhs, rhs) | Div(lhs, rhs) | Pow(lhs, rhs) => {
             let op = match ast {
-                AstNode::Add(_, _) => "+",
+                AstNode::Add { .. } => "+",
                 AstNode::Mul(_, _) => "*",
                 AstNode::Div(_, _) => "/",
                 AstNode::Pow(_, _) => "^",

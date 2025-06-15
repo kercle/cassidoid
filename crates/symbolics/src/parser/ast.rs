@@ -16,7 +16,11 @@ where
         name: String,
         annotation: Annotation,
     },
-    Add(Box<AstNode>, Box<AstNode>),
+    Add {
+        lhs: Box<AstNode>,
+        rhs: Box<AstNode>,
+        annotation: Annotation,
+    },
     AddSeq(Vec<AstNode>),
     Negation(Box<AstNode>),
     Sub(Box<AstNode>, Box<AstNode>),
@@ -51,6 +55,14 @@ where
         AstNode::NamedValue {
             annotation: Annotation::default(),
             name,
+        }
+    }
+
+    pub fn add(lhs: AstNode, rhs: AstNode) -> Self {
+        AstNode::Add {
+            lhs: Box::new(lhs),
+            rhs: Box::new(rhs),
+            annotation: Annotation::default(),
         }
     }
 }
@@ -113,7 +125,7 @@ impl AstNode {
     {
         use AstNode::*;
         let mapped = match self {
-            Add(l, r) => Add(Box::new(l.map_inner(f)), Box::new(r.map_inner(f))),
+            Add { lhs, rhs, .. } => AstNode::add(lhs.map_inner(f), rhs.map_inner(f)),
             AddSeq(nodes) => AddSeq(nodes.into_iter().map(|n| n.map_inner(f)).collect()),
             Negation(x) => Negation(Box::new(x.map_inner(f))),
             Sub(l, r) => Sub(Box::new(l.map_inner(f)), Box::new(r.map_inner(f))),
@@ -178,7 +190,11 @@ impl<'a> Iterator for AstNodeIter<'a> {
             Negation(x) | Reciprocal(x) | Sin(x) | Cos(x) | Tan(x) | Sqrt(x) => {
                 self.stack.push(x);
             }
-            Add(lhs, rhs) | Sub(lhs, rhs) | Mul(lhs, rhs) | Div(lhs, rhs) | Pow(lhs, rhs) => {
+            Add { lhs, rhs, .. }
+            | Sub(lhs, rhs)
+            | Mul(lhs, rhs)
+            | Div(lhs, rhs)
+            | Pow(lhs, rhs) => {
                 self.stack.push(rhs);
                 self.stack.push(lhs);
             }

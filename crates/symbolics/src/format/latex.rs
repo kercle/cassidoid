@@ -35,7 +35,7 @@ fn operator_precedence(ast: &AstNode) -> Option<u32> {
     match ast {
         AstNode::Negation(_) => Some(3),
         AstNode::Reciprocal(_) => Some(3),
-        AstNode::Add(_, _) => Some(1),
+        AstNode::Add { .. } => Some(1),
         AstNode::Sub(_, _) => Some(1),
         AstNode::Mul(_, _) => Some(2),
         AstNode::Div(_, _) => Some(2),
@@ -85,7 +85,7 @@ pub fn ast_to_latex(ast: &AstNode, parent_precedence: Option<u32>) -> String {
         Reciprocal(node) => {
             format!("\\frac{{1}}{{{}}}", ast_to_latex(node, precedence))
         }
-        Add(lhs, rhs) => wrap_with_parentheses(
+        Add { lhs, rhs, .. } => wrap_with_parentheses(
             format!(
                 "{} + {}",
                 ast_to_latex(lhs, precedence),

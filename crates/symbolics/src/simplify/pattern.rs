@@ -54,9 +54,9 @@ impl PatternRewrite for AstNode {
                 }
             }
             AstPattern::Add(left_pattern, right_pattern) => {
-                if let AstNode::Add(left, right) = self {
-                    let left_matches = left.matches(left_pattern);
-                    let right_matches = right.matches(right_pattern);
+                if let AstNode::Add { lhs, rhs, .. } = self {
+                    let left_matches = lhs.matches(left_pattern);
+                    let right_matches = rhs.matches(right_pattern);
 
                     if left_matches.is_none() || right_matches.is_none() {
                         return None;
@@ -102,6 +102,6 @@ mod tests {
 
         let x = matches.get("X").unwrap();
         let y = matches.get("Y").unwrap();
-        assert_eq!(ast, AstNode::Add(Box::new(x.clone()), Box::new(y.clone())));
+        assert_eq!(ast, AstNode::add(x.clone(), y.clone()));
     }
 }

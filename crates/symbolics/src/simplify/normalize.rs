@@ -24,7 +24,7 @@ fn flatten_commutative(node: AstNode) -> AstNode {
     }
 
     match &node {
-        Add(lhs, rhs) => {
+        Add { lhs, rhs, .. } => {
             return flatten_commutative(AddSeq(vec![*lhs.to_owned(), *rhs.to_owned()]));
         }
         AddSeq(nodes) => {
@@ -80,10 +80,10 @@ fn transform_inverses(node: AstNode) -> AstNode {
     use AstNode::*;
     match &node {
         Sub(lhs, rhs) => {
-            let lhs = Box::new(transform_inverses(*lhs.to_owned()));
+            let lhs = transform_inverses(*lhs.to_owned());
             let rhs = Box::new(transform_inverses(*rhs.to_owned()));
 
-            return Add(lhs, Box::new(Negation(rhs)));
+            return AstNode::add(lhs, Negation(rhs));
         }
         Div(lhs, rhs) => {
             let lhs = Box::new(transform_inverses(*lhs.to_owned()));
