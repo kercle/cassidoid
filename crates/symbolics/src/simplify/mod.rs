@@ -32,6 +32,13 @@ static RW_RULES: LazyLock<Vec<RwRule<'static>>> = LazyLock::new(|| {
         rw_rule!(Any("a") + Any("a") => |a|
             2 * a
         ),
+        rw_rule!(Any("k") * Any("a") + Any("a") => |k, a| {
+            if let Some(k_val) = k.value_from_constant() {
+                AstNode::constant(k_val + 1) * a
+            } else {
+                (k + 1) * a
+            }
+        }),
         rw_rule!(Number("a") + Number("b") => |a, b| {
             let a_val = a.value_from_constant().unwrap();
             let b_val = b.value_from_constant().unwrap();
@@ -157,7 +164,7 @@ mod tests {
 
     #[test]
     fn test_simplify_ast() {
-        let ast = parse("1+x+2+y+3").unwrap();
+        let ast = parse("(x+y)+(y+x)").unwrap();
         let simplified_ast = simplify_exhaustive(ast);
         println!("Simplified: {}", simplified_ast.to_yasc());
     }

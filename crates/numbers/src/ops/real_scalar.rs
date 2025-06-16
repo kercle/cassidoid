@@ -1,4 +1,4 @@
-use crate::RealScalar;
+use crate::{RealScalar, integer::BigInteger};
 use std::ops;
 
 impl ops::Add for &RealScalar {
@@ -22,6 +22,19 @@ impl ops::Add for RealScalar {
 
     fn add(self, other: Self) -> Self::Output {
         &self + &other
+    }
+}
+
+impl ops::Add<u64> for RealScalar {
+    type Output = RealScalar;
+
+    fn add(self, other: u64) -> Self::Output {
+        match self {
+            RealScalar::Integer(a) => RealScalar::Integer(a + BigInteger::from_u64(other)),
+            RealScalar::Rational(_a) => {
+                todo!("Implement addition of u64 to Rational")
+            }
+        }
     }
 }
 

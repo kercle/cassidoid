@@ -10,6 +10,7 @@ pub enum AstPattern<'a> {
     Number(&'a str),
     Constant(RealScalar),
     Add(Box<AstPattern<'a>>, Box<AstPattern<'a>>),
+    Mul(Box<AstPattern<'a>>, Box<AstPattern<'a>>),
 }
 
 impl ops::Add for AstPattern<'_> {
@@ -17,6 +18,14 @@ impl ops::Add for AstPattern<'_> {
 
     fn add(self, rhs: Self) -> Self::Output {
         AstPattern::Add(Box::new(self), Box::new(rhs))
+    }
+}
+
+impl ops::Mul for AstPattern<'_> {
+    type Output = Self;
+
+    fn mul(self, rhs: Self) -> Self::Output {
+        AstPattern::Mul(Box::new(self), Box::new(rhs))
     }
 }
 
@@ -49,27 +58,34 @@ impl AstPattern<'_> {
                     return None;
                 }
             }
-            AstPattern::Add(left_pattern, right_pattern) => {
-                if let AstNode::Add { lhs, rhs, .. } = tree {
-                    let left_matches = left_pattern.matches(&lhs);
-                    let right_matches = right_pattern.matches(&rhs);
-
-                    if left_matches.is_none() || right_matches.is_none() {
-                        return None;
+            AstPattern::Add(left_pattern, right_pattern)
+            | AstPattern::Mul(left_pattern, right_pattern) => {
+                let (lhs, rhs) = match tree {
+                    AstNode::Add { lhs, rhs, .. } if matches!(self, AstPattern::Add(..)) => {
+                        (lhs, rhs)
                     }
-
-                    matches = left_matches.unwrap();
-                    for (k, v) in right_matches.unwrap() {
-                        if let Some(existing) = matches.get_mut(&k) {
-                            if existing != &v {
-                                return None; // Conflict in bindings
-                            }
-                        } else {
-                            matches.insert(k, v);
-                        }
+                    AstNode::Mul { lhs, rhs, .. } if matches!(self, AstPattern::Mul(..)) => {
+                        (lhs, rhs)
                     }
-                } else {
+                    _ => return None,
+                };
+
+                let left_matches = left_pattern.matches(&lhs);
+                let right_matches = right_pattern.matches(&rhs);
+
+                if left_matches.is_none() || right_matches.is_none() {
                     return None;
+                }
+
+                matches = left_matches.unwrap();
+                for (k, v) in right_matches.unwrap() {
+                    if let Some(existing) = matches.get_mut(&k) {
+                        if existing != &v {
+                            return None; // Conflict in bindings
+                        }
+                    } else {
+                        matches.insert(k, v);
+                    }
                 }
             }
         }

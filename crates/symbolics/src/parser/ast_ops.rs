@@ -12,6 +12,28 @@ impl ops::Add for AstNode {
     }
 }
 
+impl ops::Add<u64> for AstNode {
+    type Output = Self;
+
+    fn add(self, other: u64) -> Self {
+        AstNode::add(
+            self,
+            AstNode::constant(RealScalar::Integer(BigInteger::from_u64(other))),
+        )
+    }
+}
+
+impl ops::Add<AstNode> for u64 {
+    type Output = AstNode;
+
+    fn add(self, other: AstNode) -> AstNode {
+        AstNode::add(
+            AstNode::constant(RealScalar::Integer(BigInteger::from_u64(self))),
+            other,
+        )
+    }
+}
+
 impl ops::Sub for AstNode {
     type Output = Self;
 
