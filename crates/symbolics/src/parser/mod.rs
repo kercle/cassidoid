@@ -4,6 +4,8 @@ pub mod error;
 pub mod fmt;
 pub mod lex;
 
+use std::str::FromStr;
+
 use numbers::RealScalar;
 
 use crate::parser::{
@@ -30,7 +32,7 @@ fn parse_identifier_or_call(stream: &mut TokenStream) -> Result<AstNode, ParseEr
     let identifier = identifier.unwrap().to_owned();
 
     if stream.next_if_matches_token(&Token::LeftBracket).is_none() {
-        return Ok(AstNode::named_value(identifier));
+        return Ok(AstNode::new_named_value(identifier));
     }
 
     if stream.next_if_matches_token(&Token::RightBracket).is_some() {
@@ -71,19 +73,19 @@ fn parse_atom(stream: &mut TokenStream) -> Result<AstNode, ParseError> {
         let expr = parse_block(stream)?;
 
         if stream.next_if_matches_token(&Token::RightParen).is_some() {
-            return Ok(expr);
+            Ok(expr)
         } else {
-            return Err(ParseError {
+            Err(ParseError {
                 message: "Expected closing parenthesis ')'".to_string(),
                 at_token: stream.peek().cloned(),
-            });
+            })
         }
     } else if let Some(value) = stream.next_if_number() {
         let value = RealScalar::from_str(value).map_err(|e| ParseError {
             message: e,
             at_token: stream.peek().cloned(),
         })?;
-        Ok(AstNode::constant(value))
+        Ok(AstNode::new_constant(value))
     } else {
         parse_identifier_or_call(stream)
     }
@@ -95,7 +97,7 @@ fn parse_power(stream: &mut TokenStream) -> Result<AstNode, ParseError> {
     let mut result = parse_atom(stream)?;
 
     if stream.next_if_matches_token(&Token::Caret).is_some() {
-        result = AstNode::pow(result, parse_power(stream)?);
+        result = AstNode::new_pow(result, parse_power(stream)?);
     }
 
     Ok(result)
@@ -117,7 +119,7 @@ fn parse_signed_power(stream: &mut TokenStream) -> Result<AstNode, ParseError> {
     let ast = parse_power(stream)?;
 
     if negate_count % 2 == 1 {
-        Ok(AstNode::negation(ast))
+        Ok(AstNode::new_negation(ast))
     } else {
         Ok(ast)
     }
@@ -136,8 +138,8 @@ fn parse_product(stream: &mut TokenStream) -> Result<AstNode, ParseError> {
         }
 
         result = match c {
-            Some(Token::Asterisk) => AstNode::mul(result, parse_signed_power(stream)?),
-            Some(Token::Slash) => AstNode::div(result, parse_signed_power(stream)?),
+            Some(Token::Asterisk) => AstNode::new_mul(result, parse_signed_power(stream)?),
+            Some(Token::Slash) => AstNode::new_div(result, parse_signed_power(stream)?),
             _ => unreachable!(),
         };
     }
@@ -157,8 +159,8 @@ fn parse_sum(stream: &mut TokenStream) -> Result<AstNode, ParseError> {
         }
 
         result = match op {
-            Some(Token::Plus) => AstNode::add(result, parse_product(stream)?),
-            Some(Token::Minus) => AstNode::sub(result, parse_product(stream)?),
+            Some(Token::Plus) => AstNode::new_add(result, parse_product(stream)?),
+            Some(Token::Minus) => AstNode::new_sub(result, parse_product(stream)?),
             _ => unreachable!(),
         };
     }
@@ -242,22 +244,22 @@ mod tests {
 
         assert_eq!(
             ast,
-            AstNode::sub(
-                AstNode::add(
-                    AstNode::constant(RealScalar::from_str("3").unwrap()),
-                    AstNode::mul(
-                        AstNode::constant(RealScalar::from_str("4").unwrap()),
-                        AstNode::constant(RealScalar::from_str("2").unwrap()),
+            AstNode::new_sub(
+                AstNode::new_add(
+                    AstNode::new_constant(RealScalar::from_str("3").unwrap()),
+                    AstNode::new_mul(
+                        AstNode::new_constant(RealScalar::from_str("4").unwrap()),
+                        AstNode::new_constant(RealScalar::from_str("2").unwrap()),
                     )
                 ),
-                AstNode::pow(
-                    AstNode::add(
-                        AstNode::constant(RealScalar::from_str("1").unwrap()),
-                        AstNode::constant(RealScalar::from_str("5").unwrap()),
+                AstNode::new_pow(
+                    AstNode::new_add(
+                        AstNode::new_constant(RealScalar::from_str("1").unwrap()),
+                        AstNode::new_constant(RealScalar::from_str("5").unwrap()),
                     ),
-                    AstNode::pow(
-                        AstNode::constant(RealScalar::from_str("2").unwrap()),
-                        AstNode::constant(RealScalar::from_str("3").unwrap()),
+                    AstNode::new_pow(
+                        AstNode::new_constant(RealScalar::from_str("2").unwrap()),
+                        AstNode::new_constant(RealScalar::from_str("3").unwrap()),
                     )
                 )
             )
@@ -271,12 +273,12 @@ mod tests {
 
         assert_eq!(
             ast,
-            AstNode::sub(
-                AstNode::add(
-                    AstNode::constant(RealScalar::from_str("3").unwrap()),
-                    AstNode::constant(RealScalar::from_str("5").unwrap()),
+            AstNode::new_sub(
+                AstNode::new_add(
+                    AstNode::new_constant(RealScalar::from_str("3").unwrap()),
+                    AstNode::new_constant(RealScalar::from_str("5").unwrap()),
                 ),
-                AstNode::constant(RealScalar::from_str("2").unwrap())
+                AstNode::new_constant(RealScalar::from_str("2").unwrap())
             )
         );
     }
@@ -288,9 +290,9 @@ mod tests {
 
         assert_eq!(
             ast,
-            AstNode::add(
-                AstNode::constant(RealScalar::from_str("3.14").unwrap()),
-                AstNode::constant(RealScalar::from_str("2.71").unwrap()),
+            AstNode::new_add(
+                AstNode::new_constant(RealScalar::from_str("3.14").unwrap()),
+                AstNode::new_constant(RealScalar::from_str("2.71").unwrap()),
             )
         );
     }
@@ -310,11 +312,11 @@ mod tests {
 
         assert_eq!(
             ast,
-            AstNode::add(
-                AstNode::constant(RealScalar::from_str("3").unwrap()),
-                AstNode::mul(
-                    AstNode::constant(RealScalar::from_str("5").unwrap()),
-                    AstNode::constant(RealScalar::from_str("2").unwrap())
+            AstNode::new_add(
+                AstNode::new_constant(RealScalar::from_str("3").unwrap()),
+                AstNode::new_mul(
+                    AstNode::new_constant(RealScalar::from_str("5").unwrap()),
+                    AstNode::new_constant(RealScalar::from_str("2").unwrap())
                 ),
             )
         );
@@ -327,15 +329,15 @@ mod tests {
 
         assert_eq!(
             ast,
-            AstNode::add(
-                AstNode::mul(
-                    AstNode::constant(RealScalar::from_str("7").unwrap()),
-                    AstNode::pow(
-                        AstNode::constant(RealScalar::from_str("2").unwrap()),
-                        AstNode::constant(RealScalar::from_str("3").unwrap())
+            AstNode::new_add(
+                AstNode::new_mul(
+                    AstNode::new_constant(RealScalar::from_str("7").unwrap()),
+                    AstNode::new_pow(
+                        AstNode::new_constant(RealScalar::from_str("2").unwrap()),
+                        AstNode::new_constant(RealScalar::from_str("3").unwrap())
                     )
                 ),
-                AstNode::constant(RealScalar::from_str("4").unwrap()),
+                AstNode::new_constant(RealScalar::from_str("4").unwrap()),
             )
         );
     }
@@ -347,12 +349,12 @@ mod tests {
 
         assert_eq!(
             ast,
-            AstNode::mul(
-                AstNode::add(
-                    AstNode::constant(RealScalar::from_str("3").unwrap()),
-                    AstNode::constant(RealScalar::from_str("5").unwrap()),
+            AstNode::new_mul(
+                AstNode::new_add(
+                    AstNode::new_constant(RealScalar::from_str("3").unwrap()),
+                    AstNode::new_constant(RealScalar::from_str("5").unwrap()),
                 ),
-                AstNode::constant(RealScalar::from_str("2").unwrap())
+                AstNode::new_constant(RealScalar::from_str("2").unwrap())
             )
         );
     }
@@ -364,17 +366,17 @@ mod tests {
 
         assert_eq!(
             ast,
-            AstNode::add(
-                AstNode::constant(RealScalar::from_str("3").unwrap()),
-                AstNode::pow(
-                    AstNode::mul(
-                        AstNode::constant(RealScalar::from_str("2").unwrap()),
-                        AstNode::sub(
-                            AstNode::constant(RealScalar::from_str("5").unwrap()),
-                            AstNode::constant(RealScalar::from_str("1").unwrap())
+            AstNode::new_add(
+                AstNode::new_constant(RealScalar::from_str("3").unwrap()),
+                AstNode::new_pow(
+                    AstNode::new_mul(
+                        AstNode::new_constant(RealScalar::from_str("2").unwrap()),
+                        AstNode::new_sub(
+                            AstNode::new_constant(RealScalar::from_str("5").unwrap()),
+                            AstNode::new_constant(RealScalar::from_str("1").unwrap())
                         )
                     ),
-                    AstNode::constant(RealScalar::from_str("2").unwrap())
+                    AstNode::new_constant(RealScalar::from_str("2").unwrap())
                 ),
             )
         );
@@ -387,32 +389,32 @@ mod tests {
 
         assert_eq!(
             ast,
-            AstNode::mul(
-                AstNode::mul(
-                    AstNode::div(
-                        AstNode::mul(
-                            AstNode::constant(RealScalar::from_str("5").unwrap()),
-                            AstNode::pow(
-                                AstNode::named_value("pi".to_string()),
-                                AstNode::constant(RealScalar::from_str("2").unwrap())
+            AstNode::new_mul(
+                AstNode::new_mul(
+                    AstNode::new_div(
+                        AstNode::new_mul(
+                            AstNode::new_constant(RealScalar::from_str("5").unwrap()),
+                            AstNode::new_pow(
+                                AstNode::new_named_value("pi".to_string()),
+                                AstNode::new_constant(RealScalar::from_str("2").unwrap())
                             )
                         ),
-                        AstNode::constant(RealScalar::from_str("4").unwrap())
+                        AstNode::new_constant(RealScalar::from_str("4").unwrap())
                     ),
-                    AstNode::cos(AstNode::div(
-                        AstNode::mul(
-                            AstNode::named_value("pi".to_string()),
-                            AstNode::named_value("x".to_string())
+                    AstNode::new_cos(AstNode::new_div(
+                        AstNode::new_mul(
+                            AstNode::new_named_value("pi".to_string()),
+                            AstNode::new_named_value("x".to_string())
                         ),
-                        AstNode::constant(RealScalar::from_str("2").unwrap())
+                        AstNode::new_constant(RealScalar::from_str("2").unwrap())
                     ))
                 ),
-                AstNode::sin(AstNode::div(
-                    AstNode::mul(
-                        AstNode::named_value("pi".to_string()),
-                        AstNode::named_value("y".to_string()),
+                AstNode::new_sin(AstNode::new_div(
+                    AstNode::new_mul(
+                        AstNode::new_named_value("pi".to_string()),
+                        AstNode::new_named_value("y".to_string()),
                     ),
-                    AstNode::constant(RealScalar::from_str("2").unwrap())
+                    AstNode::new_constant(RealScalar::from_str("2").unwrap())
                 ))
             )
         );
@@ -426,13 +428,13 @@ mod tests {
         assert_eq!(
             ast,
             Block(vec![
-                AstNode::add(
-                    AstNode::constant(RealScalar::from_str("3").unwrap()),
-                    AstNode::constant(RealScalar::from_str("4").unwrap()),
+                AstNode::new_add(
+                    AstNode::new_constant(RealScalar::from_str("3").unwrap()),
+                    AstNode::new_constant(RealScalar::from_str("4").unwrap()),
                 ),
-                AstNode::mul(
-                    AstNode::constant(RealScalar::from_str("5").unwrap()),
-                    AstNode::constant(RealScalar::from_str("6").unwrap())
+                AstNode::new_mul(
+                    AstNode::new_constant(RealScalar::from_str("5").unwrap()),
+                    AstNode::new_constant(RealScalar::from_str("6").unwrap())
                 )
             ])
         );

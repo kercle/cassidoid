@@ -1,4 +1,4 @@
-use std::{cmp, fmt};
+use std::{cmp, fmt, str::FromStr};
 
 use crate::integer::BigInteger;
 
@@ -36,16 +36,6 @@ impl RealScalar {
         todo!()
     }
 
-    pub fn from_str(s: &str) -> Result<Self, String> {
-        if let Ok(i) = BigInteger::from_str_radix(s, 10) {
-            Ok(RealScalar::Integer(i))
-        } else if let Ok(r) = rational::Rational::from_decimal_str(s) {
-            Ok(RealScalar::Rational(r))
-        } else {
-            Err(format!("Invalid real scalar: {}", s))
-        }
-    }
-
     pub fn is_zero(&self) -> bool {
         match self {
             RealScalar::Integer(i) => i.is_zero(),
@@ -57,6 +47,20 @@ impl RealScalar {
         match self {
             RealScalar::Integer(i) => i.is_one(),
             RealScalar::Rational(r) => r.is_one(),
+        }
+    }
+}
+
+impl FromStr for RealScalar {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        if let Ok(i) = BigInteger::from_str_radix(s, 10) {
+            Ok(RealScalar::Integer(i))
+        } else if let Ok(r) = rational::Rational::from_decimal_str(s) {
+            Ok(RealScalar::Rational(r))
+        } else {
+            Err(format!("Invalid real scalar: {}", s))
         }
     }
 }

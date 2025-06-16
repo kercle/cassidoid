@@ -34,7 +34,7 @@ static RW_RULES: LazyLock<Vec<RwRule<'static>>> = LazyLock::new(|| {
         ),
         rw_rule!(Any("k") * Any("a") + Any("a") => |k, a| {
             if let Some(k_val) = k.value_from_constant() {
-                AstNode::constant(k_val + 1) * a
+                AstNode::new_constant(k_val + 1) * a
             } else {
                 (k + 1) * a
             }
@@ -43,7 +43,7 @@ static RW_RULES: LazyLock<Vec<RwRule<'static>>> = LazyLock::new(|| {
             let a_val = a.value_from_constant().unwrap();
             let b_val = b.value_from_constant().unwrap();
 
-            AstNode::constant(a_val + b_val)
+            AstNode::new_constant(a_val + b_val)
         }),
     ]
 });
@@ -101,7 +101,7 @@ impl<PatternId: Eq + Hash + Debug> EquivalentAst<PatternId> {
     }
 
     fn iter_asts(&self) -> impl Iterator<Item = &AstNode> {
-        self.0.iter().map(|(_, entry)| &entry.ast)
+        self.0.values().map(|entry| &entry.ast)
     }
 
     fn len(&self) -> usize {
@@ -142,7 +142,7 @@ pub fn simplify_exhaustive(ast: AstNode) -> AstNode {
                 let mut rewrite_iter =
                     PatternRewriteOnceIter::new(ast.clone(), pattern, rewrite_rule);
 
-                while let Some(new_ast) = rewrite_iter.next() {
+                while let Some(new_ast) = rewrite_iter.next_pattern() {
                     equivalent_asts.add_pattern(ast.clone(), pattern_id);
                     equivalent_asts.insert(new_ast.clone());
                 }

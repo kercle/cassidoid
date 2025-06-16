@@ -85,21 +85,21 @@ impl<A> AstNode<A>
 where
     A: Default + Clone + PartialEq,
 {
-    pub fn constant(value: RealScalar) -> Self {
+    pub fn new_constant(value: RealScalar) -> Self {
         AstNode::Constant {
             annotation: A::default(),
             value,
         }
     }
 
-    pub fn named_value(name: String) -> Self {
+    pub fn new_named_value(name: String) -> Self {
         AstNode::NamedValue {
             annotation: A::default(),
             name,
         }
     }
 
-    pub fn add(lhs: AstNode<A>, rhs: AstNode<A>) -> Self {
+    pub fn new_add(lhs: AstNode<A>, rhs: AstNode<A>) -> Self {
         AstNode::Add {
             lhs: Box::new(lhs),
             rhs: Box::new(rhs),
@@ -107,21 +107,21 @@ where
         }
     }
 
-    pub fn add_seq(nodes: Vec<AstNode<A>>) -> Self {
+    pub fn new_add_seq(nodes: Vec<AstNode<A>>) -> Self {
         AstNode::AddSeq {
             nodes,
             annotation: A::default(),
         }
     }
 
-    pub fn negation(arg: AstNode<A>) -> Self {
+    pub fn new_negation(arg: AstNode<A>) -> Self {
         AstNode::Negation {
             arg: Box::new(arg),
             annotation: A::default(),
         }
     }
 
-    pub fn sub(lhs: AstNode<A>, rhs: AstNode<A>) -> Self {
+    pub fn new_sub(lhs: AstNode<A>, rhs: AstNode<A>) -> Self {
         AstNode::Sub {
             lhs: Box::new(lhs),
             rhs: Box::new(rhs),
@@ -129,7 +129,7 @@ where
         }
     }
 
-    pub fn mul(lhs: AstNode<A>, rhs: AstNode<A>) -> Self {
+    pub fn new_mul(lhs: AstNode<A>, rhs: AstNode<A>) -> Self {
         AstNode::Mul {
             lhs: Box::new(lhs),
             rhs: Box::new(rhs),
@@ -137,21 +137,21 @@ where
         }
     }
 
-    pub fn mul_seq(nodes: Vec<AstNode<A>>) -> Self {
+    pub fn new_mul_seq(nodes: Vec<AstNode<A>>) -> Self {
         AstNode::MulSeq {
             nodes,
             annotation: A::default(),
         }
     }
 
-    pub fn reciprocal(arg: AstNode<A>) -> Self {
+    pub fn new_reciprocal(arg: AstNode<A>) -> Self {
         AstNode::Reciprocal {
             arg: Box::new(arg),
             annotation: A::default(),
         }
     }
 
-    pub fn div(lhs: AstNode<A>, rhs: AstNode<A>) -> Self {
+    pub fn new_div(lhs: AstNode<A>, rhs: AstNode<A>) -> Self {
         AstNode::Div {
             lhs: Box::new(lhs),
             rhs: Box::new(rhs),
@@ -159,7 +159,7 @@ where
         }
     }
 
-    pub fn pow(lhs: AstNode<A>, rhs: AstNode<A>) -> Self {
+    pub fn new_pow(lhs: AstNode<A>, rhs: AstNode<A>) -> Self {
         AstNode::Pow {
             lhs: Box::new(lhs),
             rhs: Box::new(rhs),
@@ -167,35 +167,35 @@ where
         }
     }
 
-    pub fn sin(arg: AstNode<A>) -> Self {
+    pub fn new_sin(arg: AstNode<A>) -> Self {
         AstNode::Sin {
             arg: Box::new(arg),
             annotation: A::default(),
         }
     }
 
-    pub fn cos(arg: AstNode<A>) -> Self {
+    pub fn new_cos(arg: AstNode<A>) -> Self {
         AstNode::Cos {
             arg: Box::new(arg),
             annotation: A::default(),
         }
     }
 
-    pub fn tan(arg: AstNode<A>) -> Self {
+    pub fn new_tan(arg: AstNode<A>) -> Self {
         AstNode::Tan {
             arg: Box::new(arg),
             annotation: A::default(),
         }
     }
 
-    pub fn sqrt(arg: AstNode<A>) -> Self {
+    pub fn new_sqrt(arg: AstNode<A>) -> Self {
         AstNode::Sqrt {
             arg: Box::new(arg),
             annotation: A::default(),
         }
     }
 
-    pub fn function_call(name: String, args: Vec<AstNode<A>>) -> Self {
+    pub fn new_function_call(name: String, args: Vec<AstNode<A>>) -> Self {
         AstNode::FunctionCall {
             name,
             args,
@@ -203,7 +203,7 @@ where
         }
     }
 
-    pub fn block(nodes: Vec<AstNode<A>>) -> Self {
+    pub fn new_block(nodes: Vec<AstNode<A>>) -> Self {
         AstNode::Block(nodes)
     }
 
@@ -283,14 +283,20 @@ where
         let initial_args_len = args.len();
 
         let result = match name.as_str() {
-            "sin" => Ok(AstNode::sin(args.pop().ok_or("sin requires one argument")?)),
-            "cos" => Ok(AstNode::cos(args.pop().ok_or("cos requires one argument")?)),
-            "tan" => Ok(AstNode::tan(args.pop().ok_or("tan requires one argument")?)),
-            "sqrt" => Ok(AstNode::sqrt(
+            "sin" => Ok(AstNode::new_sin(
+                args.pop().ok_or("sin requires one argument")?,
+            )),
+            "cos" => Ok(AstNode::new_cos(
+                args.pop().ok_or("cos requires one argument")?,
+            )),
+            "tan" => Ok(AstNode::new_tan(
+                args.pop().ok_or("tan requires one argument")?,
+            )),
+            "sqrt" => Ok(AstNode::new_sqrt(
                 args.pop().ok_or("sqrt requires one argument")?,
             )),
             _ => {
-                return Ok(AstNode::function_call(name.clone(), args));
+                return Ok(AstNode::new_function_call(name.clone(), args));
             }
         };
 

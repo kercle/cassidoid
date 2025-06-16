@@ -70,8 +70,8 @@ impl AstPattern<'_> {
                     _ => return None,
                 };
 
-                let left_matches = left_pattern.matches(&lhs);
-                let right_matches = right_pattern.matches(&rhs);
+                let left_matches = left_pattern.matches(lhs);
+                let right_matches = right_pattern.matches(rhs);
 
                 if left_matches.is_none() || right_matches.is_none() {
                     return None;
@@ -115,7 +115,7 @@ where
     ) -> Self {
         let mut bindings = Vec::new();
         let annotated_ast =
-            Self::mark_matches(&pattern, ast.map_annotation(&mut |_| None), &mut bindings);
+            Self::mark_matches(pattern, ast.map_annotation(&mut |_| None), &mut bindings);
 
         Self {
             annotated_ast,
@@ -148,7 +148,7 @@ where
         })
     }
 
-    pub fn next(&mut self) -> Option<AstNode> {
+    pub fn next_pattern(&mut self) -> Option<AstNode> {
         if self.iter_index >= self.bindings.len() {
             return None;
         }
@@ -198,7 +198,7 @@ mod tests {
 
         let x = matches.get("X").unwrap();
         let y = matches.get("Y").unwrap();
-        assert_eq!(ast, AstNode::add(x.clone(), y.clone()));
+        assert_eq!(ast, AstNode::new_add(x.clone(), y.clone()));
     }
     #[test]
     fn test_repeated_term_matching() {
@@ -221,21 +221,21 @@ mod tests {
         let pattern = Any("X") + Any("X");
         let mut iter = PatternRewriteOnceIter::new(ast, &pattern, |bindings| {
             let x = bindings.get("X").unwrap();
-            AstNode::mul(
-                AstNode::constant(RealScalar::Integer(BigInteger::from_u64(2))),
+            AstNode::new_mul(
+                AstNode::new_constant(RealScalar::Integer(BigInteger::from_u64(2))),
                 x.clone(),
             )
         });
 
         assert_eq!(
-            iter.next().unwrap(),
-            AstNode::mul(
-                AstNode::constant(RealScalar::Integer(BigInteger::from_u64(2))),
-                AstNode::named_value("x".to_string()),
+            iter.next_pattern().unwrap(),
+            AstNode::new_mul(
+                AstNode::new_constant(RealScalar::Integer(BigInteger::from_u64(2))),
+                AstNode::new_named_value("x".to_string()),
             )
         );
 
-        assert!(iter.next().is_none());
+        assert!(iter.next_pattern().is_none());
     }
 
     #[test]
@@ -250,37 +250,37 @@ mod tests {
             let x = bindings.get("X").unwrap();
             let y = bindings.get("Y").unwrap();
 
-            AstNode::add(y.clone(), x.clone())
+            AstNode::new_add(y.clone(), x.clone())
         });
 
         assert_eq!(
-            iter.next().unwrap(),
-            AstNode::add(
-                AstNode::mul(
-                    AstNode::constant(RealScalar::Integer(BigInteger::from_u64(2))),
-                    AstNode::cos(AstNode::add(
-                        AstNode::named_value("x".to_string()),
-                        AstNode::constant(RealScalar::Integer(BigInteger::from_u64(1))),
+            iter.next_pattern().unwrap(),
+            AstNode::new_add(
+                AstNode::new_mul(
+                    AstNode::new_constant(RealScalar::Integer(BigInteger::from_u64(2))),
+                    AstNode::new_cos(AstNode::new_add(
+                        AstNode::new_named_value("x".to_string()),
+                        AstNode::new_constant(RealScalar::Integer(BigInteger::from_u64(1))),
                     ))
                 ),
-                AstNode::constant(RealScalar::Integer(BigInteger::from_u64(3)))
+                AstNode::new_constant(RealScalar::Integer(BigInteger::from_u64(3)))
             )
         );
 
         assert_eq!(
-            iter.next().unwrap(),
-            AstNode::add(
-                AstNode::constant(RealScalar::Integer(BigInteger::from_u64(3))),
-                AstNode::mul(
-                    AstNode::constant(RealScalar::Integer(BigInteger::from_u64(2))),
-                    AstNode::cos(AstNode::add(
-                        AstNode::constant(RealScalar::Integer(BigInteger::from_u64(1))),
-                        AstNode::named_value("x".to_string()),
+            iter.next_pattern().unwrap(),
+            AstNode::new_add(
+                AstNode::new_constant(RealScalar::Integer(BigInteger::from_u64(3))),
+                AstNode::new_mul(
+                    AstNode::new_constant(RealScalar::Integer(BigInteger::from_u64(2))),
+                    AstNode::new_cos(AstNode::new_add(
+                        AstNode::new_constant(RealScalar::Integer(BigInteger::from_u64(1))),
+                        AstNode::new_named_value("x".to_string()),
                     ))
                 )
             )
         );
 
-        assert!(iter.next().is_none());
+        assert!(iter.next_pattern().is_none());
     }
 }

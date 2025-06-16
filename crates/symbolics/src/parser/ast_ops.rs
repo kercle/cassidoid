@@ -8,7 +8,7 @@ impl ops::Add for AstNode {
     type Output = Self;
 
     fn add(self, other: Self) -> Self {
-        AstNode::add(self, other)
+        AstNode::new_add(self, other)
     }
 }
 
@@ -16,9 +16,9 @@ impl ops::Add<u64> for AstNode {
     type Output = Self;
 
     fn add(self, other: u64) -> Self {
-        AstNode::add(
+        AstNode::new_add(
             self,
-            AstNode::constant(RealScalar::Integer(BigInteger::from_u64(other))),
+            AstNode::new_constant(RealScalar::Integer(BigInteger::from_u64(other))),
         )
     }
 }
@@ -27,8 +27,8 @@ impl ops::Add<AstNode> for u64 {
     type Output = AstNode;
 
     fn add(self, other: AstNode) -> AstNode {
-        AstNode::add(
-            AstNode::constant(RealScalar::Integer(BigInteger::from_u64(self))),
+        AstNode::new_add(
+            AstNode::new_constant(RealScalar::Integer(BigInteger::from_u64(self))),
             other,
         )
     }
@@ -38,7 +38,7 @@ impl ops::Sub for AstNode {
     type Output = Self;
 
     fn sub(self, other: Self) -> Self {
-        AstNode::sub(self, other)
+        AstNode::new_sub(self, other)
     }
 }
 
@@ -46,7 +46,7 @@ impl ops::Mul for AstNode {
     type Output = Self;
 
     fn mul(self, other: Self) -> Self {
-        AstNode::mul(self, other)
+        AstNode::new_mul(self, other)
     }
 }
 
@@ -54,7 +54,7 @@ impl ops::Div for AstNode {
     type Output = Self;
 
     fn div(self, other: Self) -> Self {
-        AstNode::div(self, other)
+        AstNode::new_div(self, other)
     }
 }
 
@@ -62,9 +62,9 @@ impl ops::Mul<u64> for AstNode {
     type Output = Self;
 
     fn mul(self, other: u64) -> Self {
-        AstNode::mul(
+        AstNode::new_mul(
             self,
-            AstNode::constant(RealScalar::Integer(BigInteger::from_u64(other))),
+            AstNode::new_constant(RealScalar::Integer(BigInteger::from_u64(other))),
         )
     }
 }
@@ -73,8 +73,8 @@ impl ops::Mul<AstNode> for u64 {
     type Output = AstNode;
 
     fn mul(self, other: AstNode) -> AstNode {
-        AstNode::mul(
-            AstNode::constant(RealScalar::Integer(BigInteger::from_u64(self))),
+        AstNode::new_mul(
+            AstNode::new_constant(RealScalar::Integer(BigInteger::from_u64(self))),
             other,
         )
     }

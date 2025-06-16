@@ -137,7 +137,7 @@ impl BigInteger {
     }
 
     pub fn is_one(&self) -> bool {
-        self.eq(&BigInteger::from_u64(1))
+        self.eq_inner(&BigInteger::from_u64(1))
     }
 
     pub fn is_negative(&self) -> bool {
@@ -148,12 +148,12 @@ impl BigInteger {
         self.sign == Sign::Positive
     }
 
-    pub fn eq(&self, other: &Self) -> bool {
+    pub fn eq_inner(&self, other: &Self) -> bool {
         self.sign == other.sign
             && Self::cmp_digits(CompareFunction::Equal, &self.digits, &other.digits)
     }
 
-    pub fn gt(&self, other: &Self) -> bool {
+    pub fn gt_inner(&self, other: &Self) -> bool {
         if self.sign != other.sign {
             return self.sign == Sign::Positive;
         }
@@ -161,7 +161,7 @@ impl BigInteger {
         Self::cmp_digits(CompareFunction::Greater, &self.digits, &other.digits)
     }
 
-    pub fn lt(&self, other: &Self) -> bool {
+    pub fn lt_inner(&self, other: &Self) -> bool {
         if self.sign != other.sign {
             return self.sign == Sign::Negative;
         }
@@ -169,7 +169,7 @@ impl BigInteger {
         Self::cmp_digits(CompareFunction::Less, &self.digits, &other.digits)
     }
 
-    pub fn ge(&self, other: &Self) -> bool {
+    pub fn ge_inner(&self, other: &Self) -> bool {
         if self.sign != other.sign {
             return self.sign == Sign::Positive;
         }
@@ -177,7 +177,7 @@ impl BigInteger {
         Self::cmp_digits(CompareFunction::GreaterEqual, &self.digits, &other.digits)
     }
 
-    pub fn le(&self, other: &Self) -> bool {
+    pub fn le_inner(&self, other: &Self) -> bool {
         if self.sign != other.sign {
             return self.sign == Sign::Negative;
         }
@@ -258,7 +258,7 @@ impl BigInteger {
             result.push(1);
         }
 
-        return result;
+        result
     }
 
     fn sub_digits_larger_from_smaller_naive(first: &[Digit], second: &[Digit]) -> Vec<Digit> {
@@ -350,7 +350,7 @@ impl BigInteger {
         let m = rem.len();
 
         // Use the top two digits of rem and the top digit of rhs
-        let rem_hi = if m >= n + 1 {
+        let rem_hi = if m > n {
             ((rem[m - 1] as DoubleDigit) << DIGIT_BITS) | (rem[m - 2] as DoubleDigit)
         } else if m >= n {
             rem[m - 1] as DoubleDigit
@@ -504,13 +504,13 @@ impl BigInteger {
     }
 
     pub fn pow(&self, mut exp: Self) -> Result<Self, String> {
-        if exp.gt(&BigInteger::from_u64(20)) {
+        if exp.gt_inner(&BigInteger::from_u64(20)) {
             return Err("Failsafe: Exponent too large".to_string());
         }
 
         let mut result = BigInteger::from_u64(1);
         while !exp.is_zero() {
-            result = BigInteger::mul(&result, &self);
+            result = BigInteger::mul(&result, self);
             exp = exp.decrement();
         }
 
@@ -524,7 +524,7 @@ impl fmt::Display for BigInteger {
         let mut num = self.clone();
 
         loop {
-            if num.eq(&BigInteger::from_u64(0)) {
+            if num.eq_inner(&BigInteger::from_u64(0)) {
                 break;
             }
 
@@ -548,7 +548,7 @@ impl fmt::Display for BigInteger {
 
 impl fmt::Debug for BigInteger {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.to_string())
+        write!(f, "{}", self)
     }
 }
 

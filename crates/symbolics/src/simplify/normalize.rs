@@ -25,7 +25,7 @@ fn flatten_commutative(node: AstNode) -> AstNode {
 
     match &node {
         Add { lhs, rhs, .. } => {
-            return flatten_commutative(AstNode::add_seq(vec![*lhs.to_owned(), *rhs.to_owned()]));
+            return flatten_commutative(AstNode::new_add_seq(vec![*lhs.to_owned(), *rhs.to_owned()]));
         }
         AddSeq { nodes, .. } => {
             let mut flattened_nodes = flatten_commutative_inner(nodes, |node| {
@@ -40,21 +40,21 @@ fn flatten_commutative(node: AstNode) -> AstNode {
             });
 
             if flattened_nodes.is_empty() {
-                return AstNode::constant(RealScalar::zero());
+                return AstNode::new_constant(RealScalar::zero());
             } else if flattened_nodes.len() == 1 {
                 return flattened_nodes.pop().unwrap();
             } else {
-                return AstNode::add_seq(flattened_nodes);
+                return AstNode::new_add_seq(flattened_nodes);
             }
         }
         Negation { arg, .. } => {
-            return flatten_commutative(AstNode::mul_seq(vec![
-                AstNode::constant(RealScalar::minus_one()),
+            return flatten_commutative(AstNode::new_mul_seq(vec![
+                AstNode::new_constant(RealScalar::minus_one()),
                 *arg.to_owned(),
             ]));
         }
         Mul { lhs, rhs, .. } => {
-            return flatten_commutative(AstNode::mul_seq(vec![*lhs.to_owned(), *rhs.to_owned()]));
+            return flatten_commutative(AstNode::new_mul_seq(vec![*lhs.to_owned(), *rhs.to_owned()]));
         }
         MulSeq { nodes, .. } => {
             let mut flattened_nodes = flatten_commutative_inner(nodes, |node| {
@@ -69,11 +69,11 @@ fn flatten_commutative(node: AstNode) -> AstNode {
             });
 
             if flattened_nodes.is_empty() {
-                return AstNode::constant(RealScalar::one());
+                return AstNode::new_constant(RealScalar::one());
             } else if flattened_nodes.len() == 1 {
                 return flattened_nodes.pop().unwrap();
             } else {
-                return AstNode::mul_seq(flattened_nodes);
+                return AstNode::new_mul_seq(flattened_nodes);
             }
         }
         _ => {}
@@ -89,13 +89,13 @@ fn transform_inverses(node: AstNode) -> AstNode {
             let lhs = transform_inverses(*lhs.to_owned());
             let rhs = transform_inverses(*rhs.to_owned());
 
-            return AstNode::add(lhs, AstNode::negation(rhs));
+            return AstNode::new_add(lhs, AstNode::new_negation(rhs));
         }
         Div { lhs, rhs, .. } => {
             let lhs = transform_inverses(*lhs.to_owned());
             let rhs = transform_inverses(*rhs.to_owned());
 
-            return AstNode::mul(lhs, AstNode::reciprocal(rhs));
+            return AstNode::new_mul(lhs, AstNode::new_reciprocal(rhs));
         }
         _ => {}
     }
@@ -110,12 +110,12 @@ fn cannonical_order(node: AstNode) -> AstNode {
         AddSeq { nodes, .. } => {
             let mut sorted_nodes = nodes.clone();
             sorted_nodes.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
-            return AstNode::add_seq(sorted_nodes);
+            return AstNode::new_add_seq(sorted_nodes);
         }
         MulSeq { nodes, .. } => {
             let mut sorted_nodes = nodes.clone();
             sorted_nodes.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
-            return AstNode::mul_seq(sorted_nodes);
+            return AstNode::new_mul_seq(sorted_nodes);
         }
         _ => {}
     }

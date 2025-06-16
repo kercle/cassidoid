@@ -1,3 +1,5 @@
+use std::str::FromStr;
+
 use crate::parser::error::LexError;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -359,10 +361,76 @@ impl TokenStream {
         Ok((string_literal, start_pos))
     }
 
-    pub fn from_str(data: &str) -> Result<Self, LexError> {
+    pub fn next_token(&mut self) -> Option<&Token> {
+        if self.current < self.tokens.len() {
+            self.current += 1;
+            Some(&self.tokens[self.current - 1].0)
+        } else {
+            None
+        }
+    }
+
+    pub fn peek(&self) -> Option<&(Token, TokenPos)> {
+        if self.current < self.tokens.len() {
+            Some(&self.tokens[self.current])
+        } else {
+            None
+        }
+    }
+
+    pub fn peek_token(&self) -> Option<&Token> {
+        self.peek().map(|(token, _)| token)
+    }
+
+    pub fn next_if_matches<F>(&mut self, matcher: F) -> Option<&Token>
+    where
+        F: Fn(&Token) -> bool,
+    {
+        let current_token = self.peek_token()?;
+
+        if matcher(current_token) {
+            self.next_token()
+        } else {
+            None
+        }
+    }
+
+    pub fn next_if_matches_token(&mut self, token: &Token) -> Option<&Token> {
+        self.next_if_matches(|t| t == token)
+    }
+
+    pub fn next_if_identifier(&mut self) -> Option<&str> {
+        let token = self.next_if_matches(|t| matches!(t, Token::Identifier(_)))?;
+
+        if let Token::Identifier(name) = token {
+            Some(name.as_str())
+        } else {
+            None
+        }
+    }
+
+    pub fn next_if_number(&mut self) -> Option<&str> {
+        let token = self.next_if_matches(|t| matches!(t, Token::Number(_)))?;
+
+        if let Token::Number(value) = token {
+            Some(value)
+        } else {
+            None
+        }
+    }
+
+    pub fn end_of_stream(&self) -> bool {
+        self.current >= self.tokens.len()
+    }
+}
+
+impl FromStr for TokenStream {
+    type Err = LexError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
         let mut tokens = vec![];
 
-        let mut iter = CharIterator::new(&data);
+        let mut iter = CharIterator::new(s);
         while let Some(c) = iter.peek().cloned() {
             if c == '"' {
                 iter.next();
@@ -421,68 +489,6 @@ impl TokenStream {
         }
 
         Ok(Self { tokens, current: 0 })
-    }
-
-    pub fn next(&mut self) -> Option<&Token> {
-        if self.current < self.tokens.len() {
-            self.current += 1;
-            Some(&self.tokens[self.current - 1].0)
-        } else {
-            None
-        }
-    }
-
-    pub fn peek(&self) -> Option<&(Token, TokenPos)> {
-        if self.current < self.tokens.len() {
-            Some(&self.tokens[self.current])
-        } else {
-            None
-        }
-    }
-
-    pub fn peek_token(&self) -> Option<&Token> {
-        self.peek().map(|(token, _)| token)
-    }
-
-    pub fn next_if_matches<F>(&mut self, matcher: F) -> Option<&Token>
-    where
-        F: Fn(&Token) -> bool,
-    {
-        let current_token = self.peek_token()?;
-
-        if matcher(current_token) {
-            self.next()
-        } else {
-            None
-        }
-    }
-
-    pub fn next_if_matches_token(&mut self, token: &Token) -> Option<&Token> {
-        self.next_if_matches(|t| t == token)
-    }
-
-    pub fn next_if_identifier(&mut self) -> Option<&str> {
-        let token = self.next_if_matches(|t| matches!(t, Token::Identifier(_)))?;
-
-        if let Token::Identifier(name) = token {
-            Some(name.as_str())
-        } else {
-            None
-        }
-    }
-
-    pub fn next_if_number(&mut self) -> Option<&str> {
-        let token = self.next_if_matches(|t| matches!(t, Token::Number(_)))?;
-
-        if let Token::Number(value) = token {
-            Some(value)
-        } else {
-            None
-        }
-    }
-
-    pub fn end_of_stream(&self) -> bool {
-        self.current >= self.tokens.len()
     }
 }
 

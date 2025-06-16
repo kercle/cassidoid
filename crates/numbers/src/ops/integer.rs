@@ -72,7 +72,7 @@ impl ops::Div for &BigInteger {
     type Output = Option<BigInteger>;
 
     fn div(self, other: &BigInteger) -> Self::Output {
-        if let Some((quotient, _)) = BigInteger::div(&self, &other) {
+        if let Some((quotient, _)) = BigInteger::div(self, other) {
             Some(quotient)
         } else {
             None
@@ -92,7 +92,7 @@ impl ops::Rem for &BigInteger {
     type Output = Option<BigInteger>;
 
     fn rem(self, other: &BigInteger) -> Self::Output {
-        if let Some((_, remainder)) = BigInteger::div(&self, &other) {
+        if let Some((_, remainder)) = BigInteger::div(self, other) {
             Some(remainder)
         } else {
             None
@@ -110,15 +110,15 @@ impl ops::Rem for BigInteger {
 
 impl cmp::PartialEq for BigInteger {
     fn eq(&self, other: &Self) -> bool {
-        self.eq(other)
+        self.eq_inner(other)
     }
 }
 
 impl cmp::PartialOrd for BigInteger {
     fn partial_cmp(&self, other: &Self) -> Option<cmp::Ordering> {
-        if self.eq(other) {
+        if self.eq_inner(other) {
             Some(cmp::Ordering::Equal)
-        } else if self.lt(other) {
+        } else if self.lt_inner(other) {
             Some(cmp::Ordering::Less)
         } else {
             Some(cmp::Ordering::Greater)
