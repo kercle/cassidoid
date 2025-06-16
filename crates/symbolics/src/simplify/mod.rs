@@ -6,12 +6,40 @@ pub mod pattern;
 use std::collections::{HashMap, HashSet};
 use std::fmt::Debug;
 use std::hash::Hash;
+use std::sync::LazyLock;
 use std::{fmt, vec};
 
 use crate::format::MathDisplay;
 use crate::parser::ast::AstNode;
 use crate::rw_rule;
 use crate::simplify::pattern::{AstPattern, BindingType, PatternRewriteOnceIter};
+
+type RwRule<'a> = (
+    AstPattern<'a>,
+    Box<dyn Fn(&BindingType) -> AstNode + Send + Sync>,
+);
+
+static RW_RULES: LazyLock<Vec<RwRule<'static>>> = LazyLock::new(|| {
+    use AstPattern::*;
+
+    vec![
+        rw_rule!(Any("a") + Any("b") => |a, b|
+            b + a
+        ),
+        rw_rule!((Any("a") + Any("b")) + Any("c") => |a, b, c|
+            a + (b + c)
+        ),
+        rw_rule!(Any("a") + Any("a") => |a|
+            2 * a
+        ),
+        rw_rule!(Number("a") + Number("b") => |a, b| {
+            let a_val = a.value_from_constant().unwrap();
+            let b_val = b.value_from_constant().unwrap();
+
+            AstNode::constant(a_val + b_val)
+        }),
+    ]
+});
 
 #[derive(Debug, Clone)]
 struct EquivalentAstEntry<PatternId> {
@@ -92,25 +120,6 @@ impl<T: Debug> fmt::Debug for EquivalentAst<T> {
 }
 
 pub fn simplify_exhaustive(ast: AstNode) -> AstNode {
-    use AstPattern::*;
-    let rules: Vec<(AstPattern, Box<dyn Fn(&BindingType) -> AstNode>)> = vec![
-        rw_rule!(Any("a") + Any("b") => |a, b|
-            b + a
-        ),
-        rw_rule!((Any("a") + Any("b")) + Any("c") => |a, b, c|
-            a + (b + c)
-        ),
-        rw_rule!(Any("a") + Any("a") => |a|
-            2 * a
-        ),
-        rw_rule!(Number("a") + Number("b") => |a, b| {
-            let a_val = a.value_from_constant().unwrap();
-            let b_val = b.value_from_constant().unwrap();
-
-            AstNode::constant(a_val + b_val)
-        }),
-    ];
-
     let mut equivalent_asts = EquivalentAst::new();
     equivalent_asts.insert(ast.clone());
 
@@ -118,7 +127,7 @@ pub fn simplify_exhaustive(ast: AstNode) -> AstNode {
         let equivalent_asts_len = equivalent_asts.len();
 
         for ast in equivalent_asts.clone().iter_asts() {
-            for (pattern_id, (pattern, rewrite_rule)) in rules.iter().enumerate() {
+            for (pattern_id, (pattern, rewrite_rule)) in RW_RULES.iter().enumerate() {
                 if equivalent_asts.pattern_already_applied(ast, &pattern_id) {
                     continue; // Skip if the pattern has already been applied to this AST
                 }
