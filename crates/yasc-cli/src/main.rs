@@ -1,6 +1,6 @@
 use clap::Parser;
 use symbolics::format::MathDisplay;
-use symbolics::{parser::parse, simplify::simplify_ast};
+use symbolics::{parser::parse, simplify::simplify_exhaustive};
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
@@ -17,7 +17,7 @@ fn print_markdown(input: &str) {
         std::process::exit(1);
     });
 
-    let ast = simplify_ast(ast);
+    let ast = simplify_exhaustive(ast);
     dbg!(&ast);
 
     let latex = ast.to_latex();

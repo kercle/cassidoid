@@ -1,18 +1,17 @@
 // mod naive;
+pub mod macros;
 pub mod normalize;
+pub mod pattern;
 
 use std::collections::{HashMap, HashSet};
 use std::fmt::Debug;
 use std::hash::Hash;
 use std::{fmt, vec};
 
-use numbers::RealScalar;
-use numbers::integer::BigInteger;
-
 use crate::format::MathDisplay;
 use crate::parser::ast::AstNode;
+use crate::rw_rule;
 use crate::simplify::pattern::{AstPattern, BindingType, PatternRewriteOnceIter};
-pub mod pattern;
 
 #[derive(Debug, Clone)]
 struct EquivalentAstEntry<PatternId> {
@@ -92,52 +91,24 @@ impl<T: Debug> fmt::Debug for EquivalentAst<T> {
     }
 }
 
-pub fn simplify_ast(ast: AstNode) -> AstNode {
+pub fn simplify_exhaustive(ast: AstNode) -> AstNode {
     use AstPattern::*;
     let rules: Vec<(AstPattern, Box<dyn Fn(&BindingType) -> AstNode>)> = vec![
-        (
-            Any("A") + Any("B"),
-            Box::new(|bind: &BindingType| {
-                let a = bind.get("A").unwrap().clone();
-                let b = bind.get("B").unwrap().clone();
-                AstNode::add(b, a)
-            }),
+        rw_rule!(Any("a") + Any("b") => |a, b|
+            b + a
         ),
-        (
-            (Any("A") + Any("B")) + Any("C"),
-            Box::new(|bind: &BindingType| {
-                let a = bind.get("A").unwrap().clone();
-                let b = bind.get("B").unwrap().clone();
-                let c = bind.get("C").unwrap().clone();
-                AstNode::add(AstNode::add(a, c), b)
-            }),
+        rw_rule!((Any("a") + Any("b")) + Any("c") => |a, b, c|
+            a + (b + c)
         ),
-        (
-            Any("A") + Any("A"),
-            Box::new(|bind: &BindingType| {
-                let a = bind.get("A").unwrap().clone();
-                AstNode::mul(
-                    AstNode::constant(RealScalar::Integer(BigInteger::from_u64(2))),
-                    a,
-                )
-            }),
+        rw_rule!(Any("a") + Any("a") => |a|
+            2 * a
         ),
-        (
-            Number("A") + Number("B"),
-            Box::new(|bind: &BindingType| {
-                let a = bind.get("A").unwrap().clone();
-                let b = bind.get("B").unwrap().clone();
-                if let (
-                    AstNode::Constant { value: a_val, .. },
-                    AstNode::Constant { value: b_val, .. },
-                ) = (&a, &b)
-                {
-                    AstNode::constant(a_val + b_val)
-                } else {
-                    AstNode::add(a, b)
-                }
-            }),
-        ),
+        rw_rule!(Number("a") + Number("b") => |a, b| {
+            let a_val = a.value_from_constant().unwrap();
+            let b_val = b.value_from_constant().unwrap();
+
+            AstNode::constant(a_val + b_val)
+        }),
     ];
 
     let mut equivalent_asts = EquivalentAst::new();
@@ -177,8 +148,8 @@ mod tests {
 
     #[test]
     fn test_simplify_ast() {
-        let ast = parse("x+x+x").unwrap();
-        let simplified_ast = simplify_ast(ast);
+        let ast = parse("1+x+2+y+3").unwrap();
+        let simplified_ast = simplify_exhaustive(ast);
         println!("Simplified: {}", simplified_ast.to_yasc());
     }
 }

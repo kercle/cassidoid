@@ -314,6 +314,14 @@ where
         result
     }
 
+    pub fn value_from_constant(&self) -> Option<RealScalar> {
+        if let AstNode::Constant { value, .. } = self {
+            Some(value.clone())
+        } else {
+            None
+        }
+    }
+
     pub fn map<F>(self, mut f: F) -> Self
     where
         F: FnMut(Self) -> Self,
