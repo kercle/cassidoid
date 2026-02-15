@@ -87,16 +87,7 @@ where
         Negation { arg, .. } => {
             format!("-{}", ast_to_latex(arg, precedence))
         }
-        Add { lhs, rhs, .. } => wrap_with_parentheses(
-            format!(
-                "{} + {}",
-                ast_to_latex(lhs, precedence),
-                ast_to_latex(rhs, precedence)
-            ),
-            precedence,
-            parent_precedence,
-        ),
-        AddSeq { nodes, .. } => {
+        Add { nodes, .. } => {
             let add_str = nodes
                 .iter()
                 .map(|node| ast_to_latex(node, precedence))
@@ -113,18 +104,7 @@ where
             precedence,
             parent_precedence,
         ),
-        Mul { lhs, rhs, .. } => {
-            let lhs_str = ast_to_latex(lhs, precedence);
-            let rhs_str = ast_to_latex(rhs, precedence);
-            let mul_str = if lhs.is_constant() && rhs.is_constant() {
-                format!("{} \\cdot {}", lhs_str, rhs_str)
-            } else {
-                format!("{} {}", lhs_str, rhs_str)
-            };
-
-            wrap_with_parentheses(mul_str, precedence, parent_precedence)
-        }
-        MulSeq { nodes, .. } => {
+        Mul { nodes, .. } => {
             let mul_str = nodes
                 .iter()
                 .map(|node| ast_to_latex(node, precedence))
@@ -198,7 +178,7 @@ mod tests {
     #[test]
     fn test_ast_to_latex_with_parenthesis() {
         let ast = parse("(2 + 3) * 6").unwrap();
-        assert_eq!(ast.to_latex(), "\\left(2 + 3\\right) 6");
+        assert_eq!(ast.to_latex(), "\\left(2 + 3\\right) \\cdot 6");
     }
 
     #[test]
@@ -218,7 +198,7 @@ mod tests {
         let ast = parse("5*pi^2/4*cos[pi*x/2]*sin[π*y/2]").unwrap();
         assert_eq!(
             ast.to_latex(),
-            "\\frac{5 \\pi^{2}}{4} \\cos\\left(\\frac{\\pi x}{2}\\right) \\sin\\left(\\frac{\\pi y}{2}\\right)"
+            "\\frac{5 \\cdot \\pi^{2}}{4} \\cdot \\cos\\left(\\frac{\\pi \\cdot x}{2}\\right) \\cdot \\sin\\left(\\frac{\\pi \\cdot y}{2}\\right)"
         );
     }
 }

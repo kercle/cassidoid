@@ -1,6 +1,5 @@
 use std::cmp::{self, Ordering};
 
-use crate::format::MathDisplay;
 use numbers::RealScalar;
 
 #[derive(Debug, Clone, PartialEq)]
@@ -17,11 +16,6 @@ where
         annotation: Annotation,
     },
     Add {
-        lhs: Box<AstNode<Annotation>>,
-        rhs: Box<AstNode<Annotation>>,
-        annotation: Annotation,
-    },
-    AddSeq {
         nodes: Vec<AstNode<Annotation>>,
         annotation: Annotation,
     },
@@ -35,11 +29,6 @@ where
         annotation: Annotation,
     },
     Mul {
-        lhs: Box<AstNode<Annotation>>,
-        rhs: Box<AstNode<Annotation>>,
-        annotation: Annotation,
-    },
-    MulSeq {
         nodes: Vec<AstNode<Annotation>>,
         annotation: Annotation,
     },
@@ -98,19 +87,15 @@ where
         }
     }
 
-    pub fn new_add(lhs: AstNode<A>, rhs: AstNode<A>) -> Self {
+    pub fn new_add(nodes: Vec<AstNode<A>>) -> Self {
         AstNode::Add {
-            lhs: Box::new(lhs),
-            rhs: Box::new(rhs),
+            nodes,
             annotation: A::default(),
         }
     }
 
-    pub fn new_add_seq(nodes: Vec<AstNode<A>>) -> Self {
-        AstNode::AddSeq {
-            nodes,
-            annotation: A::default(),
-        }
+    pub fn new_add_pair(lhs: AstNode<A>, rhs: AstNode<A>) -> Self {
+        Self::new_add(vec![lhs, rhs])
     }
 
     pub fn new_negation(arg: AstNode<A>) -> Self {
@@ -128,16 +113,12 @@ where
         }
     }
 
-    pub fn new_mul(lhs: AstNode<A>, rhs: AstNode<A>) -> Self {
-        AstNode::Mul {
-            lhs: Box::new(lhs),
-            rhs: Box::new(rhs),
-            annotation: A::default(),
-        }
+    pub fn new_mul_pair(lhs: AstNode<A>, rhs: AstNode<A>) -> Self {
+        Self::new_mul(vec![lhs, rhs])
     }
 
-    pub fn new_mul_seq(nodes: Vec<AstNode<A>>) -> Self {
-        AstNode::MulSeq {
+    pub fn new_mul(nodes: Vec<AstNode<A>>) -> Self {
+        AstNode::Mul {
             nodes,
             annotation: A::default(),
         }
@@ -210,24 +191,14 @@ where
         match self {
             AstNode::Constant { value, .. } => AstNode::Constant { value, annotation },
             AstNode::NamedValue { name, .. } => AstNode::NamedValue { name, annotation },
-            AstNode::Add { lhs, rhs, .. } => AstNode::Add {
-                lhs,
-                rhs,
-                annotation,
-            },
-            AstNode::AddSeq { nodes, .. } => AstNode::AddSeq { nodes, annotation },
+            AstNode::Add { nodes, .. } => AstNode::Add { nodes, annotation },
             AstNode::Negation { arg, .. } => AstNode::Negation { arg, annotation },
             AstNode::Sub { lhs, rhs, .. } => AstNode::Sub {
                 lhs,
                 rhs,
                 annotation,
             },
-            AstNode::Mul { lhs, rhs, .. } => AstNode::Mul {
-                lhs,
-                rhs,
-                annotation,
-            },
-            AstNode::MulSeq { nodes, .. } => AstNode::MulSeq { nodes, annotation },
+            AstNode::Mul { nodes, .. } => AstNode::Mul { nodes, annotation },
             AstNode::Div { lhs, rhs, .. } => AstNode::Div {
                 lhs,
                 rhs,
@@ -256,11 +227,9 @@ where
             AstNode::Constant { annotation, .. } => annotation,
             AstNode::NamedValue { annotation, .. } => annotation,
             AstNode::Add { annotation, .. } => annotation,
-            AstNode::AddSeq { annotation, .. } => annotation,
             AstNode::Negation { annotation, .. } => annotation,
             AstNode::Sub { annotation, .. } => annotation,
             AstNode::Mul { annotation, .. } => annotation,
-            AstNode::MulSeq { annotation, .. } => annotation,
             AstNode::Div { annotation, .. } => annotation,
             AstNode::Pow { annotation, .. } => annotation,
             AstNode::Sin { annotation, .. } => annotation,
@@ -334,16 +303,7 @@ where
     {
         use AstNode::*;
         let mapped = match self {
-            Add {
-                lhs,
-                rhs,
-                annotation,
-            } => Add {
-                lhs: Box::new(lhs.map_inner(f)),
-                rhs: Box::new(rhs.map_inner(f)),
-                annotation,
-            },
-            AddSeq { nodes, annotation } => AstNode::AddSeq {
+            Add { nodes, annotation } => AstNode::Add {
                 nodes: nodes.into_iter().map(|n| n.map_inner(f)).collect(),
                 annotation,
             },
@@ -360,16 +320,7 @@ where
                 rhs: Box::new(rhs.map_inner(f)),
                 annotation,
             },
-            Mul {
-                lhs,
-                rhs,
-                annotation,
-            } => Mul {
-                lhs: Box::new(lhs.map_inner(f)),
-                rhs: Box::new(rhs.map_inner(f)),
-                annotation,
-            },
-            MulSeq { nodes, annotation } => MulSeq {
+            Mul { nodes, annotation } => Mul {
                 nodes: nodes.into_iter().map(|n| n.map_inner(f)).collect(),
                 annotation,
             },
@@ -449,16 +400,7 @@ where
                 name,
                 annotation: f(annotation),
             },
-            AstNode::Add {
-                lhs,
-                rhs,
-                annotation,
-            } => AstNode::Add {
-                lhs: Box::new(lhs.map_annotation(f)),
-                rhs: Box::new(rhs.map_annotation(f)),
-                annotation: f(annotation),
-            },
-            AstNode::AddSeq { nodes, annotation } => AstNode::AddSeq {
+            AstNode::Add { nodes, annotation } => AstNode::Add {
                 nodes: nodes.into_iter().map(|n| n.map_annotation(f)).collect(),
                 annotation: f(annotation),
             },
@@ -475,16 +417,7 @@ where
                 rhs: Box::new(rhs.map_annotation(f)),
                 annotation: f(annotation),
             },
-            AstNode::Mul {
-                lhs,
-                rhs,
-                annotation,
-            } => AstNode::Mul {
-                lhs: Box::new(lhs.map_annotation(f)),
-                rhs: Box::new(rhs.map_annotation(f)),
-                annotation: f(annotation),
-            },
-            AstNode::MulSeq { nodes, annotation } => AstNode::MulSeq {
+            AstNode::Mul { nodes, annotation } => AstNode::Mul {
                 nodes: nodes.into_iter().map(|n| n.map_annotation(f)).collect(),
                 annotation: f(annotation),
             },
@@ -549,7 +482,7 @@ where
             (Constant { value: a, .. }, Constant { value: b, .. }) => a.partial_cmp(b),
             (Constant { .. }, _) => Some(Ordering::Less),
             (_, Constant { .. }) => Some(Ordering::Greater),
-            (a, b) => a.to_yasc().partial_cmp(&b.to_yasc()),
+            (_a, _b) => todo!(),
         }
     }
 }

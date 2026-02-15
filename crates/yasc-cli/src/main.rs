@@ -1,6 +1,6 @@
 use clap::Parser;
 use symbolics::format::MathDisplay;
-use symbolics::{parser::parse, simplify::simplify_exhaustive};
+use symbolics::parser::parse;
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
@@ -16,17 +16,6 @@ fn print_markdown(input: &str) {
         eprintln!("Error parsing input: {}", err);
         std::process::exit(1);
     });
-
-    let ast = ast
-        .flatten_commutative()
-        .fold_constants()
-        .unflatten_commutative();
-
-    let ast = simplify_exhaustive(ast)
-        .flatten_commutative()
-        .fold_constants()
-        .cannonical_order()
-        .unflatten_commutative();
 
     let latex = ast.to_latex();
     println!("$$\n{}\n$$", latex);
