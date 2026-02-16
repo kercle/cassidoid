@@ -1,5 +1,5 @@
 use crate::parser::ast::AstNode;
-use numbers::RealScalar;
+use numbers::Number;
 
 fn greek_letter(name: &str) -> String {
     match name {
@@ -67,7 +67,7 @@ where
     use AstNode::*;
     match ast {
         Constant { value, .. } => {
-            if let RealScalar::Rational(rational) = value {
+            if let Number::Rational(rational) = value {
                 if rational.is_zero() {
                     "0".to_string()
                 } else if rational.denominator().is_one() {

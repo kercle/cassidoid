@@ -1,6 +1,6 @@
 use std::{cmp::Ordering, fmt::Debug, ops::Deref};
 
-use numbers::RealScalar;
+use numbers::Number;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum AstNode<Annotation = ()>
@@ -8,7 +8,7 @@ where
     Annotation: Clone + PartialEq,
 {
     Constant {
-        value: RealScalar,
+        value: Number,
         annotation: Annotation,
     },
     NamedValue {
@@ -87,12 +87,12 @@ impl<A: Clone + PartialEq + Default + Debug> NormalizedAstNode<A> {
             .collect_like_terms_inner()
     }
 
-    fn split_coefficient(self) -> (RealScalar, Self) {
+    fn split_coefficient(self) -> (Number, Self) {
         use AstNode::*;
 
         let inner = self.into_inner();
 
-        let mut coeff = RealScalar::one();
+        let mut coeff = Number::one();
         let rest;
 
         if let Mul { nodes, .. } = inner {
@@ -125,7 +125,7 @@ impl<A: Clone + PartialEq + Default + Debug> NormalizedAstNode<A> {
             Constant { value, .. } => AstNode::new_constant(value),
             NamedValue { name, .. } => AstNode::new_named_value(name),
             Add { nodes, .. } => {
-                let mut terms: Vec<(RealScalar, NormalizedAstNode<A>)> = vec![];
+                let mut terms: Vec<(Number, NormalizedAstNode<A>)> = vec![];
 
                 for v in nodes.into_iter() {
                     let v = NormalizedAstNode::new_unchecked(v)
@@ -235,7 +235,7 @@ impl<A> AstNode<A>
 where
     A: Default + Clone + PartialEq,
 {
-    pub fn new_constant(value: RealScalar) -> Self {
+    pub fn new_constant(value: Number) -> Self {
         AstNode::Constant {
             annotation: A::default(),
             value,
@@ -243,7 +243,7 @@ where
     }
 
     pub fn new_constant_from_i64(value: i64) -> Self {
-        AstNode::new_constant(RealScalar::from_i64(value))
+        AstNode::new_constant(Number::from_i64(value))
     }
 
     pub fn new_constant_one() -> Self {
@@ -397,7 +397,7 @@ where
         }
     }
 
-    pub fn value_from_constant(&self) -> Option<RealScalar> {
+    pub fn value_from_constant(&self) -> Option<Number> {
         if let AstNode::Constant { value, .. } = self {
             Some(value.clone())
         } else {
@@ -510,7 +510,7 @@ where
                 }
 
                 if flattened_nodes.is_empty() {
-                    AstNode::new_constant(RealScalar::zero())
+                    AstNode::new_constant(Number::zero())
                 } else if flattened_nodes.len() == 1 {
                     flattened_nodes.pop().unwrap()
                 } else {
@@ -519,7 +519,7 @@ where
                 }
             }
             Negation { arg, .. } => {
-                AstNode::new_mul_pair(AstNode::new_constant(RealScalar::minus_one()), *arg)
+                AstNode::new_mul_pair(AstNode::new_constant(Number::minus_one()), *arg)
                     .normalize_inner()
             }
             Mul { nodes, .. } => {
@@ -539,7 +539,7 @@ where
                 }
 
                 if flattened_nodes.is_empty() {
-                    AstNode::new_constant(RealScalar::one())
+                    AstNode::new_constant(Number::one())
                 } else if flattened_nodes.len() == 1 {
                     flattened_nodes.pop().unwrap()
                 } else {
@@ -549,12 +549,12 @@ where
             }
             Sub { lhs, rhs, .. } => AstNode::new_add_pair(
                 *lhs,
-                AstNode::new_mul_pair(AstNode::new_constant(RealScalar::minus_one()), *rhs),
+                AstNode::new_mul_pair(AstNode::new_constant(Number::minus_one()), *rhs),
             )
             .normalize_inner(),
             Div { lhs, rhs, .. } => AstNode::new_mul_pair(
                 *lhs,
-                AstNode::new_pow(*rhs, AstNode::new_constant(RealScalar::minus_one())),
+                AstNode::new_pow(*rhs, AstNode::new_constant(Number::minus_one())),
             )
             .normalize_inner(),
             Pow { lhs, rhs, .. } => AstNode::new_pow(lhs.normalize_inner(), rhs.normalize_inner()),
@@ -609,7 +609,7 @@ where
             }
             Add { nodes, .. } => {
                 let mut new_nodes = vec![];
-                let mut running_constant = RealScalar::zero();
+                let mut running_constant = Number::zero();
 
                 for n in nodes {
                     let n = n.fold_constants();
@@ -633,7 +633,7 @@ where
             }
             Mul { nodes, .. } => {
                 let mut new_nodes = vec![];
-                let mut running_constant = RealScalar::one();
+                let mut running_constant = Number::one();
 
                 for n in nodes {
                     let n = n.fold_constants();

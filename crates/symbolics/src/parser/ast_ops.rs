@@ -1,6 +1,6 @@
 use std::ops;
 
-use numbers::{RealScalar, integer::BigInteger};
+use numbers::{Number, integer::BigInteger};
 
 use crate::parser::ast::AstNode;
 
@@ -18,7 +18,7 @@ impl ops::Add<u64> for AstNode {
     fn add(self, other: u64) -> Self {
         AstNode::new_add(vec![
             self,
-            AstNode::new_constant(RealScalar::Integer(BigInteger::from_u64(other))),
+            AstNode::new_constant(Number::Integer(BigInteger::from_u64(other))),
         ])
     }
 }
@@ -28,7 +28,7 @@ impl ops::Add<AstNode> for u64 {
 
     fn add(self, other: AstNode) -> AstNode {
         AstNode::new_add(vec![
-            AstNode::new_constant(RealScalar::Integer(BigInteger::from_u64(self))),
+            AstNode::new_constant(Number::Integer(BigInteger::from_u64(self))),
             other,
         ])
     }
@@ -64,7 +64,7 @@ impl ops::Mul<u64> for AstNode {
     fn mul(self, other: u64) -> Self {
         AstNode::new_mul(vec![
             self,
-            AstNode::new_constant(RealScalar::Integer(BigInteger::from_u64(other))),
+            AstNode::new_constant(Number::Integer(BigInteger::from_u64(other))),
         ])
     }
 }
@@ -74,7 +74,7 @@ impl ops::Mul<AstNode> for u64 {
 
     fn mul(self, other: AstNode) -> AstNode {
         AstNode::new_mul(vec![
-            AstNode::new_constant(RealScalar::Integer(BigInteger::from_u64(self))),
+            AstNode::new_constant(Number::Integer(BigInteger::from_u64(self))),
             other,
         ])
     }

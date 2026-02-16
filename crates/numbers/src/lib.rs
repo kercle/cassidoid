@@ -9,19 +9,14 @@ pub mod integer;
 pub mod rational;
 
 #[derive(Debug, Clone, PartialEq)]
-pub enum RealScalar {
+pub enum Number {
     Integer(integer::BigInteger),
     Rational(rational::BigRational),
 }
 
-pub enum Scalar {
-    Real(RealScalar),
-    Complex(RealScalar, RealScalar),
-}
-
-impl RealScalar {
+impl Number {
     pub fn from_i64(value: i64) -> Self {
-        RealScalar::Integer(BigInteger::from_i64(value))
+        Number::Integer(BigInteger::from_i64(value))
     }
 
     pub fn from_f64(_value: f64) -> Self {
@@ -42,49 +37,49 @@ impl RealScalar {
 
     pub fn is_zero(&self) -> bool {
         match self {
-            RealScalar::Integer(i) => i.is_zero(),
-            RealScalar::Rational(r) => r.is_zero(),
+            Number::Integer(i) => i.is_zero(),
+            Number::Rational(r) => r.is_zero(),
         }
     }
 
     pub fn is_one(&self) -> bool {
         match self {
-            RealScalar::Integer(i) => i.is_one(),
-            RealScalar::Rational(r) => r.is_one(),
+            Number::Integer(i) => i.is_one(),
+            Number::Rational(r) => r.is_one(),
         }
     }
 
     pub fn to_hex_string(&self) -> String {
         match self {
-            RealScalar::Integer(i) => i.to_hex_string(),
-            RealScalar::Rational(r) => r.to_hex_string(),
+            Number::Integer(i) => i.to_hex_string(),
+            Number::Rational(r) => r.to_hex_string(),
         }
     }
 }
 
-impl FromStr for RealScalar {
+impl FromStr for Number {
     type Err = String;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         if let Ok(i) = BigInteger::from_str_radix(s, 10) {
-            Ok(RealScalar::Integer(i))
+            Ok(Number::Integer(i))
         } else if let Ok(r) = rational::BigRational::from_decimal_str(s) {
-            Ok(RealScalar::Rational(r))
+            Ok(Number::Rational(r))
         } else {
             Err(format!("Invalid real scalar: {}", s))
         }
     }
 }
 
-impl PartialOrd for RealScalar {
+impl PartialOrd for Number {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         Some(self.cmp(other))
     }
 }
 
-impl Ord for RealScalar {
+impl Ord for Number {
     fn cmp(&self, other: &Self) -> Ordering {
-        use RealScalar::*;
+        use Number::*;
         match (self, other) {
             (Integer(i1), Integer(i2)) => i1.cmp(i2),
             (Rational(r1), Rational(r2)) => r1.cmp(r2),
@@ -94,13 +89,13 @@ impl Ord for RealScalar {
     }
 }
 
-impl Eq for RealScalar {}
+impl Eq for Number {}
 
-impl fmt::Display for RealScalar {
+impl fmt::Display for Number {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            RealScalar::Integer(i) => write!(f, "{}", i),
-            RealScalar::Rational(r) => write!(f, "{}/{}", r.numerator(), r.denominator()),
+            Number::Integer(i) => write!(f, "{}", i),
+            Number::Rational(r) => write!(f, "{}/{}", r.numerator(), r.denominator()),
         }
     }
 }
