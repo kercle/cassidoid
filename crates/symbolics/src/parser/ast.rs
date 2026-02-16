@@ -301,40 +301,28 @@ where
         f(mapped)
     }
 
-    pub fn normalize(self: &AstNode<A>) -> AstNode<A> {
+    pub fn normalize(self: AstNode<A>) -> AstNode<A> {
         use AstNode::*;
 
-        fn normalize_inner<A, F>(nodes: &[AstNode<A>], extract_func: F) -> Vec<AstNode<A>>
-        where
-            A: Default + Clone + PartialEq,
-            F: Fn(&AstNode<A>) -> Option<Vec<AstNode<A>>>,
-        {
-            let mut flattened_nodes = vec![];
-            for node in nodes.iter() {
-                let node = node.normalize();
-
-                if let Some(mut inner_nodes) = extract_func(&node) {
-                    flattened_nodes.append(&mut inner_nodes);
-                } else {
-                    flattened_nodes.push(node);
-                }
-            }
-
-            flattened_nodes
-        }
-
         match self {
+            Constant { value, .. } => AstNode::new_constant(value),
+            NamedValue { name, .. } => AstNode::new_named_value(name),
+            Block { nodes, .. } => {
+                let normalized_nodes = nodes.iter().map(|a| a.to_owned().normalize()).collect();
+                AstNode::new_block(normalized_nodes)
+            }
+            FunctionCall { name, args, .. } => {
+                let normalized_args = args.iter().map(|a| a.to_owned().normalize()).collect();
+                AstNode::new_function_call(name, normalized_args)
+            }
             Add { nodes, .. } => {
-                let mut flattened_nodes = normalize_inner(nodes, |node| {
-                    if let Add {
-                        nodes: inner_nodes, ..
-                    } = node
-                    {
-                        Some(inner_nodes.to_owned())
-                    } else {
-                        None
+                let mut flattened_nodes = Vec::new();
+                for n in nodes.into_iter().map(|n| n.normalize()) {
+                    match n {
+                        Add { nodes, .. } => flattened_nodes.extend(nodes),
+                        other => flattened_nodes.push(other),
                     }
-                });
+                }
 
                 if flattened_nodes.is_empty() {
                     AstNode::new_constant(RealScalar::zero())
@@ -345,22 +333,18 @@ where
                     AstNode::new_add(flattened_nodes)
                 }
             }
-            Negation { arg, .. } => AstNode::new_mul_pair(
-                AstNode::new_constant(RealScalar::minus_one()),
-                arg.normalize(),
-            )
-            .normalize(),
+            Negation { arg, .. } => {
+                AstNode::new_mul_pair(AstNode::new_constant(RealScalar::minus_one()), *arg)
+                    .normalize()
+            }
             Mul { nodes, .. } => {
-                let mut flattened_nodes = normalize_inner(nodes, |node| {
-                    if let Mul {
-                        nodes: inner_nodes, ..
-                    } = node
-                    {
-                        Some(inner_nodes.to_owned())
-                    } else {
-                        None
+                let mut flattened_nodes = Vec::new();
+                for n in nodes.into_iter().map(|n| n.normalize()) {
+                    match n {
+                        Mul { nodes, .. } => flattened_nodes.extend(nodes),
+                        other => flattened_nodes.push(other),
                     }
-                });
+                }
 
                 if flattened_nodes.is_empty() {
                     AstNode::new_constant(RealScalar::one())
@@ -371,7 +355,17 @@ where
                     AstNode::new_mul(flattened_nodes)
                 }
             }
-            _ => self.clone(),
+            Sub { lhs, rhs, .. } => AstNode::new_add_pair(
+                *lhs,
+                AstNode::new_mul_pair(AstNode::new_constant(RealScalar::minus_one()), *rhs),
+            )
+            .normalize(),
+            Div { lhs, rhs, .. } => AstNode::new_mul_pair(
+                *lhs,
+                AstNode::new_pow(*rhs, AstNode::new_constant(RealScalar::minus_one())),
+            )
+            .normalize(),
+            Pow { lhs, rhs, .. } => AstNode::new_pow(lhs.normalize(), rhs.normalize()),
         }
     }
 }
