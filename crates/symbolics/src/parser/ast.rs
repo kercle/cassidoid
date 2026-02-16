@@ -479,6 +479,16 @@ where
             }
         }
     }
+
+    pub fn collect_like_terms(self) -> Self {
+        self.normalize().fold_constants().collect_like_terms_inner()
+    }
+
+    fn collect_like_terms_inner(self) -> Self {
+        match self {
+            _ => self,
+        }
+    }
 }
 
 impl<A> AstNode<A>
