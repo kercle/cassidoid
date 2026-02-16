@@ -80,7 +80,7 @@ impl<A: Clone + PartialEq> NormalizedAstNode<A> {
 }
 
 impl<A: Clone + PartialEq + Default + Debug> NormalizedAstNode<A> {
-    pub fn collect_like_terms(self) -> Self {
+    pub fn collect_like_terms(self) -> AstNode<A> {
         self.into_inner()
             .fold_constants()
             .normalize()
@@ -117,24 +117,19 @@ impl<A: Clone + PartialEq + Default + Debug> NormalizedAstNode<A> {
         (coeff, NormalizedAstNode::new_unchecked(rest))
     }
 
-    fn collect_like_terms_inner(self) -> Self {
+    fn collect_like_terms_inner(self) -> AstNode<A> {
         use AstNode::*;
         let inner = self.into_inner();
 
         match inner {
-            Constant { value, .. } => {
-                NormalizedAstNode::new_unchecked(AstNode::new_constant(value))
-            }
-            NamedValue { name, .. } => {
-                NormalizedAstNode::new_unchecked(AstNode::new_named_value(name))
-            }
+            Constant { value, .. } => AstNode::new_constant(value),
+            NamedValue { name, .. } => AstNode::new_named_value(name),
             Add { nodes, .. } => {
                 let mut terms: Vec<(RealScalar, NormalizedAstNode<A>)> = vec![];
 
                 for v in nodes.into_iter() {
                     let v = NormalizedAstNode::new_unchecked(v)
-                        .collect_like_terms()
-                        .into_inner();
+                        .collect_like_terms();
                     let (cn, ct) = NormalizedAstNode::new_unchecked(v).split_coefficient();
 
                     let mut merged = false;
@@ -153,7 +148,7 @@ impl<A: Clone + PartialEq + Default + Debug> NormalizedAstNode<A> {
                     }
                 }
 
-                let new_nodes = terms
+                let new_nodes: Vec<AstNode<A>> = terms
                     .into_iter()
                     .filter_map(|(c, t)| {
                         if c.is_zero() {
@@ -169,7 +164,12 @@ impl<A: Clone + PartialEq + Default + Debug> NormalizedAstNode<A> {
                         }
                     })
                     .collect();
-                NormalizedAstNode::new_unchecked(AstNode::new_add(new_nodes))
+
+                if new_nodes.is_empty() {
+                    AstNode::new_constant_zero()
+                } else {
+                    AstNode::new_add(new_nodes)
+                }
             }
             Negation { .. } => unreachable!("Negation should not exist in normalized AST"),
             Sub { .. } => unreachable!("Sub should not exist in normalized AST"),
@@ -179,21 +179,18 @@ impl<A: Clone + PartialEq + Default + Debug> NormalizedAstNode<A> {
                     .map(|n| {
                         NormalizedAstNode::new_unchecked(n)
                             .collect_like_terms()
-                            .into_inner()
                     })
                     .collect();
-                AstNode::new_mul(nodes).normalize()
+                AstNode::new_mul(nodes)
             }
             Div { .. } => unreachable!("Div should not exist in normalized AST"),
             Pow { lhs, rhs, .. } => {
                 let lhs = NormalizedAstNode::new_unchecked(*lhs)
-                    .collect_like_terms()
-                    .into_inner();
+                    .collect_like_terms();
                 let rhs = NormalizedAstNode::new_unchecked(*rhs)
-                    .collect_like_terms()
-                    .into_inner();
+                    .collect_like_terms();
 
-                NormalizedAstNode::new_unchecked(AstNode::new_pow(lhs, rhs))
+                AstNode::new_pow(lhs, rhs)
             }
             FunctionCall { name, args, .. } => {
                 let args = args
@@ -201,10 +198,9 @@ impl<A: Clone + PartialEq + Default + Debug> NormalizedAstNode<A> {
                     .map(|n| {
                         NormalizedAstNode::new_unchecked(n)
                             .collect_like_terms()
-                            .into_inner()
                     })
                     .collect();
-                NormalizedAstNode::new_unchecked(AstNode::new_function_call(name, args))
+                AstNode::new_function_call(name, args)
             }
             Block { nodes, .. } => {
                 let nodes = nodes
@@ -212,10 +208,9 @@ impl<A: Clone + PartialEq + Default + Debug> NormalizedAstNode<A> {
                     .map(|n| {
                         NormalizedAstNode::new_unchecked(n)
                             .collect_like_terms()
-                            .into_inner()
                     })
                     .collect();
-                NormalizedAstNode::new_unchecked(AstNode::new_block(nodes))
+                AstNode::new_block(nodes)
             }
         }
     }
@@ -532,7 +527,9 @@ where
                 for n in nodes.into_iter().map(|n| n.normalize_inner()) {
                     match n {
                         Constant { value, .. } => {
-                            if !value.is_one() {
+                            if value.is_zero() {
+                                return AstNode::new_constant_zero();
+                            } else if !value.is_one() {
                                 flattened_nodes.push(AstNode::new_constant(value))
                             }
                         }
