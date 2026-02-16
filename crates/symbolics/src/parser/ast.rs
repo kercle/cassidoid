@@ -397,6 +397,80 @@ where
 
         f(mapped)
     }
+
+    pub fn normalize(self: &AstNode<A>) -> AstNode<A> {
+        use AstNode::*;
+
+        fn normalize_inner<A, F>(nodes: &[AstNode<A>], extract_func: F) -> Vec<AstNode<A>>
+        where
+            A: Default + Clone + PartialEq,
+            F: Fn(&AstNode<A>) -> Option<Vec<AstNode<A>>>,
+        {
+            let mut flattened_nodes = vec![];
+            for node in nodes.iter() {
+                let node = node.normalize();
+
+                if let Some(mut inner_nodes) = extract_func(&node) {
+                    flattened_nodes.append(&mut inner_nodes);
+                } else {
+                    flattened_nodes.push(node);
+                }
+            }
+
+            flattened_nodes
+        }
+
+        match self {
+            Add { nodes, .. } => {
+                let mut flattened_nodes = normalize_inner(nodes, |node| {
+                    if let Add {
+                        nodes: inner_nodes, ..
+                    } = node
+                    {
+                        Some(inner_nodes.to_owned())
+                    } else {
+                        None
+                    }
+                });
+
+                if flattened_nodes.is_empty() {
+                    AstNode::new_constant(RealScalar::zero())
+                } else if flattened_nodes.len() == 1 {
+                    flattened_nodes.pop().unwrap()
+                } else {
+                    flattened_nodes.sort_by(|a, b| a.cmp_struct(b));
+                    AstNode::new_add(flattened_nodes)
+                }
+            }
+            Negation { arg, .. } => AstNode::new_mul_pair(
+                AstNode::new_constant(RealScalar::minus_one()),
+                arg.normalize(),
+            )
+            .normalize(),
+            Mul { nodes, .. } => {
+                let mut flattened_nodes = normalize_inner(nodes, |node| {
+                    if let Mul {
+                        nodes: inner_nodes, ..
+                    } = node
+                    {
+                        Some(inner_nodes.to_owned())
+                    } else {
+                        None
+                    }
+                });
+
+                if flattened_nodes.is_empty() {
+                    AstNode::new_constant(RealScalar::one())
+                } else if flattened_nodes.len() == 1 {
+                    flattened_nodes.pop().unwrap()
+                } else {
+                    flattened_nodes.sort_by(|a, b| a.cmp_struct(b));
+                    AstNode::new_mul(flattened_nodes)
+                }
+            }
+            _ => self.clone(),
+        }
+    }
 }
 
 impl<A> AstNode<A>
@@ -514,6 +588,20 @@ where
     }
 
     pub fn cmp_struct(&self, other: &Self) -> Ordering {
+        fn cmp_vec<A: Clone + PartialEq>(a: &[AstNode<A>], b: &[AstNode<A>]) -> Ordering {
+            let len_cmp = a.len().cmp(&b.len());
+            if len_cmp != Ordering::Equal {
+                return len_cmp;
+            }
+            for (x, y) in a.iter().zip(b.iter()) {
+                let c = x.cmp_struct(y);
+                if c != Ordering::Equal {
+                    return c;
+                }
+            }
+            Ordering::Equal
+        }
+
         let k = self.kind().cmp(&other.kind());
         if k != Ordering::Equal {
             return k;
@@ -566,18 +654,4 @@ where
             _ => Ordering::Equal,
         }
     }
-}
-
-fn cmp_vec<A: Clone + PartialEq>(a: &[AstNode<A>], b: &[AstNode<A>]) -> Ordering {
-    let len_cmp = a.len().cmp(&b.len());
-    if len_cmp != Ordering::Equal {
-        return len_cmp;
-    }
-    for (x, y) in a.iter().zip(b.iter()) {
-        let c = x.cmp_struct(y);
-        if c != Ordering::Equal {
-            return c;
-        }
-    }
-    Ordering::Equal
 }
