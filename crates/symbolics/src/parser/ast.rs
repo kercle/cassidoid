@@ -305,7 +305,7 @@ where
         f(mapped)
     }
 
-    pub fn normalize(self: AstNode<A>) -> AstNode<A> {
+    pub fn normalize(self) -> Self {
         use AstNode::*;
 
         match self {

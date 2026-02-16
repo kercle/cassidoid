@@ -522,7 +522,7 @@ impl BigInteger {
         use std::fmt::Write;
 
         let mut iter = self.digits.iter().rev();
-        while let Some(&digit) = iter.next() {
+        for &digit in iter.by_ref() {
             if digit != 0 {
                 if s.is_empty() {
                     if self.sign == Sign::Negative {
@@ -539,7 +539,7 @@ impl BigInteger {
             return "0x0".to_string();
         }
 
-        while let Some(&n) = iter.next() {
+        for &n in iter {
             write!(s, "{:016x}", n).unwrap();
         }
         s
