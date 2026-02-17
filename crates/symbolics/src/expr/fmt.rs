@@ -17,8 +17,8 @@ impl<A: Clone + PartialEq> Debug for Expr<A> {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), Error> {
         let s = match self {
             Expr::Atom { entry, .. } => format!("{entry:?}"),
-            Expr::App { head, args, .. } => {
-                let head_str = if matches!(**head, Expr::App { .. }) {
+            Expr::Compound { head, args, .. } => {
+                let head_str = if matches!(**head, Expr::Compound { .. }) {
                     format!("({head:?})")
                 } else {
                     format!("{head:?}")

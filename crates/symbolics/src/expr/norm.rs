@@ -6,15 +6,15 @@ impl<A: Clone + PartialEq + Default> Expr<A> {
             .sort_args(|e| e.is_symbol("Add") || e.is_symbol("Mul"))
     }
 
-    /// Flattens nested applications whenever `head_predicate`
+    /// Flattens nested compounds whenever `head_predicate`
     /// returns true.
     ///
     /// # Behavior
     ///
     /// - Atoms are returned unchanged.
-    /// - Applications with a head not flagged by `head_predicate` are
+    /// - Compounds with a head not flagged by `head_predicate` are
     ///   reconstructed with their arguments recursively flattened.
-    /// - Applications whose head is flagged by `head_predicate` have
+    /// - Compounds whose head is flagged by `head_predicate` have
     ///   their nested arguments merged into the parent argument list,
     ///   for all nested arguments that have the same head as their
     ///   parent.
@@ -22,14 +22,14 @@ impl<A: Clone + PartialEq + Default> Expr<A> {
     pub fn flatten(self, head_predicate: impl Fn(&Expr<A>) -> bool + Copy) -> Self {
         match self {
             Expr::Atom { .. } => self.drop_annotation(),
-            Expr::App { head, args, .. } if head_predicate(&*head) => {
+            Expr::Compound { head, args, .. } if head_predicate(&*head) => {
                 let mut new_args = Vec::with_capacity(args.len());
 
                 for arg in args.into_iter() {
                     let arg = arg.flatten(head_predicate);
 
                     match arg {
-                        Expr::App { head: ch, args, .. } if *ch == *head => {
+                        Expr::Compound { head: ch, args, .. } if *ch == *head => {
                             new_args.extend(args);
                         }
                         _ => {
@@ -38,9 +38,9 @@ impl<A: Clone + PartialEq + Default> Expr<A> {
                     }
                 }
 
-                Expr::new_app(*head, new_args)
+                Expr::new_compound(*head, new_args)
             }
-            Expr::App { head, args, .. } => Expr::new_app(
+            Expr::Compound { head, args, .. } => Expr::new_compound(
                 *head,
                 args.into_iter()
                     .map(|a| a.flatten(head_predicate))
@@ -49,21 +49,21 @@ impl<A: Clone + PartialEq + Default> Expr<A> {
         }
     }
 
-    /// Sort nested applications whenever `head_predicate` returns
+    /// Sort nested Compounds whenever `head_predicate` returns
     /// true.
     ///
     /// # Behavior
     ///
     /// - Atoms are returned unchanged.
-    /// - Applications with a head not flagged by `head_predicate` are
+    /// - Compounds with a head not flagged by `head_predicate` are
     ///   reconstructed and sort_args is propagated to args.
-    /// - Applications whose head is flagged by `head_predicate` have
+    /// - Compounds whose head is flagged by `head_predicate` have
     ///   their nested arguments sorted.
     /// - Annotations in new expression are reset to Default::default().
     pub fn sort_args(self, head_predicate: impl Fn(&Expr<A>) -> bool + Copy) -> Self {
         match self {
             Expr::Atom { .. } => self.drop_annotation(),
-            Expr::App { head, args, .. } => {
+            Expr::Compound { head, args, .. } => {
                 let mut args: Vec<Expr<A>> = args
                     .into_iter()
                     .map(|a| a.sort_args(head_predicate))
@@ -73,7 +73,7 @@ impl<A: Clone + PartialEq + Default> Expr<A> {
                     args.sort();
                 }
 
-                Expr::new_app(*head, args)
+                Expr::new_compound(*head, args)
             }
         }
     }
@@ -84,11 +84,11 @@ mod tests {
     use super::*;
 
     fn mul(s: &[Expr<()>]) -> Expr<()> {
-        Expr::new_app(Expr::new_symbol("Mul"), s.to_vec())
+        Expr::new_compound(Expr::new_symbol("Mul"), s.to_vec())
     }
 
     fn add(s: &[Expr<()>]) -> Expr<()> {
-        Expr::new_app(Expr::new_symbol("Add"), s.to_vec())
+        Expr::new_compound(Expr::new_symbol("Add"), s.to_vec())
     }
 
     fn x() -> Expr<()> {

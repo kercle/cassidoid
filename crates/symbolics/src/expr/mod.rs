@@ -2,6 +2,7 @@ pub mod atom;
 pub mod fmt;
 pub mod norm;
 pub mod ops;
+pub mod pattern;
 
 use atom::Atom;
 use numbers::Number;
@@ -17,7 +18,7 @@ where
         entry: Atom,
         ann: A,
     },
-    App {
+    Compound {
         head: Box<Expr<A>>,
         args: Vec<Expr<A>>,
         ann: A,
@@ -49,8 +50,8 @@ impl<A: Clone + PartialEq + Default> NormalizedExpr<A> {
 }
 
 impl<A: Clone + PartialEq> Expr<A> {
-    pub fn new_app_with_annotation(head: Expr<A>, args: Vec<Expr<A>>, ann: A) -> Self {
-        Expr::App {
+    pub fn new_compound_with_annotation(head: Expr<A>, args: Vec<Expr<A>>, ann: A) -> Self {
+        Expr::Compound {
             head: Box::new(head),
             args,
             ann,
@@ -70,8 +71,8 @@ impl<A> Expr<A>
 where
     A: Default + Clone + PartialEq,
 {
-    pub fn new_app(head: Expr<A>, args: Vec<Expr<A>>) -> Self {
-        Expr::App {
+    pub fn new_compound(head: Expr<A>, args: Vec<Expr<A>>) -> Self {
+        Expr::Compound {
             head: Box::new(head),
             args,
             ann: A::default(),
@@ -102,7 +103,7 @@ where
                 entry,
                 ann: A::default(),
             },
-            Expr::App { head, args, .. } => Expr::App {
+            Expr::Compound { head, args, .. } => Expr::Compound {
                 head,
                 args,
                 ann: A::default(),

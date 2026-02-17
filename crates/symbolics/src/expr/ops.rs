@@ -7,7 +7,7 @@ fn make_binary_expr<A: Clone + PartialEq + Default>(
     lhs: Expr<A>,
     rhs: Expr<A>,
 ) -> Expr<A> {
-    Expr::App {
+    Expr::Compound {
         head: Box::new(Expr::new_symbol(symb)),
         args: vec![lhs, rhs],
         ann: A::default(),
@@ -19,13 +19,13 @@ fn cmp_expr<A: Clone + PartialEq>(lhs: &Expr<A>, rhs: &Expr<A>) -> Ordering {
 
     match (lhs, rhs) {
         (Atom { entry: ea, .. }, Atom { entry: eb, .. }) => ea.cmp(eb),
-        (Atom { .. }, App { .. }) => Ordering::Less,
-        (App { .. }, Atom { .. }) => Ordering::Greater,
+        (Atom { .. }, Compound { .. }) => Ordering::Less,
+        (Compound { .. }, Atom { .. }) => Ordering::Greater,
         (
-            App {
+            Compound {
                 head: ha, args: aa, ..
             },
-            App {
+            Compound {
                 head: hb, args: ab, ..
             },
         ) => {
