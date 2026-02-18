@@ -11,10 +11,7 @@ use numbers::Number;
 use crate::parser::ast::AstNode;
 
 #[derive(Clone, PartialEq)]
-pub enum Expr<A = ()>
-where
-    A: Clone + PartialEq,
-{
+pub enum Expr<A = ()> {
     Atom {
         entry: Atom,
         ann: A,
