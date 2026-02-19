@@ -9,12 +9,12 @@ use std::str::FromStr;
 use numbers::Number;
 
 use crate::parser::{
-    ast::AstNode,
+    ast::ParserAst,
     error::{BoxedError, ParseError},
     lex::{Token, TokenStream},
 };
 
-fn parse_identifier_or_call(stream: &mut TokenStream) -> Result<AstNode, ParseError> {
+fn parse_identifier_or_call(stream: &mut TokenStream) -> Result<ParserAst, ParseError> {
     // <named_value_or_function_call> ::= <identifier>
     //    | <identifier> "(" ")"
     //    | <identifier> "(" <block> { "," <block> }* ")"
@@ -31,11 +31,11 @@ fn parse_identifier_or_call(stream: &mut TokenStream) -> Result<AstNode, ParseEr
     let identifier = identifier.unwrap().to_owned();
 
     if stream.next_if_matches_token(&Token::LeftBracket).is_none() {
-        return Ok(AstNode::new_named_value(identifier));
+        return Ok(ParserAst::new_named_value(identifier));
     }
 
     if stream.next_if_matches_token(&Token::RightBracket).is_some() {
-        return Ok(AstNode::new_function_call(identifier, vec![]));
+        return Ok(ParserAst::new_function_call(identifier, vec![]));
     }
 
     let mut args = vec![parse_block(stream)?];
@@ -54,10 +54,10 @@ fn parse_identifier_or_call(stream: &mut TokenStream) -> Result<AstNode, ParseEr
         });
     }
 
-    Ok(AstNode::new_function_call(identifier, args))
+    Ok(ParserAst::new_function_call(identifier, args))
 }
 
-fn parse_atom(stream: &mut TokenStream) -> Result<AstNode, ParseError> {
+fn parse_atom(stream: &mut TokenStream) -> Result<ParserAst, ParseError> {
     // <atom> ::= <number>
     //    | "(" <block> ")"
     //    | <named_value_or_function_call>
@@ -78,25 +78,25 @@ fn parse_atom(stream: &mut TokenStream) -> Result<AstNode, ParseError> {
             message: e,
             at_token: stream.peek().cloned(),
         })?;
-        Ok(AstNode::new_constant(value))
+        Ok(ParserAst::new_constant(value))
     } else {
         parse_identifier_or_call(stream)
     }
 }
 
-fn parse_power(stream: &mut TokenStream) -> Result<AstNode, ParseError> {
+fn parse_power(stream: &mut TokenStream) -> Result<ParserAst, ParseError> {
     // <power> ::= <atom> { "^" <power> }
 
     let mut result = parse_atom(stream)?;
 
     if stream.next_if_matches_token(&Token::Caret).is_some() {
-        result = AstNode::new_pow(result, parse_power(stream)?);
+        result = ParserAst::new_pow(result, parse_power(stream)?);
     }
 
     Ok(result)
 }
 
-fn parse_signed_power(stream: &mut TokenStream) -> Result<AstNode, ParseError> {
+fn parse_signed_power(stream: &mut TokenStream) -> Result<ParserAst, ParseError> {
     // <signed_power> ::= { "+" | "-" }* power
 
     let mut negate_count = 0;
@@ -112,13 +112,13 @@ fn parse_signed_power(stream: &mut TokenStream) -> Result<AstNode, ParseError> {
     let ast = parse_power(stream)?;
 
     if negate_count % 2 == 1 {
-        Ok(AstNode::new_negation(ast))
+        Ok(ParserAst::new_negation(ast))
     } else {
         Ok(ast)
     }
 }
 
-fn parse_product(stream: &mut TokenStream) -> Result<AstNode, ParseError> {
+fn parse_product(stream: &mut TokenStream) -> Result<ParserAst, ParseError> {
     // <product> ::= <match_signed_power> { ("*"|"/") <match_signed_power> }*
 
     let mut result = parse_signed_power(stream)?;
@@ -131,8 +131,8 @@ fn parse_product(stream: &mut TokenStream) -> Result<AstNode, ParseError> {
         }
 
         result = match c {
-            Some(Token::Asterisk) => AstNode::new_mul_pair(result, parse_signed_power(stream)?),
-            Some(Token::Slash) => AstNode::new_div(result, parse_signed_power(stream)?),
+            Some(Token::Asterisk) => ParserAst::new_mul_pair(result, parse_signed_power(stream)?),
+            Some(Token::Slash) => ParserAst::new_div(result, parse_signed_power(stream)?),
             _ => unreachable!(),
         };
     }
@@ -140,7 +140,7 @@ fn parse_product(stream: &mut TokenStream) -> Result<AstNode, ParseError> {
     Ok(result)
 }
 
-fn parse_sum(stream: &mut TokenStream) -> Result<AstNode, ParseError> {
+fn parse_sum(stream: &mut TokenStream) -> Result<ParserAst, ParseError> {
     // <sum> ::= <product> { ("+"|"-") <product> }*
 
     let mut result = parse_product(stream)?;
@@ -152,8 +152,8 @@ fn parse_sum(stream: &mut TokenStream) -> Result<AstNode, ParseError> {
         }
 
         result = match op {
-            Some(Token::Plus) => AstNode::new_add_pair(result, parse_product(stream)?),
-            Some(Token::Minus) => AstNode::new_sub(result, parse_product(stream)?),
+            Some(Token::Plus) => ParserAst::new_add_pair(result, parse_product(stream)?),
+            Some(Token::Minus) => ParserAst::new_sub(result, parse_product(stream)?),
             _ => unreachable!(),
         };
     }
@@ -161,13 +161,13 @@ fn parse_sum(stream: &mut TokenStream) -> Result<AstNode, ParseError> {
     Ok(result)
 }
 
-fn parse_expression(stream: &mut TokenStream) -> Result<AstNode, ParseError> {
+fn parse_expression(stream: &mut TokenStream) -> Result<ParserAst, ParseError> {
     // <expression> ::= <sum>
 
     parse_sum(stream)
 }
 
-fn parse_block(stream: &mut TokenStream) -> Result<AstNode, ParseError> {
+fn parse_block(stream: &mut TokenStream) -> Result<ParserAst, ParseError> {
     // <block> ::= <expression> { ";" <expression> }*
     //    | "{" <block> "}"
 
@@ -201,12 +201,12 @@ fn parse_block(stream: &mut TokenStream) -> Result<AstNode, ParseError> {
         } else if nodes.len() == 1 {
             Ok(nodes.pop().unwrap())
         } else {
-            Ok(AstNode::new_block(nodes))
+            Ok(ParserAst::new_block(nodes))
         }
     }
 }
 
-pub fn parse(input: &str) -> Result<AstNode, BoxedError> {
+pub fn parse(input: &str) -> Result<ParserAst, BoxedError> {
     let mut stream = TokenStream::from_str(input)?;
 
     let ast = parse_block(&mut stream);
@@ -236,22 +236,22 @@ mod tests {
 
         assert_eq!(
             ast,
-            AstNode::new_sub(
-                AstNode::new_add_pair(
-                    AstNode::new_constant(Number::from_str("3").unwrap()),
-                    AstNode::new_mul_pair(
-                        AstNode::new_constant(Number::from_str("4").unwrap()),
-                        AstNode::new_constant(Number::from_str("2").unwrap()),
+            ParserAst::new_sub(
+                ParserAst::new_add_pair(
+                    ParserAst::new_constant(Number::from_str("3").unwrap()),
+                    ParserAst::new_mul_pair(
+                        ParserAst::new_constant(Number::from_str("4").unwrap()),
+                        ParserAst::new_constant(Number::from_str("2").unwrap()),
                     )
                 ),
-                AstNode::new_pow(
-                    AstNode::new_add_pair(
-                        AstNode::new_constant(Number::from_str("1").unwrap()),
-                        AstNode::new_constant(Number::from_str("5").unwrap()),
+                ParserAst::new_pow(
+                    ParserAst::new_add_pair(
+                        ParserAst::new_constant(Number::from_str("1").unwrap()),
+                        ParserAst::new_constant(Number::from_str("5").unwrap()),
                     ),
-                    AstNode::new_pow(
-                        AstNode::new_constant(Number::from_str("2").unwrap()),
-                        AstNode::new_constant(Number::from_str("3").unwrap()),
+                    ParserAst::new_pow(
+                        ParserAst::new_constant(Number::from_str("2").unwrap()),
+                        ParserAst::new_constant(Number::from_str("3").unwrap()),
                     )
                 )
             )
@@ -265,12 +265,12 @@ mod tests {
 
         assert_eq!(
             ast,
-            AstNode::new_sub(
-                AstNode::new_add_pair(
-                    AstNode::new_constant(Number::from_str("3").unwrap()),
-                    AstNode::new_constant(Number::from_str("5").unwrap()),
+            ParserAst::new_sub(
+                ParserAst::new_add_pair(
+                    ParserAst::new_constant(Number::from_str("3").unwrap()),
+                    ParserAst::new_constant(Number::from_str("5").unwrap()),
                 ),
-                AstNode::new_constant(Number::from_str("2").unwrap())
+                ParserAst::new_constant(Number::from_str("2").unwrap())
             )
         );
     }
@@ -282,9 +282,9 @@ mod tests {
 
         assert_eq!(
             ast,
-            AstNode::new_add_pair(
-                AstNode::new_constant(Number::from_str("3.14").unwrap()),
-                AstNode::new_constant(Number::from_str("2.71").unwrap()),
+            ParserAst::new_add_pair(
+                ParserAst::new_constant(Number::from_str("3.14").unwrap()),
+                ParserAst::new_constant(Number::from_str("2.71").unwrap()),
             )
         );
     }
@@ -304,11 +304,11 @@ mod tests {
 
         assert_eq!(
             ast,
-            AstNode::new_add_pair(
-                AstNode::new_constant(Number::from_str("3").unwrap()),
-                AstNode::new_mul_pair(
-                    AstNode::new_constant(Number::from_str("5").unwrap()),
-                    AstNode::new_constant(Number::from_str("2").unwrap())
+            ParserAst::new_add_pair(
+                ParserAst::new_constant(Number::from_str("3").unwrap()),
+                ParserAst::new_mul_pair(
+                    ParserAst::new_constant(Number::from_str("5").unwrap()),
+                    ParserAst::new_constant(Number::from_str("2").unwrap())
                 ),
             )
         );
@@ -321,15 +321,15 @@ mod tests {
 
         assert_eq!(
             ast,
-            AstNode::new_add_pair(
-                AstNode::new_mul_pair(
-                    AstNode::new_constant(Number::from_str("7").unwrap()),
-                    AstNode::new_pow(
-                        AstNode::new_constant(Number::from_str("2").unwrap()),
-                        AstNode::new_constant(Number::from_str("3").unwrap())
+            ParserAst::new_add_pair(
+                ParserAst::new_mul_pair(
+                    ParserAst::new_constant(Number::from_str("7").unwrap()),
+                    ParserAst::new_pow(
+                        ParserAst::new_constant(Number::from_str("2").unwrap()),
+                        ParserAst::new_constant(Number::from_str("3").unwrap())
                     )
                 ),
-                AstNode::new_constant(Number::from_str("4").unwrap()),
+                ParserAst::new_constant(Number::from_str("4").unwrap()),
             )
         );
     }
@@ -341,12 +341,12 @@ mod tests {
 
         assert_eq!(
             ast,
-            AstNode::new_mul_pair(
-                AstNode::new_add_pair(
-                    AstNode::new_constant(Number::from_str("3").unwrap()),
-                    AstNode::new_constant(Number::from_str("5").unwrap()),
+            ParserAst::new_mul_pair(
+                ParserAst::new_add_pair(
+                    ParserAst::new_constant(Number::from_str("3").unwrap()),
+                    ParserAst::new_constant(Number::from_str("5").unwrap()),
                 ),
-                AstNode::new_constant(Number::from_str("2").unwrap())
+                ParserAst::new_constant(Number::from_str("2").unwrap())
             )
         );
     }
@@ -358,17 +358,17 @@ mod tests {
 
         assert_eq!(
             ast,
-            AstNode::new_add_pair(
-                AstNode::new_constant(Number::from_str("3").unwrap()),
-                AstNode::new_pow(
-                    AstNode::new_mul_pair(
-                        AstNode::new_constant(Number::from_str("2").unwrap()),
-                        AstNode::new_sub(
-                            AstNode::new_constant(Number::from_str("5").unwrap()),
-                            AstNode::new_constant(Number::from_str("1").unwrap())
+            ParserAst::new_add_pair(
+                ParserAst::new_constant(Number::from_str("3").unwrap()),
+                ParserAst::new_pow(
+                    ParserAst::new_mul_pair(
+                        ParserAst::new_constant(Number::from_str("2").unwrap()),
+                        ParserAst::new_sub(
+                            ParserAst::new_constant(Number::from_str("5").unwrap()),
+                            ParserAst::new_constant(Number::from_str("1").unwrap())
                         )
                     ),
-                    AstNode::new_constant(Number::from_str("2").unwrap())
+                    ParserAst::new_constant(Number::from_str("2").unwrap())
                 ),
             )
         );
@@ -381,32 +381,32 @@ mod tests {
 
         assert_eq!(
             ast,
-            AstNode::new_mul_pair(
-                AstNode::new_mul_pair(
-                    AstNode::new_div(
-                        AstNode::new_mul_pair(
-                            AstNode::new_constant(Number::from_str("5").unwrap()),
-                            AstNode::new_pow(
-                                AstNode::new_named_value("pi".to_string()),
-                                AstNode::new_constant(Number::from_str("2").unwrap())
+            ParserAst::new_mul_pair(
+                ParserAst::new_mul_pair(
+                    ParserAst::new_div(
+                        ParserAst::new_mul_pair(
+                            ParserAst::new_constant(Number::from_str("5").unwrap()),
+                            ParserAst::new_pow(
+                                ParserAst::new_named_value("pi".to_string()),
+                                ParserAst::new_constant(Number::from_str("2").unwrap())
                             )
                         ),
-                        AstNode::new_constant(Number::from_str("4").unwrap())
+                        ParserAst::new_constant(Number::from_str("4").unwrap())
                     ),
-                    AstNode::new_cos(AstNode::new_div(
-                        AstNode::new_mul_pair(
-                            AstNode::new_named_value("pi".to_string()),
-                            AstNode::new_named_value("x".to_string())
+                    ParserAst::new_cos(ParserAst::new_div(
+                        ParserAst::new_mul_pair(
+                            ParserAst::new_named_value("pi".to_string()),
+                            ParserAst::new_named_value("x".to_string())
                         ),
-                        AstNode::new_constant(Number::from_str("2").unwrap())
+                        ParserAst::new_constant(Number::from_str("2").unwrap())
                     ))
                 ),
-                AstNode::new_sin(AstNode::new_div(
-                    AstNode::new_mul_pair(
-                        AstNode::new_named_value("pi".to_string()),
-                        AstNode::new_named_value("y".to_string()),
+                ParserAst::new_sin(ParserAst::new_div(
+                    ParserAst::new_mul_pair(
+                        ParserAst::new_named_value("pi".to_string()),
+                        ParserAst::new_named_value("y".to_string()),
                     ),
-                    AstNode::new_constant(Number::from_str("2").unwrap())
+                    ParserAst::new_constant(Number::from_str("2").unwrap())
                 ))
             )
         );
@@ -419,14 +419,14 @@ mod tests {
 
         assert_eq!(
             ast,
-            AstNode::new_block(vec![
-                AstNode::new_add_pair(
-                    AstNode::new_constant(Number::from_str("3").unwrap()),
-                    AstNode::new_constant(Number::from_str("4").unwrap()),
+            ParserAst::new_block(vec![
+                ParserAst::new_add_pair(
+                    ParserAst::new_constant(Number::from_str("3").unwrap()),
+                    ParserAst::new_constant(Number::from_str("4").unwrap()),
                 ),
-                AstNode::new_mul_pair(
-                    AstNode::new_constant(Number::from_str("5").unwrap()),
-                    AstNode::new_constant(Number::from_str("6").unwrap())
+                ParserAst::new_mul_pair(
+                    ParserAst::new_constant(Number::from_str("5").unwrap()),
+                    ParserAst::new_constant(Number::from_str("6").unwrap())
                 )
             ])
         );

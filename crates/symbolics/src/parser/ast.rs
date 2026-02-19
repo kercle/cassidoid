@@ -3,7 +3,7 @@ use std::fmt::Debug;
 use numbers::Number;
 
 #[derive(Debug, Clone, PartialEq)]
-pub enum AstNode<Annotation = ()>
+pub enum ParserAst<Annotation = ()>
 where
     Annotation: Clone + PartialEq,
 {
@@ -16,56 +16,56 @@ where
         annotation: Annotation,
     },
     Add {
-        nodes: Vec<AstNode<Annotation>>,
+        nodes: Vec<ParserAst<Annotation>>,
         annotation: Annotation,
     },
     Negation {
-        arg: Box<AstNode<Annotation>>,
+        arg: Box<ParserAst<Annotation>>,
         annotation: Annotation,
     },
     Sub {
-        lhs: Box<AstNode<Annotation>>,
-        rhs: Box<AstNode<Annotation>>,
+        lhs: Box<ParserAst<Annotation>>,
+        rhs: Box<ParserAst<Annotation>>,
         annotation: Annotation,
     },
     Mul {
-        nodes: Vec<AstNode<Annotation>>,
+        nodes: Vec<ParserAst<Annotation>>,
         annotation: Annotation,
     },
     Div {
-        lhs: Box<AstNode<Annotation>>,
-        rhs: Box<AstNode<Annotation>>,
+        lhs: Box<ParserAst<Annotation>>,
+        rhs: Box<ParserAst<Annotation>>,
         annotation: Annotation,
     },
     Pow {
-        lhs: Box<AstNode<Annotation>>,
-        rhs: Box<AstNode<Annotation>>,
+        lhs: Box<ParserAst<Annotation>>,
+        rhs: Box<ParserAst<Annotation>>,
         annotation: Annotation,
     },
     FunctionCall {
         name: String,
-        args: Vec<AstNode<Annotation>>,
+        args: Vec<ParserAst<Annotation>>,
         annotation: Annotation,
     },
     Block {
-        nodes: Vec<AstNode<Annotation>>,
+        nodes: Vec<ParserAst<Annotation>>,
         annotation: Annotation,
     },
 }
 
-impl<A> AstNode<A>
+impl<A> ParserAst<A>
 where
     A: Default + Clone + PartialEq,
 {
     pub fn new_constant(value: Number) -> Self {
-        AstNode::Constant {
+        ParserAst::Constant {
             annotation: A::default(),
             value,
         }
     }
 
     pub fn new_constant_from_i64(value: i64) -> Self {
-        AstNode::new_constant(Number::from_i64(value))
+        ParserAst::new_constant(Number::from_i64(value))
     }
 
     pub fn new_constant_one() -> Self {
@@ -77,102 +77,102 @@ where
     }
 
     pub fn new_named_value<T: ToString>(name: T) -> Self {
-        AstNode::NamedValue {
+        ParserAst::NamedValue {
             name: name.to_string(),
             annotation: A::default(),
         }
     }
 
-    pub fn new_add(nodes: Vec<AstNode<A>>) -> Self {
-        AstNode::Add {
+    pub fn new_add(nodes: Vec<ParserAst<A>>) -> Self {
+        ParserAst::Add {
             nodes,
             annotation: A::default(),
         }
     }
 
-    pub fn new_add_pair(lhs: AstNode<A>, rhs: AstNode<A>) -> Self {
+    pub fn new_add_pair(lhs: ParserAst<A>, rhs: ParserAst<A>) -> Self {
         Self::new_add(vec![lhs, rhs])
     }
 
-    pub fn new_negation(arg: AstNode<A>) -> Self {
-        AstNode::Negation {
+    pub fn new_negation(arg: ParserAst<A>) -> Self {
+        ParserAst::Negation {
             arg: Box::new(arg),
             annotation: A::default(),
         }
     }
 
-    pub fn new_sub(lhs: AstNode<A>, rhs: AstNode<A>) -> Self {
-        AstNode::Sub {
+    pub fn new_sub(lhs: ParserAst<A>, rhs: ParserAst<A>) -> Self {
+        ParserAst::Sub {
             lhs: Box::new(lhs),
             rhs: Box::new(rhs),
             annotation: A::default(),
         }
     }
 
-    pub fn new_mul_pair(lhs: AstNode<A>, rhs: AstNode<A>) -> Self {
+    pub fn new_mul_pair(lhs: ParserAst<A>, rhs: ParserAst<A>) -> Self {
         Self::new_mul(vec![lhs, rhs])
     }
 
-    pub fn new_mul(nodes: Vec<AstNode<A>>) -> Self {
-        AstNode::Mul {
+    pub fn new_mul(nodes: Vec<ParserAst<A>>) -> Self {
+        ParserAst::Mul {
             nodes,
             annotation: A::default(),
         }
     }
 
-    pub fn new_div(lhs: AstNode<A>, rhs: AstNode<A>) -> Self {
-        AstNode::Div {
+    pub fn new_div(lhs: ParserAst<A>, rhs: ParserAst<A>) -> Self {
+        ParserAst::Div {
             lhs: Box::new(lhs),
             rhs: Box::new(rhs),
             annotation: A::default(),
         }
     }
 
-    pub fn new_pow(lhs: AstNode<A>, rhs: AstNode<A>) -> Self {
-        AstNode::Pow {
+    pub fn new_pow(lhs: ParserAst<A>, rhs: ParserAst<A>) -> Self {
+        ParserAst::Pow {
             lhs: Box::new(lhs),
             rhs: Box::new(rhs),
             annotation: A::default(),
         }
     }
 
-    pub fn new_cos(arg: AstNode<A>) -> Self {
+    pub fn new_cos(arg: ParserAst<A>) -> Self {
         Self::new_function_call("cos".to_string(), vec![arg])
     }
 
-    pub fn new_sin(arg: AstNode<A>) -> Self {
+    pub fn new_sin(arg: ParserAst<A>) -> Self {
         Self::new_function_call("sin".to_string(), vec![arg])
     }
 
-    pub fn new_tan(arg: AstNode<A>) -> Self {
+    pub fn new_tan(arg: ParserAst<A>) -> Self {
         Self::new_function_call("tan".to_string(), vec![arg])
     }
 
-    pub fn new_sqrt(arg: AstNode<A>) -> Self {
+    pub fn new_sqrt(arg: ParserAst<A>) -> Self {
         Self::new_function_call("sqrt".to_string(), vec![arg])
     }
 
-    pub fn new_function_call<T: ToString>(name: T, args: Vec<AstNode<A>>) -> Self {
-        AstNode::FunctionCall {
+    pub fn new_function_call<T: ToString>(name: T, args: Vec<ParserAst<A>>) -> Self {
+        ParserAst::FunctionCall {
             name: name.to_string(),
             args,
             annotation: A::default(),
         }
     }
 
-    pub fn new_block(nodes: Vec<AstNode<A>>) -> Self {
-        AstNode::Block {
+    pub fn new_block(nodes: Vec<ParserAst<A>>) -> Self {
+        ParserAst::Block {
             nodes,
             annotation: A::default(),
         }
     }
 
-    pub fn drop_annotation(self) -> AstNode {
+    pub fn drop_annotation(self) -> ParserAst {
         self.map_annotation(&mut |_| ())
     }
 
     pub fn with_annotation(self, annotation: A) -> Self {
-        use AstNode::*;
+        use ParserAst::*;
         match self {
             Constant { value, .. } => Constant { value, annotation },
             NamedValue { name, .. } => NamedValue { name, annotation },
@@ -204,7 +204,7 @@ where
     }
 
     pub fn annotation(&self) -> &A {
-        use AstNode::*;
+        use ParserAst::*;
         match self {
             Constant { annotation, .. }
             | NamedValue { annotation, .. }
@@ -220,7 +220,7 @@ where
     }
 
     pub fn value_from_constant(&self) -> Option<Number> {
-        if let AstNode::Constant { value, .. } = self {
+        if let ParserAst::Constant { value, .. } = self {
             Some(value.clone())
         } else {
             None
@@ -238,9 +238,9 @@ where
     where
         F: FnMut(Self) -> Self,
     {
-        use AstNode::*;
+        use ParserAst::*;
         let mapped = match self {
-            Add { nodes, annotation } => AstNode::Add {
+            Add { nodes, annotation } => ParserAst::Add {
                 nodes: nodes.into_iter().map(|n| n.map_inner(f)).collect(),
                 annotation,
             },
@@ -299,16 +299,16 @@ where
     }
 }
 
-impl<A> AstNode<A>
+impl<A> ParserAst<A>
 where
     A: Clone + PartialEq,
 {
     pub fn is_constant(&self) -> bool {
-        matches!(self, AstNode::Constant { .. })
+        matches!(self, ParserAst::Constant { .. })
     }
 
     pub fn is_one(&self) -> bool {
-        if let AstNode::Constant { value, .. } = self {
+        if let ParserAst::Constant { value, .. } = self {
             value.is_one()
         } else {
             false
@@ -316,19 +316,19 @@ where
     }
 
     pub fn is_zero(&self) -> bool {
-        if let AstNode::Constant { value, .. } = self {
+        if let ParserAst::Constant { value, .. } = self {
             value.is_zero()
         } else {
             false
         }
     }
 
-    pub fn map_annotation<B, F>(self, f: &mut F) -> AstNode<B>
+    pub fn map_annotation<B, F>(self, f: &mut F) -> ParserAst<B>
     where
         B: Clone + PartialEq,
         F: FnMut(A) -> B,
     {
-        use AstNode::*;
+        use ParserAst::*;
         match self {
             Constant { value, annotation } => Constant {
                 value,

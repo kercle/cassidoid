@@ -1,4 +1,4 @@
-use crate::parser::ast::AstNode;
+use crate::parser::ast::ParserAst;
 use numbers::Number;
 
 fn greek_letter(name: &str) -> String {
@@ -31,17 +31,17 @@ fn greek_letter(name: &str) -> String {
     }
 }
 
-fn node_weight<A>(ast: &AstNode<A>) -> Option<u32>
+fn node_weight<A>(ast: &ParserAst<A>) -> Option<u32>
 where
     A: Clone + PartialEq,
 {
     match ast {
-        AstNode::Negation { .. } => Some(3),
-        AstNode::Add { .. } => Some(1),
-        AstNode::Sub { .. } => Some(1),
-        AstNode::Mul { .. } => Some(2),
-        AstNode::Div { .. } => Some(2),
-        AstNode::Pow { .. } => Some(4),
+        ParserAst::Negation { .. } => Some(3),
+        ParserAst::Add { .. } => Some(1),
+        ParserAst::Sub { .. } => Some(1),
+        ParserAst::Mul { .. } => Some(2),
+        ParserAst::Div { .. } => Some(2),
+        ParserAst::Pow { .. } => Some(4),
         _ => None,
     }
 }
@@ -58,13 +58,13 @@ fn wrap_with_parentheses(
     }
 }
 
-pub fn ast_to_latex<A>(ast: &AstNode<A>, parent_weight: Option<u32>) -> String
+pub fn ast_to_latex<A>(ast: &ParserAst<A>, parent_weight: Option<u32>) -> String
 where
     A: Clone + PartialEq,
 {
     let weight = node_weight(ast);
 
-    use AstNode::*;
+    use ParserAst::*;
     match ast {
         Constant { value, .. } => {
             if let Number::Rational(rational) = value {
