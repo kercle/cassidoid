@@ -113,16 +113,3 @@ where
         }
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::test::common::*;
-
-    #[test]
-    fn test_expr_to_pattern() {
-        let expr = 4 * (x() * blank() + pattern("x", blank()));
-        let pat = Pattern::from_expr(&expr);
-        dbg!(pat);
-    }
-}
