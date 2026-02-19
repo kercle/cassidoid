@@ -1,4 +1,7 @@
-use std::collections::HashMap;
+use std::{
+    collections::HashMap,
+    fmt::{Debug, Formatter},
+};
 
 use crate::expr::{Expr, pattern::Pattern};
 
@@ -15,6 +18,12 @@ enum BindAction {
 pub struct Binding<'a, A> {
     expr: &'a Expr<A>,
     rc: u32,
+}
+
+impl<'a, A: Clone + Debug + PartialEq> Debug for Binding<'a, A> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
+        write!(f, "{:?}", *self.expr)
+    }
 }
 
 impl<'a, A> Binding<'a, A> {
@@ -40,14 +49,17 @@ impl<'a, A> Binding<'a, A> {
     }
 }
 
-#[derive(Clone)]
-pub struct MatchContext<'a, A> {
+#[derive(Clone, Debug)]
+pub struct MatchContext<'a, A>
+where
+    A: PartialEq + Clone,
+{
     bindings: HashMap<String, Binding<'a, A>>,
 }
 
 impl<'a, A> MatchContext<'a, A>
 where
-    A: PartialEq,
+    A: PartialEq + Clone + Debug,
 {
     pub fn new() -> Self {
         MatchContext {
@@ -78,6 +90,14 @@ where
             }
         }
     }
+
+    pub fn get<T: AsRef<str>>(&self, name: T) -> Option<&'a Expr<A>> {
+        if let Some(e) = self.bindings.get(name.as_ref()) {
+            Some(e.expr)
+        } else {
+            None
+        }
+    }
 }
 
 enum Task<'a, A> {
@@ -106,7 +126,10 @@ struct ChoicePoint<'a, A> {
 #[derive(Debug, Clone, Copy)]
 struct MatchFail;
 
-pub struct MatchIter<'a, A> {
+pub struct MatchIter<'a, A>
+where
+    A: PartialEq + Clone,
+{
     todo: Vec<Task<'a, A>>,
     ctx: MatchContext<'a, A>,
     back_track: Vec<ChoicePoint<'a, A>>,
@@ -116,7 +139,7 @@ pub struct MatchIter<'a, A> {
 
 impl<'a, A> MatchIter<'a, A>
 where
-    A: PartialEq + Clone,
+    A: PartialEq + Clone + Debug,
 {
     pub fn new(expr: &'a Expr<A>, pattern: &'a Pattern<'a, A>) -> Self {
         MatchIter {
@@ -312,7 +335,7 @@ where
 
 impl<'a, A> Iterator for MatchIter<'a, A>
 where
-    A: PartialEq + Clone,
+    A: PartialEq + Clone + Debug,
 {
     type Item = MatchContext<'a, A>;
 
