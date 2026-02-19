@@ -83,7 +83,7 @@ where
                 greek_letter(&value.to_string())
             }
         }
-        NamedValue { name, .. } => greek_letter(name),
+        Symbol { name, .. } => greek_letter(name),
         Negation { arg, .. } => {
             format!("-{}", ast_to_latex(arg, weight))
         }

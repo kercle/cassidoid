@@ -17,7 +17,7 @@ where
         value: Number,
         annotation: Annotation,
     },
-    NamedValue {
+    Symbol {
         name: String,
         annotation: Annotation,
     },
@@ -83,7 +83,7 @@ where
     }
 
     pub fn new_named_value<T: ToString>(name: T) -> Self {
-        ParserAst::NamedValue {
+        ParserAst::Symbol {
             name: name.to_string(),
             annotation: A::default(),
         }
@@ -181,7 +181,7 @@ where
         use ParserAst::*;
         match self {
             Constant { value, .. } => Constant { value, annotation },
-            NamedValue { name, .. } => NamedValue { name, annotation },
+            Symbol { name, .. } => Symbol { name, annotation },
             Add { nodes, .. } => Add { nodes, annotation },
             Negation { arg, .. } => Negation { arg, annotation },
             Sub { lhs, rhs, .. } => Sub {
@@ -213,7 +213,7 @@ where
         use ParserAst::*;
         match self {
             Constant { annotation, .. }
-            | NamedValue { annotation, .. }
+            | Symbol { annotation, .. }
             | Add { annotation, .. }
             | Negation { annotation, .. }
             | Sub { annotation, .. }
@@ -298,7 +298,7 @@ where
                 nodes: nodes.into_iter().map(|n| n.map_inner(f)).collect(),
                 annotation,
             },
-            node @ Constant { .. } | node @ NamedValue { .. } => node,
+            node @ Constant { .. } | node @ Symbol { .. } => node,
         };
 
         f(mapped)
@@ -388,7 +388,7 @@ where
                 value,
                 annotation: f(annotation),
             },
-            NamedValue { name, annotation } => NamedValue {
+            Symbol { name, annotation } => Symbol {
                 name,
                 annotation: f(annotation),
             },
