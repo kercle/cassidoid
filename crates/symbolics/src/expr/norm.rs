@@ -3,7 +3,7 @@ use std::hash::{DefaultHasher, Hash, Hasher};
 use numbers::Number;
 
 use crate::{
-    expr::{Expr, atom::Atom},
+    expr::{Expr, NormalizedExpr},
     parser::ast::{ADD_HEAD, MUL_HEAD},
 };
 
@@ -32,33 +32,51 @@ fn cannonical_fold_ac_with_neutral_el<A: Default + Clone + PartialEq>(
     }
 }
 
+fn partition_constants<A: Default + Clone + PartialEq>(
+    args: &[Expr<A>],
+) -> (Vec<Number>, Vec<Expr<A>>) {
+    let (c_args, v_args): (Vec<&Expr<A>>, Vec<&Expr<A>>) =
+        args.into_iter().partition(|e| e.is_number());
+
+    let c_args = c_args
+        .iter()
+        .map(|e| e.get_number().unwrap().clone())
+        .collect();
+
+    let v_args: Vec<Expr<A>> = v_args.iter().map(|&e| e.clone()).collect();
+
+    (c_args, v_args)
+}
+
 fn cannonical_fold_op<A: Default + Clone + PartialEq>(
     head: &Expr<A>,
-    c_iter: &mut dyn Iterator<Item = &Number>,
-    args_rest: &mut Vec<Expr<A>>,
+    args: &[Expr<A>],
 ) -> Option<Expr<A>> {
     if head.matches_symbol(ADD_HEAD) {
-        let value: Number = c_iter.sum();
-        let is_neutral_element = value.is_zero();
+        let (c_args, mut args) = partition_constants(args);
+        let constant: Number = c_args.iter().sum();
+
+        let is_neutral_element = constant.is_zero();
         Some(cannonical_fold_ac_with_neutral_el(
             head,
-            value,
+            constant,
             is_neutral_element,
-            args_rest,
+            &mut args,
         ))
     } else if head.matches_symbol(MUL_HEAD) {
-        let value: Number = c_iter.product();
+        let (c_args, mut args) = partition_constants(args);
+        let constant: Number = c_args.iter().product();
 
-        if value.is_zero() {
+        if constant.is_zero() {
             return Some(Number::zero().into());
         }
 
-        let is_neutral_element = value.is_one();
+        let is_neutral_element = constant.is_one();
         Some(cannonical_fold_ac_with_neutral_el(
             head,
-            value,
+            constant,
             is_neutral_element,
-            args_rest,
+            &mut args,
         ))
     } else {
         None
@@ -75,9 +93,7 @@ impl<A: Clone + PartialEq + Default> Expr<A> {
         loop {
             current = current
                 .flatten(&head_predicate)
-                .fold_constants(|head, c_iter, args_rest| {
-                    cannonical_fold_op(head, c_iter, args_rest)
-                })
+                .apply_to_compounds(|head, args| cannonical_fold_op(head, args))
                 .sort_args(&head_predicate);
 
             let mut state = DefaultHasher::new();
@@ -169,42 +185,29 @@ impl<A: Clone + PartialEq + Default> Expr<A> {
         }
     }
 
-    pub fn fold_constants(
+    fn apply_to_compounds(
         self,
-        fold_op: impl Fn(
-            &Expr<A>,
-            &mut dyn Iterator<Item = &Number>,
-            &mut Vec<Expr<A>>,
-        ) -> Option<Expr<A>>
-        + Copy,
+        f: impl Fn(&Expr<A>, &[Expr<A>]) -> Option<Expr<A>> + Copy,
     ) -> Self {
         match self {
             Expr::Atom { .. } => self.drop_annotation(),
             Expr::Compound { head, args, .. } => {
-                // Split constant and other arguments
-                let (c_args, mut args): (Vec<Expr<A>>, Vec<Expr<A>>) = args
-                    .into_iter()
-                    .map(|a| a.fold_constants(fold_op))
-                    .partition(|e| e.is_number());
+                let args: Vec<Expr<A>> =
+                    args.into_iter().map(|a| a.apply_to_compounds(f)).collect();
 
-                // Extract a reference to the underlying numbers
-                let mut c_iter = c_args.iter().map(|c| match c {
-                    Expr::Atom {
-                        entry: Atom::Number(v),
-                        ..
-                    } => v,
-                    _ => unreachable!(),
-                });
-
-                // If constants in compound can be folded, do so. Otherwise reconstruct initial expression.
-                if let Some(e) = fold_op(&head, &mut c_iter, &mut args) {
+                if let Some(e) = f(&head, &args) {
                     e
                 } else {
-                    args.extend(c_args);
                     Expr::new_compound(*head, args)
                 }
             }
         }
+    }
+}
+
+impl<A: Clone + PartialEq + Default> NormalizedExpr<A> {
+    pub fn collect_like_terms(self) -> Expr<A> {
+        todo!()
     }
 }
 
