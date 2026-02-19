@@ -55,7 +55,7 @@ where
                         bind_name: None,
                         match_head: args.get(0),
                     })
-                } else if head.matches_symbol(BLANK_ONE_HEAD) {
+                } else if head.matches_symbol(BLANK_SEQ_HEAD) {
                     Some(Pattern::BlankSeq {
                         bind_name: None,
                         match_head: args.get(0),
@@ -111,5 +111,18 @@ where
             },
             _ => self,
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::expr::{generator::*, pattern::Pattern};
+
+    #[test]
+    fn test_dbg() {
+        let e = blank_sequence(None);
+        dbg!(&e);
+        let p = Pattern::from_expr(&e);
+        dbg!(&p);
     }
 }
