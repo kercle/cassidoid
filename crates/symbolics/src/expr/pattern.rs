@@ -1,8 +1,8 @@
 use crate::expr::{Expr, ExprWalker};
 
-const PATTERN_HEAD: &str = "Pattern";
-const BLANK_ONE_HEAD: &str = "Blank";
-const BLANK_SEQ_HEAD: &str = "BlankSeq";
+pub const PATTERN_HEAD: &str = "Pattern";
+pub const BLANK_ONE_HEAD: &str = "Blank";
+pub const BLANK_SEQ_HEAD: &str = "BlankSeq";
 
 pub enum Pattern<'a, A> {
     Literal(&'a Expr<A>),
