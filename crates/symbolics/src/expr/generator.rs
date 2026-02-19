@@ -28,6 +28,12 @@ impl ExprBuilder for SymbolGenerator {
     }
 }
 
+impl From<SymbolGenerator> for Expr {
+    fn from(s: SymbolGenerator) -> Self {
+        s.build()
+    }
+}
+
 pub fn f() -> Expr<()> {
     Expr::new_compound(Expr::new_symbol("f"), Vec::new())
 }
