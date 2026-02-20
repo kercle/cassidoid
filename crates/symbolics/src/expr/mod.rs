@@ -349,6 +349,47 @@ where
             },
         }
     }
+
+    pub fn map_annotations<B, F>(self, f: &F) -> Expr<B>
+    where
+        F: Fn(A) -> B + Copy,
+    {
+        match self {
+            Expr::Atom { entry, annotation } => Expr::Atom {
+                entry,
+                annotation: f(annotation),
+            },
+            Expr::Compound {
+                head,
+                args,
+                annotation,
+            } => {
+                let head = head.map_annotations(f);
+                let args = args.into_iter().map(|a| a.map_annotations(f)).collect();
+                let annotation = f(annotation);
+
+                Expr::Compound {
+                    head: Box::new(head),
+                    args,
+                    annotation,
+                }
+            }
+        }
+    }
+
+    pub fn map_bottom_up<F>(self, f: &F) -> Expr<A>
+    where
+        F: Fn(Expr<A>) -> Expr<A> + Copy,
+    {
+        match self {
+            Expr::Atom { .. } => f(self),
+            Expr::Compound { head, args, .. } => {
+                let head = f(head.map_bottom_up(f));
+                let args = args.into_iter().map(|a| f(a.map_bottom_up(f))).collect();
+                Expr::new_compound(head, args)
+            }
+        }
+    }
 }
 
 pub struct ExprTopDownWalker<'a, A> {
@@ -380,7 +421,7 @@ impl<'a, A> Iterator for ExprTopDownWalker<'a, A> {
     }
 }
 
-pub enum Visit<'a, A> {
+enum Visit<'a, A> {
     Enter(&'a Expr<A>),
     Exit(&'a Expr<A>),
 }
@@ -424,11 +465,15 @@ impl<'a, A> Iterator for ExprBottomUpWalker<'a, A> {
 #[cfg(test)]
 mod tests {
     use crate::{
-        expr::generator::{SymbolGenerator, cos, exp, pow},
+        expr::generator::{ExprBuilder, SymbolGenerator, cos, exp, pow},
         symbol,
     };
 
     use super::*;
+
+    fn dd(f: Expr, x: SymbolGenerator) -> Expr {
+        Expr::new_compound("D", vec![f, x.build()])
+    }
 
     #[test]
     fn test_expr_ordering() {
@@ -447,7 +492,7 @@ mod tests {
     fn test_walker() {
         let (x, y, z) = symbol!("x", "y", "z");
 
-        let expr = 2 + x * cos(x + exp(pow(y, 2) + 7 * z));
+        let expr = 2 + x * cos(x + dd(exp(pow(y, 2) + 7 * z), x));
         dbg!(&expr);
         for e in ExprBottomUpWalker::new(&expr) {
             dbg!(e);
