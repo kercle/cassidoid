@@ -1,12 +1,29 @@
+use std::str::FromStr;
+
 use crate::expr::{Expr, ExprTopDownWalker};
 
 pub const PATTERN_HEAD: &str = "Pattern";
+pub const PATTERN_TEST_HEAD: &str = "PatternTest";
 pub const BLANK_ONE_HEAD: &str = "Blank";
 pub const BLANK_SEQ_HEAD: &str = "BlankSeq";
 
 #[derive(Debug)]
 pub enum PatternPredicate {
     IsSymbolQ,
+}
+
+#[derive(Debug, PartialEq, Eq)]
+pub struct ParsePredicateError;
+
+impl FromStr for PatternPredicate {
+    type Err = ParsePredicateError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "IsSymbolQ" => Ok(PatternPredicate::IsSymbolQ),
+            _ => Err(ParsePredicateError),
+        }
+    }
 }
 
 pub enum Pattern<'a, A> {
@@ -36,11 +53,34 @@ where
 
     fn from_pattern_compound(expr: &'a Expr<A>) -> Option<Pattern<'a, A>> {
         match expr {
-            Expr::Compound { head, args, .. } if head.matches_symbol(PATTERN_HEAD) => {
-                if args.len() != 2 {
-                    return None;
-                }
+            Expr::Compound { head, args, .. }
+                if head.matches_symbol(PATTERN_TEST_HEAD) && args.len() == 2 =>
+            {
+                let pat = args.get(0)?;
+                let pred = args
+                    .get(1)?
+                    .get_symbol()?
+                    .parse::<PatternPredicate>()
+                    .ok()?;
 
+                match Self::from_pattern_compound(pat) {
+                    Some(Pattern::Blank {
+                        bind_name,
+                        match_head,
+                        predicate: None,
+                    }) => Some(Pattern::Blank {
+                        bind_name,
+                        match_head,
+                        predicate: Some(pred),
+                    }),
+                    _ => {
+                        todo!()
+                    }
+                }
+            }
+            Expr::Compound { head, args, .. }
+                if head.matches_symbol(PATTERN_HEAD) && args.len() == 2 =>
+            {
                 let e = args.get(1)?;
                 let h = e.head()?;
 
@@ -51,11 +91,7 @@ where
                     unimplemented!()
                 }
             }
-            Expr::Compound { head, args, .. } => {
-                if args.len() > 1 {
-                    return None;
-                }
-
+            Expr::Compound { head, args, .. } if args.len() <= 1 => {
                 if head.matches_symbol(BLANK_ONE_HEAD) {
                     Some(Pattern::Blank {
                         bind_name: None,
@@ -124,7 +160,9 @@ where
 
 #[cfg(test)]
 mod tests {
-    use crate::expr::{generator::*, pattern::Pattern};
+    use expr_macro::raw_expr;
+
+    use crate::expr::{Expr, atom::Atom, generator::*, pattern::Pattern};
 
     #[test]
     fn test_dbg() {
@@ -132,5 +170,27 @@ mod tests {
         dbg!(&e);
         let p = Pattern::from_expr(&e);
         dbg!(&p);
+    }
+
+    #[test]
+    fn test_built_pattern_from_expr() {
+        let expr = raw_expr! {
+            PatternTest[Blank[], IsSymbolQ]
+        };
+        let pattern = Pattern::from_expr(&expr);
+        assert_eq!(
+            format!("{pattern:?}"),
+            r#"Blank{None, None, Some(IsSymbolQ)}"#
+        );
+
+        let expr = raw_expr! {
+            PatternTest[Pattern[x, Blank[]], IsSymbolQ]
+        };
+        let pattern = Pattern::from_expr(&expr);
+
+        assert_eq!(
+            format!("{pattern:?}"),
+            r#"Blank{Some("x"), None, Some(IsSymbolQ)}"#
+        );
     }
 }
