@@ -1,5 +1,5 @@
 use std::{
-    collections::HashMap,
+    collections::{HashMap, hash_map::Iter as HashMapIter},
     fmt::{Debug, Formatter},
 };
 
@@ -46,6 +46,10 @@ impl<'a, A> Binding<'a, A> {
 
     pub fn has_no_bindings(&self) -> bool {
         self.rc == 0
+    }
+
+    pub fn get_expr(&self) -> &'a Expr<A> {
+        self.expr
     }
 }
 
@@ -97,6 +101,11 @@ where
         } else {
             None
         }
+    }
+
+    pub fn iter(&self) -> HashMapIter<'_, String, Binding<'_, A>> {
+        // self.bindings.iter().map(|(k,b)| (k,b))
+        self.bindings.iter()
     }
 }
 

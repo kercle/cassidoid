@@ -1,3 +1,5 @@
+mod trigon;
+
 use crate::expr::{Expr, NormalizedExpr, derivative::resolve_derivatives};
 
 pub struct Simplifier {
@@ -13,6 +15,10 @@ impl Simplifier {
 
     pub fn with_resolved_derivatives(self) -> Simplifier {
         Simplifier::new(resolve_derivatives(self.expr.take_expr()))
+    }
+
+    pub fn with_trigonometric_identities(self) -> Simplifier {
+        Simplifier::new(trigon::simplify_trigon(self.expr.take_expr()))
     }
 
     pub fn finish(self) -> Expr {

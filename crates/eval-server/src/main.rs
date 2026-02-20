@@ -86,6 +86,7 @@ fn process_message(inbound_msg: String) -> Result<ServerMessage, String> {
 
     let result_expr = Simplifier::new(Expr::from_parser_ast(&ast_in))
         .with_resolved_derivatives()
+        .with_trigonometric_identities()
         .finish_normalized();
 
     if let Ok(ast_out) = ParserAst::try_from(result_expr) {
