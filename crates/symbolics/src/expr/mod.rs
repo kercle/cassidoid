@@ -324,7 +324,7 @@ where
         Self::new_number(Number::from_i64(value))
     }
 
-    pub fn drop_annotation(self) -> Self {
+    pub fn annotation_to_default(self) -> Self {
         match self {
             Expr::Atom { entry, .. } => Expr::Atom {
                 entry,
@@ -336,6 +336,10 @@ where
                 annotation: A::default(),
             },
         }
+    }
+
+    pub fn drop_annotation(self) -> Expr {
+        self.map_annotations(&|_| ())
     }
 
     pub fn with_annotation(self, annotation: A) -> Self {

@@ -148,7 +148,7 @@ impl<A: Clone + PartialEq + Default> Expr<A> {
     /// - Annotations in new expression are reset to Default::default().
     pub fn flatten(self, head_predicate: impl Fn(&Expr<A>) -> bool + Copy) -> Self {
         match self {
-            Expr::Atom { .. } => self.drop_annotation(),
+            Expr::Atom { .. } => self.annotation_to_default(),
             Expr::Compound { head, args, .. } if head_predicate(&*head) => {
                 let mut new_args = Vec::with_capacity(args.len());
 
@@ -160,7 +160,7 @@ impl<A: Clone + PartialEq + Default> Expr<A> {
                             new_args.extend(args);
                         }
                         _ => {
-                            new_args.push(arg.drop_annotation());
+                            new_args.push(arg.annotation_to_default());
                         }
                     }
                 }
@@ -189,7 +189,7 @@ impl<A: Clone + PartialEq + Default> Expr<A> {
     /// - Annotations in new expression are reset to Default::default().
     pub fn sort_args(self, head_predicate: impl Fn(&Expr<A>) -> bool + Copy) -> Self {
         match self {
-            Expr::Atom { .. } => self.drop_annotation(),
+            Expr::Atom { .. } => self.annotation_to_default(),
             Expr::Compound { head, args, .. } => {
                 let mut args: Vec<Expr<A>> = args
                     .into_iter()
@@ -210,7 +210,7 @@ impl<A: Clone + PartialEq + Default> Expr<A> {
         f: impl Fn(&Expr<A>, &[Expr<A>]) -> Option<Expr<A>> + Copy,
     ) -> Self {
         match self {
-            Expr::Atom { .. } => self.drop_annotation(),
+            Expr::Atom { .. } => self.annotation_to_default(),
             Expr::Compound { head, args, .. } => {
                 let args: Vec<Expr<A>> =
                     args.into_iter().map(|a| a.apply_to_compounds(f)).collect();
@@ -474,7 +474,7 @@ impl<A: Clone + PartialEq + Default> NormalizedExpr<A> {
         let expr = self.take_expr();
 
         match expr {
-            Expr::Atom { .. } => NormalizedExpr(expr.drop_annotation()),
+            Expr::Atom { .. } => NormalizedExpr(expr.annotation_to_default()),
             Expr::Compound { head, args, .. } => {
                 // We get a normalized tree, so we can initialize NormalizedExpr
                 // without normalization.

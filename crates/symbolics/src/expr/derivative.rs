@@ -1,10 +1,27 @@
+use std::fmt::Debug;
+
+use expr_macro::raw_expr;
 use numbers::Number;
 
 use crate::{
     builtin::*,
-    expr::{Expr, NormalizedExpr, atom::Atom},
+    expr::{Expr, NormalizedExpr, atom::Atom, matcher::MatchIter, pattern::Pattern},
     parser::ast::{ADD_HEAD, MUL_HEAD, POW_HEAD},
 };
+
+pub fn resolve_derivatives<A>(expr: NormalizedExpr<A>) -> Expr
+where
+    A: Default + Clone + PartialEq + Debug,
+{
+    let expr = expr.take_expr().drop_annotation();
+    let pattern = raw_expr! { D[Pattern[f, Blank[]], Pattern[x, Blank[]]] };
+
+    if let Some(ctx) = MatchIter::new(&expr, &Pattern::from_expr(&pattern)).next() {
+        dbg!(&ctx);
+    }
+
+    expr
+}
 
 pub fn derivative<A: Default + Clone + PartialEq>(expr: NormalizedExpr<A>, var: &str) -> Expr<A> {
     derivative_inner(expr.take_expr(), var)
@@ -64,7 +81,7 @@ fn derivative_inner<A: Default + Clone + PartialEq>(expr: Expr<A>, var: &str) ->
         }
         _ => Expr::new_compound(
             CANNONICAL_HEAD_DERIVATIVE,
-            vec![expr.drop_annotation(), var.into()],
+            vec![expr.annotation_to_default(), var.into()],
         ),
     }
 }
@@ -138,8 +155,10 @@ mod tests {
         let (x, y) = symbol!("x", "y");
         let e = NormalizedExpr::new(1 + 5 * x + y * pow(x, 2));
 
-        let result = NormalizedExpr::new(derivative(e, "x")).collect_like_terms();
+        let result = NormalizedExpr::new(derivative(e, "x"))
+            .collect_like_terms()
+            .take_expr();
 
-        dbg!(&result);
+        assert_eq!(result, raw_expr! { Add[5, Mul[2, x, y]] });
     }
 }
