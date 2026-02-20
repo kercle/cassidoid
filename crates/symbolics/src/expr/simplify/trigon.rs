@@ -17,9 +17,6 @@ pub fn replace_all_quick_and_dirty(expr: Expr, norm_pattern_expr: NormalizedExpr
     let pattern_expr = norm_pattern_expr.take_expr();
     let pattern = Pattern::from_expr(&pattern_expr);
 
-    dbg!(&pattern_expr);
-    dbg!(&expr);
-
     expr.map_bottom_up(&|e| {
         if let Some(ctx) = MatchIter::new(&e, &pattern).next() {
             let mut new_term = replacement.clone();

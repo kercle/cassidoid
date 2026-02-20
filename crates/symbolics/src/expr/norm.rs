@@ -112,6 +112,7 @@ impl<A: Clone + PartialEq + Default> Expr<A> {
 
         loop {
             current = current
+                .desugar()
                 .flatten(&head_predicate)
                 .apply_to_compounds(|head, args| cannonical_fold_op(head, args))
                 .sort_args(&head_predicate);
@@ -200,6 +201,33 @@ impl<A: Clone + PartialEq + Default> Expr<A> {
                     args.sort();
                 }
 
+                Expr::new_compound(*head, args)
+            }
+        }
+    }
+
+    pub fn desugar(self) -> Self {
+        match self {
+            Expr::Atom { .. } => self,
+            Expr::Compound { head, mut args, .. }
+                if head.matches_symbol(SUB_HEAD) && args.len() == 2 =>
+            {
+                let rhs = args.pop().unwrap().desugar();
+                let lhs = args.pop().unwrap().desugar();
+
+                Expr::new_compound(
+                    ADD_HEAD,
+                    vec![lhs, Expr::new_compound(MUL_HEAD, vec![(-1).into(), rhs])],
+                )
+            }
+            Expr::Compound { head, mut args, .. }
+                if head.matches_symbol(NEG_HEAD) && args.len() == 1 =>
+            {
+                let arg = args.pop().unwrap().desugar();
+                Expr::new_compound(MUL_HEAD, vec![(-1).into(), arg])
+            }
+            Expr::Compound { head, args, .. } => {
+                let args: Vec<Expr<A>> = args.into_iter().map(|a| a.desugar()).collect();
                 Expr::new_compound(*head, args)
             }
         }
@@ -570,5 +598,10 @@ mod tests {
         let e = NormalizedExpr::new(exp(1 + x + 2 * x - 7 - 8 * x + y * x));
 
         dbg!(e.collect_like_terms().take_expr());
+    }
+
+    #[test]
+    fn test_constant_folding() {
+        
     }
 }
