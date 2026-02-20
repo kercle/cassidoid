@@ -83,7 +83,7 @@ fn process_message(inbound_msg: String) -> Result<ServerMessage, String> {
     let ClientMessage::Eval(input) = inbound_msg;
 
     let ast_in = parse(&input).map_err(|err| format!("Error parsing input: {}", err))?;
-    let expr = NormalizedExpr::new(Expr::from_parser_ast(&ast_in));
+    let expr = NormalizedExpr::new(Expr::from_parser_ast(&ast_in)).collect_like_terms();
 
     if let Ok(ast_out) = ParserAst::try_from(expr) {
         Ok(ServerMessage::EvalResult {
