@@ -60,6 +60,29 @@ impl BigInteger {
         }
     }
 
+    pub fn from_i128(value: i128) -> Self {
+        if value == 0 {
+            return BigInteger::from_vec(Sign::Positive, vec![0]);
+        }
+
+        let sign = if value < 0 {
+            Sign::Negative
+        } else {
+            Sign::Positive
+        };
+
+        let abs = value.wrapping_abs() as u128;
+
+        let low = abs as Digit;
+        let high = (abs >> 64) as Digit;
+
+        if high == 0 {
+            BigInteger::from_vec(sign, vec![low])
+        } else {
+            BigInteger::from_vec(sign, vec![low, high])
+        }
+    }
+
     pub fn from_u64(value: u64) -> Self {
         BigInteger::from_vec(Sign::Positive, vec![value])
     }
@@ -589,6 +612,18 @@ impl BigInteger {
             write!(s, "{:016x}", n).unwrap();
         }
         s
+    }
+}
+
+impl From<i128> for BigInteger {
+    fn from(value: i128) -> Self {
+        BigInteger::from_i128(value)
+    }
+}
+
+impl From<i64> for BigInteger {
+    fn from(value: i64) -> Self {
+        BigInteger::from_i64(value)
     }
 }
 

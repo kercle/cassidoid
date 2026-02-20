@@ -127,6 +127,12 @@ impl FromStr for Number {
     }
 }
 
+impl From<i128> for Number {
+    fn from(value: i128) -> Self {
+        Number::Integer(BigInteger::from_i128(value))
+    }
+}
+
 impl PartialOrd for Number {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         Some(self.cmp(other))

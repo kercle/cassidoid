@@ -1,7 +1,7 @@
 [workspace]
 resolver = "2"
 members = [
-    "crates/eval-server",
+    "crates/eval-server", "crates/expr_macro",
     "crates/numbers",
     "crates/symbolics",
     "crates/toy-cas-cli",

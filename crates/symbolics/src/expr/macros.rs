@@ -1,6 +1,6 @@
 #[macro_export]
 macro_rules! symbol {
     ( $($x:expr),* $(,)? ) => {
-        ( $(SymbolGenerator::new($x)),* )
+        ( $($crate::expr::generator::SymbolGenerator::new($x)),* )
     };
 }
