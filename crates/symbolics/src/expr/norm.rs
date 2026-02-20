@@ -86,7 +86,7 @@ fn cannonical_fold_op<A: Default + Clone + PartialEq>(
         let rhs = &args[1];
 
         if lhs.is_number_zero() {
-            if rhs.is_number_zero() {
+            if rhs.is_number_zero() || rhs.is_number_negative() {
                 None
             } else {
                 Some(Number::zero().into())
@@ -95,6 +95,8 @@ fn cannonical_fold_op<A: Default + Clone + PartialEq>(
             Some(Number::one().into())
         } else if rhs.is_number_one() {
             Some(lhs.clone())
+        } else if let (Some(lhs), Some(rhs)) = (lhs.get_number(), rhs.get_number()) {
+            lhs.pow(rhs).map(|n| Expr::new_number(n)).ok()
         } else {
             None
         }
@@ -403,21 +405,6 @@ impl<A: Clone + PartialEq + Default> NormalizedExpr<A> {
                     annotation,
                 )
             }
-            Expr::Compound {
-                head,
-                args,
-                annotation,
-            } if head.matches_symbol(POW_HEAD) => {
-                let args = args
-                    .into_iter()
-                    .map(|e| NormalizedExpr::new(e).resugar())
-                    .collect();
-                Expr::Compound {
-                    head,
-                    args,
-                    annotation,
-                }
-            }
             _ => expr,
         }
     }
@@ -598,10 +585,5 @@ mod tests {
         let e = NormalizedExpr::new(exp(1 + x + 2 * x - 7 - 8 * x + y * x));
 
         dbg!(e.collect_like_terms().take_expr());
-    }
-
-    #[test]
-    fn test_constant_folding() {
-        
     }
 }

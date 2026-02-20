@@ -148,6 +148,14 @@ impl<A> Expr<A> {
         self.get_number().map(|n| n.is_one()).unwrap_or(false)
     }
 
+    pub fn is_number_negative(&self) -> bool {
+        self.get_number().map(|n| n.is_negative()).unwrap_or(false)
+    }
+
+    pub fn is_number_positive(&self) -> bool {
+        self.get_number().map(|n| n.is_positive()).unwrap_or(false)
+    }
+
     pub fn is_number(&self) -> bool {
         matches!(
             self,

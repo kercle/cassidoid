@@ -83,8 +83,11 @@ fn process_message(inbound_msg: String) -> Result<ServerMessage, String> {
     let ClientMessage::Eval(input) = inbound_msg;
 
     let ast_in = parse(&input).map_err(|err| format!("Error parsing input: {}", err))?;
+    let input_expr = Expr::from_parser_ast(&ast_in);
 
-    let result_expr = Simplifier::new(Expr::from_parser_ast(&ast_in))
+    dbg!(&input_expr);
+
+    let result_expr = Simplifier::new(input_expr)
         .with_resolved_derivatives()
         .with_trigonometric_identities()
         .finish_normalized();
