@@ -83,6 +83,14 @@ impl Number {
         }
     }
 
+    pub fn is_integer(&self) -> bool {
+        matches!(self, Number::Integer(_))
+    }
+
+    pub fn is_rational(&self) -> bool {
+        matches!(self, Number::Rational(_))
+    }
+
     pub fn to_rational(self) -> Result<BigRational, String> {
         use Number::*;
         match self {

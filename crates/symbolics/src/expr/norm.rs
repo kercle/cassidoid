@@ -115,7 +115,11 @@ fn cannonical_fold_op<A: Default + Clone + PartialEq>(
         } else if rhs.is_number_one() {
             Some(lhs.clone())
         } else if let (Some(lhs), Some(rhs)) = (lhs.get_number(), rhs.get_number()) {
-            lhs.pow(rhs).map(|n| Expr::new_number(n)).ok()
+            if rhs.is_integer() {
+                lhs.pow(rhs).map(|n| Expr::new_number(n)).ok()
+            } else {
+                None
+            }
         } else {
             None
         }

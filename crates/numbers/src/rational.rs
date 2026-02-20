@@ -179,7 +179,7 @@ impl BigRational {
 
     pub fn pow(&self, exp: &BigRational) -> Result<Self, String> {
         if !exp.denominator().is_one() {
-            todo!("Implement non-trivial exponentiation of rationals");
+            todo!("Implement non-trivial exponentiation of rationals: {self:?}^{exp:?}");
         }
 
         let exp = exp.numerator();
