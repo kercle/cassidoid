@@ -130,7 +130,7 @@ where
         }
         Pow { lhs, rhs, .. } => {
             let pow_str = format!(
-                "{}^{{{}}}",
+                "{{{}^{{{}}}}}",
                 ast_to_latex(lhs, weight),
                 ast_to_latex(rhs, weight)
             );
