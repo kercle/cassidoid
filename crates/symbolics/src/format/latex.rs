@@ -89,7 +89,9 @@ where
                 greek_letter(&value.to_string())
             }
         }
-        Symbol { name, .. } if name == CANNONICAL_SYM_INDETERMINATE => format!(r#"\text{{{name}}}"#),
+        Symbol { name, .. } if name == CANNONICAL_SYM_INDETERMINATE => {
+            format!(r#"\text{{{name}}}"#)
+        }
         Symbol { name, .. } => greek_letter(name),
         Negation { arg, .. } => {
             format!("-{}", ast_to_latex(arg, weight))
@@ -231,7 +233,7 @@ mod tests {
         let ast = parse("5*pi^2/4*cos[pi*x/2]*sin[π*y/2]").unwrap();
         assert_eq!(
             ast.to_latex(),
-            r#"\frac{5 \cdot \pi^{2}}{4} \cdot \text{cos}\left[\frac{\pi \cdot x}{2}\right] \cdot \text{sin}\left[\frac{\pi \cdot y}{2}\right]"#
+            "\\frac{5 \\cdot {\\pi^{2}}}{4} \\cdot \\text{cos}\\left[\\frac{\\pi \\cdot x}{2}\\right] \\cdot \\text{sin}\\left[\\frac{\\pi \\cdot y}{2}\\right]"
         );
     }
 }
