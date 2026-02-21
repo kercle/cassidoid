@@ -1,8 +1,9 @@
 use expr_macro::{norm_expr, raw_expr};
 
 use crate::{
+    atom::Atom,
     chain_replace_quick_and_dirty,
-    expr::{Expr, NormalizedExpr, atom::Atom, pattern::Pattern},
+    expr::{Expr, NormalizedExpr, pattern::Pattern},
     matcher::MatchIter,
 };
 

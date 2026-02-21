@@ -1,11 +1,12 @@
 use expr_macro::raw_expr;
 
 use crate::{
+    atom::Atom,
     builtin::{
         CANNONICAL_HEAD_COS, CANNONICAL_HEAD_EXP, CANNONICAL_HEAD_LOG, CANNONICAL_HEAD_SIN,
         CANNONICAL_HEAD_TAN, CANNONICAL_SYM_PLUS_INFINITY,
     },
-    expr::{Expr, atom::Atom, pattern::Pattern},
+    expr::{Expr, pattern::Pattern},
     matcher::MatchIter,
     parser::ast::NEG_HEAD,
 };

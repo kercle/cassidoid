@@ -2,7 +2,7 @@ use std::fmt::Debug;
 
 use numbers::Number;
 
-use crate::expr::{Expr, atom::Atom};
+use crate::{atom::Atom, expr::Expr};
 
 pub const ADD_HEAD: &str = "Add";
 pub const SUB_HEAD: &str = "Sub";

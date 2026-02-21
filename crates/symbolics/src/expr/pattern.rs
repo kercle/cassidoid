@@ -173,7 +173,10 @@ where
 mod tests {
     use expr_macro::raw_expr;
 
-    use crate::expr::{Expr, atom::Atom, generator::*, pattern::Pattern};
+    use crate::{
+        atom::Atom,
+        expr::{Expr, generator::*, pattern::Pattern},
+    };
 
     #[test]
     fn test_dbg() {

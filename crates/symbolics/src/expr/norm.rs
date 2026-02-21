@@ -6,8 +6,9 @@ use std::{
 use numbers::Number;
 
 use crate::{
+    atom::Atom,
     builtin::{CANNONICAL_HEAD_SQRT, CANNONICAL_SYM_INDETERMINATE},
-    expr::{Expr, NormalizedExpr, atom::Atom, generator::pow},
+    expr::{Expr, NormalizedExpr, generator::pow},
     parser::ast::{ADD_HEAD, DIV_HEAD, MUL_HEAD, NEG_HEAD, POW_HEAD, SUB_HEAD},
 };
 

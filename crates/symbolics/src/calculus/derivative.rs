@@ -4,8 +4,9 @@ use expr_macro::raw_expr;
 use numbers::Number;
 
 use crate::{
+    atom::Atom,
     builtin::*,
-    expr::{Expr, NormalizedExpr, atom::Atom, pattern::Pattern},
+    expr::{Expr, NormalizedExpr, pattern::Pattern},
     matcher::MatchIter,
     parser::ast::{ADD_HEAD, MUL_HEAD, POW_HEAD},
 };

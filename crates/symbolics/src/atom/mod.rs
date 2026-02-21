@@ -1,3 +1,5 @@
+pub mod hash;
+
 use std::cmp::Ordering;
 
 use numbers::Number;

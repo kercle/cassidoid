@@ -1,4 +1,3 @@
-pub mod atom;
 pub mod fmt;
 pub mod generator;
 pub mod hash;
@@ -7,10 +6,12 @@ pub mod norm;
 pub mod ops;
 pub mod pattern;
 
-use atom::Atom;
 use numbers::Number;
 
-use crate::parser::ast::{ADD_HEAD, MUL_HEAD, POW_HEAD, ParserAst};
+use crate::{
+    atom::Atom,
+    parser::ast::{ADD_HEAD, MUL_HEAD, POW_HEAD, ParserAst},
+};
 
 #[derive(Clone, PartialEq)]
 pub enum Expr<A = ()> {

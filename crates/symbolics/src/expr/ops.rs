@@ -2,7 +2,7 @@ use std::{cmp::Ordering, ops};
 
 use numbers::Number;
 
-use crate::{expr::Expr, parser::ast::ADD_HEAD};
+use crate::{ expr::Expr, parser::ast::ADD_HEAD};
 
 fn cmp_expr<A: Clone + PartialEq>(lhs: &Expr<A>, rhs: &Expr<A>) -> Ordering {
     use Expr::*;

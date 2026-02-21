@@ -5,3 +5,4 @@ pub mod format;
 pub mod matcher;
 pub mod parser;
 pub mod simplify;
+pub mod atom;
