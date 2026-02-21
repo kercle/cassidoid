@@ -8,12 +8,18 @@ Since this is just a toy project of mine, I want to keep the core modules indepe
 
 ## Goals
 
-- [ ] Decouple `AstNode` from internal `Expr`
-- [ ] Pattern matching and rewrite engine
+- [x] Decouple `AstNode` from internal `Expr`
+- [x] Basic Pattern matching
+- [ ] Advanced Pattern matching (commutative expressions)
+- [ ] Rewrite engine
 - [ ] Basic polynomial engine
-- [ ] Naive Differentiation and Integration
+- [ ] Solve polynomial equations
+- [x] Naive Differentiation
+- [ ] Naive Integration
 - [ ] Matrix/Vector operations
 - [ ] Plotting and dynamical variables for dashboards
 - [ ] Numerical integration and ODE/PDE solving
 - [ ] Numerical solver for equations
 - [ ] UI maybe with Tauri
+- [x] Web frontend built with Svelte
+- [ ] Compile to Web-Assembly and bundle with frontend
