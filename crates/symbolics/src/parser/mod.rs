@@ -49,7 +49,7 @@ fn parse_identifier_or_call(stream: &mut TokenStream) -> Result<ParserAst, Parse
 
     if stream.next_if_matches_token(&Token::RightBracket).is_none() {
         return Err(ParseError {
-            message: "Expected closing parenthesis ')' after function arguments".to_string(),
+            message: "Expected closing parenthesis ']' after function arguments".to_string(),
             at_token: stream.peek().cloned(),
         });
     }
