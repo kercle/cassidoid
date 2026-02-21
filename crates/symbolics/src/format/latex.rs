@@ -163,8 +163,8 @@ where
         FunctionCall { name, args, .. }
             if name == CANNONICAL_HEAD_DERIVATIVE && args.len() == 2 =>
         {
-            let f = args.get(0).unwrap();
-            let x = args.get(1).unwrap();
+            let f = args.first().unwrap();
+            let x = args.last().unwrap();
 
             let f_latex = ast_to_latex(f, weight);
             let x_latex = ast_to_latex(x, weight);

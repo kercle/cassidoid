@@ -16,15 +16,13 @@ pub struct SymbolGenerator {
 
 impl SymbolGenerator {
     pub fn new(name: &'static str) -> SymbolGenerator {
-        SymbolGenerator {
-            name: name.as_ref(),
-        }
+        SymbolGenerator { name }
     }
 }
 
 impl ExprBuilder for SymbolGenerator {
     fn build(&self) -> Expr {
-        Expr::new_symbol(&self.name)
+        Expr::new_symbol(self.name)
     }
 }
 

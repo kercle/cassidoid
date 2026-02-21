@@ -20,6 +20,9 @@ pub struct Binding<'a, A> {
     rc: u32,
 }
 
+#[derive(Clone, Debug)]
+pub struct BindingDecError;
+
 impl<'a, A: Clone + Debug + PartialEq> Debug for Binding<'a, A> {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
         write!(f, "{:?}", *self.expr)
@@ -35,12 +38,12 @@ impl<'a, A> Binding<'a, A> {
         self.rc += 1;
     }
 
-    pub fn dec_bindings(&mut self) -> Result<(), ()> {
+    pub fn dec_bindings(&mut self) -> Result<(), BindingDecError> {
         if self.rc > 0 {
             self.rc -= 1;
             Ok(())
         } else {
-            Err(())
+            Err(BindingDecError)
         }
     }
 
@@ -53,7 +56,7 @@ impl<'a, A> Binding<'a, A> {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Default)]
 pub struct MatchContext<'a, A>
 where
     A: PartialEq + Clone,
@@ -61,23 +64,24 @@ where
     bindings: HashMap<String, Binding<'a, A>>,
 }
 
+#[derive(Clone, Debug)]
+pub struct MatchContextBindError;
+
 impl<'a, A> MatchContext<'a, A>
 where
     A: PartialEq + Clone + Debug,
 {
-    pub fn new() -> Self {
-        MatchContext {
-            bindings: HashMap::new(),
-        }
-    }
-
-    pub fn bind<T: AsRef<str>>(&mut self, name: T, expr: &'a Expr<A>) -> Result<(), ()> {
+    pub fn bind<T: AsRef<str>>(
+        &mut self,
+        name: T,
+        expr: &'a Expr<A>,
+    ) -> Result<(), MatchContextBindError> {
         if let Some(b) = self.bindings.get_mut(name.as_ref()) {
             if b.expr == expr {
                 b.inc_bindings();
                 Ok(())
             } else {
-                Err(())
+                Err(MatchContextBindError)
             }
         } else {
             self.bindings
@@ -148,19 +152,19 @@ where
 
 impl<'a, A> MatchIter<'a, A>
 where
-    A: PartialEq + Clone + Debug,
+    A: Default + PartialEq + Clone + Debug,
 {
     pub fn new(expr: &'a Expr<A>, pattern: &'a Pattern<'a, A>) -> Self {
         MatchIter {
             todo: vec![Task::Node { pattern, expr }],
-            ctx: MatchContext::new(),
+            ctx: MatchContext::default(),
             back_track: Vec::new(),
             undo_log: Vec::new(),
             done: false,
         }
     }
 
-    fn bind_one(&mut self, name: &str, expr: &'a Expr<A>) -> Result<(), ()> {
+    fn bind_one(&mut self, name: &str, expr: &'a Expr<A>) -> Result<(), MatchContextBindError> {
         self.undo_log.push(BindAction::Bind(name.to_string()));
         self.ctx.bind(name, expr)
     }
@@ -190,7 +194,7 @@ where
             }
 
             // if there are further ks, push updated choicepoint back
-            if k + 1 <= k_max {
+            if k < k_max {
                 self.back_track.push(ChoicePoint {
                     k_next: k + 1,
                     ..cp
@@ -243,7 +247,7 @@ where
                 let k_max = exprs.len() - min_left;
 
                 // Try the first split k_min now, but save choicepoint for k_min+1..=k_max
-                if k_min + 1 <= k_max {
+                if k_min < k_max {
                     self.back_track.push(ChoicePoint {
                         todo_len: self.todo.len(),
                         undo_len: self.undo_log.len(),
@@ -349,7 +353,7 @@ where
 
 impl<'a, A> Iterator for MatchIter<'a, A>
 where
-    A: PartialEq + Clone + Debug,
+    A: Default + PartialEq + Clone + Debug,
 {
     type Item = MatchContext<'a, A>;
 
@@ -377,7 +381,8 @@ where
         if !self.backtrack() {
             self.done = true;
         }
-        return Some(out);
+
+        Some(out)
     }
 }
 

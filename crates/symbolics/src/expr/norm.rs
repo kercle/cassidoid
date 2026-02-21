@@ -39,8 +39,7 @@ fn cannonical_fold_ac_with_neutral_el<A: Default + Clone + PartialEq>(
 fn partition_constants<A: Default + Clone + PartialEq>(
     args: &[Expr<A>],
 ) -> (Vec<Number>, Vec<Expr<A>>) {
-    let (c_args, v_args): (Vec<&Expr<A>>, Vec<&Expr<A>>) =
-        args.into_iter().partition(|e| e.is_number());
+    let (c_args, v_args): (Vec<&Expr<A>>, Vec<&Expr<A>>) = args.iter().partition(|e| e.is_number());
 
     let c_args = c_args
         .iter()
@@ -140,11 +139,11 @@ impl<A: Clone + PartialEq + Default> Expr<A> {
             current.hash(&mut state);
             let current_hash = state.finish();
 
-            if let Some(last_hash) = last_hash {
-                if current_hash == last_hash {
-                    // if hashes agree, assume fixed point
-                    break;
-                }
+            if let Some(last_hash) = last_hash
+                && current_hash == last_hash
+            {
+                // if hashes agree, assume fixed point
+                break;
             }
 
             last_hash = Some(current_hash);
@@ -158,9 +157,9 @@ impl<A: Clone + PartialEq + Default> Expr<A> {
 
         self.apply_till_fixed_point(|e| {
             e.desugar()
-                .flatten(&head_predicate)
+                .flatten(head_predicate)
                 .apply_to_compounds(|head, args| cannonical_fold_op(head, args))
-                .sort_args(&head_predicate)
+                .sort_args(head_predicate)
         })
     }
 
@@ -168,9 +167,9 @@ impl<A: Clone + PartialEq + Default> Expr<A> {
         let head_predicate = |e: &Expr<A>| e.matches_symbol(ADD_HEAD) || e.matches_symbol(MUL_HEAD);
 
         self.apply_till_fixed_point(|e| {
-            e.flatten(&head_predicate)
+            e.flatten(head_predicate)
                 .apply_to_compounds(|head, args| cannonical_fold_op(head, args))
-                .sort_args(&head_predicate)
+                .sort_args(head_predicate)
         })
     }
 
@@ -490,7 +489,7 @@ impl<A: Clone + PartialEq + Default> NormalizedExpr<A> {
                 ..
             } => (val, Number::one().into()),
             Expr::Compound { head, mut args, .. } if head.matches_symbol(MUL_HEAD) => {
-                if let Some(coeff) = args.first().map(|e| e.get_number()).flatten() {
+                if let Some(coeff) = args.first().and_then(|e| e.get_number()) {
                     let coeff = coeff.clone();
                     let _ = args.swap_remove(0);
                     (coeff.clone(), Expr::new_compound(*head, args).normalize())

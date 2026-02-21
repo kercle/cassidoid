@@ -68,7 +68,7 @@ where
             Expr::Compound { head, args, .. }
                 if head.matches_symbol(PATTERN_TEST_HEAD) && args.len() == 2 =>
             {
-                let pat = args.get(0)?;
+                let pat = args.first()?;
                 let pred = args
                     .get(1)?
                     .get_symbol()?
@@ -93,11 +93,11 @@ where
             Expr::Compound { head, args, .. }
                 if head.matches_symbol(PATTERN_HEAD) && args.len() == 2 =>
             {
-                let e = args.get(1)?;
+                let e = args.last()?;
                 let h = e.head()?;
 
                 if h.matches_symbol(BLANK_ONE_HEAD) || h.matches_symbol(BLANK_SEQ_HEAD) {
-                    let bind_name = args.get(0)?.get_symbol()?;
+                    let bind_name = args.first()?.get_symbol()?;
                     Some(Self::from_pattern_compound(e)?.with_bind_name(bind_name))
                 } else {
                     unimplemented!()
@@ -107,13 +107,13 @@ where
                 if head.matches_symbol(BLANK_ONE_HEAD) {
                     Some(Pattern::Blank {
                         bind_name: None,
-                        match_head: args.get(0),
+                        match_head: args.first(),
                         predicate: None,
                     })
                 } else if head.matches_symbol(BLANK_SEQ_HEAD) {
                     Some(Pattern::BlankSeq {
                         bind_name: None,
-                        match_head: args.get(0),
+                        match_head: args.first(),
                     })
                 } else {
                     None
@@ -126,14 +126,13 @@ where
     fn from_expr_inner(expr: &'a Expr<A>) -> Self {
         let mut descend = false;
         for e in ExprTopDownWalker::new(expr) {
-            if let Expr::Compound { head, .. } = e {
-                if head.matches_symbol(PATTERN_HEAD) | head.matches_symbol(BLANK_ONE_HEAD)
-                    || head.matches_symbol(BLANK_SEQ_HEAD)
-                {
-                    // There are possibly still non-literal patterns in tree -> descend
-                    descend = true;
-                    break;
-                }
+            if let Expr::Compound { head, .. } = e
+                && (head.matches_symbol(PATTERN_HEAD) | head.matches_symbol(BLANK_ONE_HEAD)
+                    || head.matches_symbol(BLANK_SEQ_HEAD))
+            {
+                // There are possibly still non-literal patterns in tree -> descend
+                descend = true;
+                break;
             }
         }
 
