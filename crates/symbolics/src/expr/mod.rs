@@ -1,4 +1,5 @@
 pub mod constructors;
+pub mod convert;
 pub mod fmt;
 pub mod generator;
 pub mod hash;
@@ -16,20 +17,7 @@ use crate::{
     parser::ast::{ADD_HEAD, MUL_HEAD, POW_HEAD, ParserAst},
 };
 
-impl<A, T: Into<Atom>> From<T> for Expr<A>
-where
-    A: Default,
-{
-    fn from(x: T) -> Self {
-        Expr::Atom {
-            entry: x.into(),
-            annotation: A::default(),
-        }
-    }
-}
-
 impl<A> Expr<A> {
-
     pub fn as_atom(&self) -> Option<&Atom> {
         match self {
             Expr::Atom { entry, .. } => Some(entry),
