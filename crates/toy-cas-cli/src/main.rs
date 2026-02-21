@@ -1,9 +1,9 @@
 use clap::Parser;
 use symbolics::expr::Expr;
-use symbolics::simplify::Simplifier;
 use symbolics::format::MathDisplay;
 use symbolics::parser::ast::ParserAst;
 use symbolics::parser::parse;
+use symbolics::simplify::Simplifier;
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
