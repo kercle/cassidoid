@@ -40,15 +40,11 @@ impl<'a, A> PatSpan<'a, A> {
 }
 
 enum Task<'a, A> {
-    MatchNode {
+    MatchOne {
         pattern: Pattern<'a, A>,
         expr: &'a Expr<A>,
     },
-    MatchOrderedList {
-        patterns: PatSpan<'a, A>,
-        exprs: &'a [Expr<A>],
-    },
-    MatchUnorderedList {
+    MatchSeq {
         patterns: PatSpan<'a, A>,
         exprs: &'a [Expr<A>],
     },
@@ -85,7 +81,7 @@ where
 {
     pub fn new(expr: &'a Expr<A>, pattern: Pattern<'a, A>) -> Self {
         MatchIter {
-            tasks: vec![Task::MatchNode { pattern, expr }],
+            tasks: vec![Task::MatchOne { pattern, expr }],
             ctx: MatchContext::default(),
             back_track: Vec::new(),
             bind_action_log: Vec::new(),
@@ -148,7 +144,7 @@ where
                 continue;
             }
 
-            self.tasks.push(Task::MatchOrderedList {
+            self.tasks.push(Task::MatchSeq {
                 patterns: cp.rest_pats,
                 exprs: &cp.rest_exprs[k..],
             });
@@ -226,14 +222,14 @@ where
                 .map_err(|_| MatchFail)?;
         }
 
-        self.tasks.push(Task::MatchOrderedList {
+        self.tasks.push(Task::MatchSeq {
             patterns: rest_pats,
             exprs: &exprs[k_min..],
         });
         Ok(())
     }
 
-    fn task_match_node(
+    fn task_match_one(
         &mut self,
         pattern: Pattern<'a, A>,
         expr: &'a Expr<A>,
@@ -258,11 +254,11 @@ where
                     ..
                 } = expr
                 {
-                    self.tasks.push(Task::MatchOrderedList {
+                    self.tasks.push(Task::MatchSeq {
                         patterns: PatSpan::from(args),
                         exprs: eargs,
                     });
-                    self.tasks.push(Task::MatchNode {
+                    self.tasks.push(Task::MatchOne {
                         pattern: *head,
                         expr: ehead,
                     });
@@ -275,7 +271,7 @@ where
         }
     }
 
-    fn task_ordered_list(
+    fn task_match_seq(
         &mut self,
         patterns: PatSpan<'a, A>,
         exprs: &'a [Expr<A>],
@@ -298,11 +294,11 @@ where
             _ => {
                 // non-seq: need at least one expr
                 let (e0, erest) = exprs.split_first().ok_or(MatchFail)?;
-                self.tasks.push(Task::MatchOrderedList {
+                self.tasks.push(Task::MatchSeq {
                     patterns: patterns.clone().rest(),
                     exprs: erest,
                 });
-                self.tasks.push(Task::MatchNode {
+                self.tasks.push(Task::MatchOne {
                     // can we get rid of this clone?
                     // patterns are mostly pointers and relatively shallow
                     // -> shouldn't be a problem in general.
@@ -312,14 +308,6 @@ where
                 Ok(())
             }
         }
-    }
-
-    fn task_unordered_list(
-        &mut self,
-        _patterns: PatSpan<'a, A>,
-        _exprs: &'a [Expr<A>],
-    ) -> Result<(), MatchFail> {
-        todo!()
     }
 }
 
@@ -336,13 +324,8 @@ where
 
         while let Some(task) = self.tasks.pop() {
             let r = match task {
-                Task::MatchNode { pattern, expr } => self.task_match_node(pattern, expr),
-                Task::MatchOrderedList { patterns, exprs } => {
-                    self.task_ordered_list(patterns, exprs)
-                }
-                Task::MatchUnorderedList { patterns, exprs } => {
-                    self.task_unordered_list(patterns, exprs)
-                }
+                Task::MatchOne { pattern, expr } => self.task_match_one(pattern, expr),
+                Task::MatchSeq { patterns, exprs } => self.task_match_seq(patterns, exprs),
             };
 
             if r.is_err() && !self.backtrack() {

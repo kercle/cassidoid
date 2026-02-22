@@ -161,7 +161,7 @@ mod tests {
     }
 
     #[test]
-    fn match_two_blankseq_backtracking_count() {
+    fn match_two_ordered_blankseq_backtracking_count() {
         // This is the classic backtracking stressor: f[a__, b__] against 4 args
         // Solutions are splits:
         // a={1}, b={2,3,4}
@@ -267,5 +267,22 @@ mod tests {
                 .first_match(&raw_expr! { f[1, 2] })
                 .is_none()
         );
+    }
+
+    #[test]
+    fn match_two_unordered_blankseq_backtracking_count() {
+        // This is the classic backtracking stressor: f[a__, b__] against 4 args
+        // Solutions are splits:
+        // a={1}, b={2,3,4}
+        // a={1,2}, b={3,4}
+        // a={1,2,3}, b={4}
+        //
+        // So expected count = 3
+        let expr = raw_expr! { Add[1, 2, 3, 4] };
+        let matcher = Matcher::new(raw_expr! { Add[Pattern[a, BlankSeq[]], Pattern[b, BlankSeq[]]] });
+        let mut it = matcher.iter_matches(&expr);
+
+        let count = it.by_ref().count();
+        assert_eq!(count, 3);
     }
 }
