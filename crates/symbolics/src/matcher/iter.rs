@@ -50,7 +50,7 @@ enum Task<'a, A> {
     },
 }
 
-struct ChoicePoint<'a, A> {
+struct ChoicePointOrderedSplit<'a, A> {
     todo_len: usize,
     undo_len: usize,
 
@@ -61,6 +61,17 @@ struct ChoicePoint<'a, A> {
 
     rest_pats: PatSpan<'a, A>,
     rest_exprs: &'a [Expr<A>],
+}
+
+impl<'a, A> ChoicePointOrderedSplit<'a, A> {
+    pub fn to_choice_point(self) -> ChoicePoint<'a, A> {
+        ChoicePoint::OrderedSplit(self)
+    }
+}
+
+enum ChoicePoint<'a, A> {
+    OrderedSplit(ChoicePointOrderedSplit<'a, A>),
+    UnorderedSplit,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -113,44 +124,61 @@ where
         }
     }
 
+    fn backtrack_step_seq(&mut self, cp: ChoicePointOrderedSplit<'a, A>) -> bool {
+        self.tasks.truncate(cp.todo_len);
+        self.rollback_binds(cp.undo_len);
+
+        let min_left = Self::min_required(&cp.rest_pats);
+        let k_max = cp.rest_exprs.len().saturating_sub(min_left);
+        let k = cp.k_next;
+
+        if k < cp.k_min || k > k_max {
+            return false; // choicepoint exhausted
+        }
+
+        // if there are further ks, push updated choicepoint back
+        if k < k_max {
+            let cpos = ChoicePointOrderedSplit {
+                k_next: k + 1,
+                rest_pats: cp.rest_pats.clone(),
+                ..cp
+            };
+
+            self.back_track.push(cpos.to_choice_point());
+        }
+
+        // apply this k
+        if let Some(&name) = cp.seq_name.as_ref()
+            && self
+                .bind_seq(name, &cp.rest_exprs[..k])
+                .map_err(|_| MatchFail)
+                .is_err()
+        {
+            return false;
+        }
+
+        self.tasks.push(Task::MatchSeq {
+            patterns: cp.rest_pats,
+            exprs: &cp.rest_exprs[k..],
+        });
+
+        return true;
+    }
+
     fn backtrack(&mut self) -> bool {
         while let Some(cp) = self.back_track.pop() {
-            self.tasks.truncate(cp.todo_len);
-            self.rollback_binds(cp.undo_len);
-
-            let min_left = Self::min_required(&cp.rest_pats);
-            let k_max = cp.rest_exprs.len().saturating_sub(min_left);
-            let k = cp.k_next;
-
-            if k < cp.k_min || k > k_max {
-                continue; // choicepoint exhausted
+            match cp {
+                ChoicePoint::OrderedSplit(cpos) => {
+                    if self.backtrack_step_seq(cpos) {
+                        return true;
+                    } else {
+                        continue;
+                    }
+                }
+                ChoicePoint::UnorderedSplit => todo!(),
             }
-
-            // if there are further ks, push updated choicepoint back
-            if k < k_max {
-                self.back_track.push(ChoicePoint {
-                    k_next: k + 1,
-                    rest_pats: cp.rest_pats.clone(),
-                    ..cp
-                });
-            }
-
-            // apply this k
-            if let Some(&name) = cp.seq_name.as_ref()
-                && self
-                    .bind_seq(name, &cp.rest_exprs[..k])
-                    .map_err(|_| MatchFail)
-                    .is_err()
-            {
-                continue;
-            }
-
-            self.tasks.push(Task::MatchSeq {
-                patterns: cp.rest_pats,
-                exprs: &cp.rest_exprs[k..],
-            });
-            return true;
         }
+
         false
     }
 
@@ -208,7 +236,7 @@ where
 
         // Try the first split k_min now, but save choicepoint for k_min+1..=k_max
         if k_min < k_max {
-            self.back_track.push(ChoicePoint {
+            let cpos = ChoicePointOrderedSplit {
                 todo_len: self.tasks.len(),
                 undo_len: self.bind_action_log.len(),
                 seq_name: bind_name,
@@ -216,7 +244,9 @@ where
                 k_next: k_min + 1,
                 rest_pats: rest_pats.clone(),
                 rest_exprs: exprs,
-            });
+            };
+
+            self.back_track.push(cpos.to_choice_point());
         }
 
         if let Some(name) = bind_name {
