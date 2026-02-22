@@ -1,10 +1,43 @@
 use std::fmt::Debug;
+use std::rc::Rc;
 
 use crate::{
     expr::Expr,
     matcher::context::{MatchContext, MatchContextBindError},
     pattern::Pattern,
 };
+
+#[derive(Clone)]
+struct PatSpan<'a, A> {
+    reference: Rc<[Pattern<'a, A>]>,
+    start: usize,
+}
+
+impl<'a, A> PatSpan<'a, A> {
+    pub fn from(arr: Vec<Pattern<'a, A>>) -> Self {
+        PatSpan {
+            reference: Rc::from(arr),
+            start: 0,
+        }
+    }
+
+    pub fn rest(mut self) -> Self {
+        self.start += 1;
+        self
+    }
+
+    pub fn len(&self) -> usize {
+        self.reference.len().saturating_sub(self.start)
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.start >= self.reference.len()
+    }
+
+    pub fn first(&self) -> Option<&Pattern<'a, A>> {
+        self.reference.get(self.start)
+    }
+}
 
 enum BindAction {
     Bind(String),
@@ -16,11 +49,11 @@ enum Task<'a, A> {
         expr: &'a Expr<A>,
     },
     OrderedList {
-        patterns: Vec<Pattern<'a, A>>,
+        patterns: PatSpan<'a, A>,
         exprs: &'a [Expr<A>],
     },
     UnorderedList {
-        patterns: Vec<Pattern<'a, A>>,
+        patterns: PatSpan<'a, A>,
         exprs: &'a [Expr<A>],
     },
 }
@@ -29,11 +62,10 @@ struct ChoicePoint<'a, A> {
     todo_len: usize,
     undo_len: usize,
 
-    // data needed to enumerate alternatives:
     seq_name: Option<String>,
-    k_next: usize, // next length to try
-    // and what remains after the seq pattern:
-    rest_pats: Vec<Pattern<'a, A>>,
+    k_next: usize,
+
+    rest_pats: PatSpan<'a, A>,
     rest_exprs: &'a [Expr<A>],
 }
 
@@ -178,7 +210,7 @@ where
                 } = expr
                 {
                     self.tasks.push(Task::OrderedList {
-                        patterns: args,
+                        patterns: PatSpan::from(args),
                         exprs: eargs,
                     });
                     self.tasks.push(Task::Node {
@@ -196,10 +228,9 @@ where
 
     fn queue_ordered_list(
         &mut self,
-        patterns: Vec<Pattern<'a, A>>,
+        patterns: PatSpan<'a, A>,
         exprs: &'a [Expr<A>],
     ) -> Result<(), MatchFail> {
-        // both empty => ok
         if patterns.is_empty() {
             return if exprs.is_empty() {
                 Ok(())
@@ -208,16 +239,14 @@ where
             };
         }
 
-        let (p0, prest) = patterns.split_first().unwrap();
-
-        match p0 {
+        match patterns.first().unwrap() {
             Pattern::BlankSeq { bind_name, .. } => {
                 if exprs.is_empty() {
                     return Err(MatchFail);
                 }
 
                 // We need to leave a few exprs for remaining patterns
-                let min_left = prest.len();
+                let min_left = patterns.len() - 1;
                 if exprs.len() < 1 + min_left {
                     return Err(MatchFail);
                 }
@@ -232,7 +261,7 @@ where
                         undo_len: self.undo_log.len(),
                         seq_name: bind_name.clone(),
                         k_next: k_min + 1,
-                        rest_pats: prest.to_vec(),
+                        rest_pats: patterns.clone().rest(),
                         rest_exprs: exprs,
                     });
                 }
@@ -243,7 +272,7 @@ where
                 }
 
                 self.tasks.push(Task::OrderedList {
-                    patterns: prest.to_vec(),
+                    patterns: patterns.clone().rest(),
                     exprs: &exprs[k_min..],
                 });
                 Ok(())
@@ -252,11 +281,11 @@ where
                 // non-seq: need at least one expr
                 let (e0, erest) = exprs.split_first().ok_or(MatchFail)?;
                 self.tasks.push(Task::OrderedList {
-                    patterns: prest.to_vec(),
+                    patterns: patterns.clone().rest(),
                     exprs: erest,
                 });
                 self.tasks.push(Task::Node {
-                    pattern: p0.clone(),
+                    pattern: patterns.first().unwrap().clone(), // Todo: can we get rid of this clone?
                     expr: e0,
                 });
                 Ok(())
@@ -266,7 +295,7 @@ where
 
     fn queue_unordered_list(
         &mut self,
-        _patterns: Vec<Pattern<'a, A>>,
+        _patterns: PatSpan<'a, A>,
         _exprs: &'a [Expr<A>],
     ) -> Result<(), MatchFail> {
         todo!()
