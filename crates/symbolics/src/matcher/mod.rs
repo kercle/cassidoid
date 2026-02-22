@@ -1,5 +1,7 @@
+mod choice_point;
 pub mod context;
 pub mod iter;
+mod pattern_span;
 
 #[cfg(test)]
 mod tests;

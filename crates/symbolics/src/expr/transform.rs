@@ -1,11 +1,9 @@
 use crate::expr::Expr;
 
-
 impl<A> Expr<A>
 where
     A: Default + Clone + PartialEq,
 {
-
     pub fn annotation_to_default(self) -> Self {
         match self {
             Expr::Atom { entry, .. } => Expr::Atom {

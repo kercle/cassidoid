@@ -1,43 +1,14 @@
 use std::fmt::Debug;
-use std::rc::Rc;
 
 use crate::{
     expr::Expr,
-    matcher::context::{MatchContext, MatchContextBindError},
+    matcher::{
+        choice_point::{ChoicePoint, ChoicePointOrderedSplit, ChoicePointUnorderedSplit},
+        context::{MatchContext, MatchContextBindError},
+        pattern_span::PatSpan,
+    },
     pattern::{Pattern, PatternPredicate},
 };
-
-#[derive(Clone)]
-struct PatSpan<'a, A> {
-    reference: Rc<[Pattern<'a, A>]>,
-    start: usize,
-}
-
-impl<'a, A> PatSpan<'a, A> {
-    pub fn from(arr: Vec<Pattern<'a, A>>) -> Self {
-        PatSpan {
-            reference: Rc::from(arr),
-            start: 0,
-        }
-    }
-
-    pub fn as_slice(&self) -> &[Pattern<'a, A>] {
-        &self.reference[self.start..]
-    }
-
-    pub fn first(&self) -> Option<&Pattern<'a, A>> {
-        self.reference.get(self.start)
-    }
-
-    pub fn rest(mut self) -> Self {
-        self.start += 1;
-        self
-    }
-
-    pub fn is_empty(&self) -> bool {
-        self.start >= self.reference.len()
-    }
-}
 
 enum Task<'a, A> {
     MatchOne {
@@ -48,30 +19,6 @@ enum Task<'a, A> {
         patterns: PatSpan<'a, A>,
         exprs: &'a [Expr<A>],
     },
-}
-
-struct ChoicePointOrderedSplit<'a, A> {
-    todo_len: usize,
-    undo_len: usize,
-
-    seq_name: Option<&'a str>,
-
-    k_min: usize,
-    k_next: usize,
-
-    rest_pats: PatSpan<'a, A>,
-    rest_exprs: &'a [Expr<A>],
-}
-
-impl<'a, A> ChoicePointOrderedSplit<'a, A> {
-    pub fn to_choice_point(self) -> ChoicePoint<'a, A> {
-        ChoicePoint::OrderedSplit(self)
-    }
-}
-
-enum ChoicePoint<'a, A> {
-    OrderedSplit(ChoicePointOrderedSplit<'a, A>),
-    UnorderedSplit,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -124,7 +71,7 @@ where
         }
     }
 
-    fn backtrack_step_seq(&mut self, cp: ChoicePointOrderedSplit<'a, A>) -> bool {
+    fn backtrack_step_ordered_seq(&mut self, cp: ChoicePointOrderedSplit<'a, A>) -> bool {
         self.tasks.truncate(cp.todo_len);
         self.rollback_binds(cp.undo_len);
 
@@ -165,17 +112,27 @@ where
         return true;
     }
 
+    fn backtrack_step_unordered_seq(&mut self, _cp: ChoicePointUnorderedSplit<'a, A>) -> bool {
+        todo!()
+    }
+
     fn backtrack(&mut self) -> bool {
         while let Some(cp) = self.back_track.pop() {
             match cp {
                 ChoicePoint::OrderedSplit(cpos) => {
-                    if self.backtrack_step_seq(cpos) {
+                    if self.backtrack_step_ordered_seq(cpos) {
                         return true;
                     } else {
                         continue;
                     }
                 }
-                ChoicePoint::UnorderedSplit => todo!(),
+                ChoicePoint::UnorderedSplit(cpus) => {
+                    if self.backtrack_step_unordered_seq(cpus) {
+                        return true;
+                    } else {
+                        continue;
+                    }
+                }
             }
         }
 
