@@ -37,6 +37,10 @@ impl<'a, A> PatSpan<'a, A> {
     pub fn first(&self) -> Option<&Pattern<'a, A>> {
         self.reference.get(self.start)
     }
+
+    pub fn as_slice(&self) -> &[Pattern<'a, A>] {
+        &self.reference[self.start..]
+    }
 }
 
 enum Task<'a, A> {
@@ -55,6 +59,8 @@ struct ChoicePoint<'a, A> {
     undo_len: usize,
 
     seq_name: Option<&'a str>,
+
+    k_min: usize,
     k_next: usize,
 
     rest_pats: PatSpan<'a, A>,
@@ -120,7 +126,7 @@ where
             let k_max = cp.rest_exprs.len().saturating_sub(min_left);
             let k = cp.k_next;
 
-            if k < 1 || k > k_max {
+            if k < cp.k_min || k > k_max {
                 continue; // choicepoint exhausted
             }
 
@@ -129,7 +135,6 @@ where
                 self.back_track.push(ChoicePoint {
                     k_next: k + 1,
                     rest_pats: cp.rest_pats.clone(),
-                    seq_name: cp.seq_name.clone(),
                     ..cp
                 });
             }
@@ -186,9 +191,10 @@ where
         }
     }
 
-    fn match_blank_seq(
+    fn match_blank_seq_or_blank_null_seq(
         &mut self,
         exprs: &'a [Expr<A>],
+        k_min: usize,
         min_left: usize,
         rest_pats: PatSpan<'a, A>,
         bind_name: Option<&'a str>,
@@ -198,11 +204,10 @@ where
         }
 
         // We need to leave a few exprs for remaining patterns
-        if exprs.len() < 1 + min_left {
+        if exprs.len() < k_min + min_left {
             return Err(MatchFail);
         }
 
-        let k_min = 1; // At least one element in BlankSeq pattern
         let k_max = exprs.len() - min_left; // At most k_max lements in BlankSeq pattern
 
         // Try the first split k_min now, but save choicepoint for k_min+1..=k_max
@@ -211,6 +216,7 @@ where
                 todo_len: self.tasks.len(),
                 undo_len: self.bind_action_log.len(),
                 seq_name: bind_name,
+                k_min: 1,
                 k_next: k_min + 1,
                 rest_pats: rest_pats.clone(),
                 rest_exprs: exprs,
@@ -227,6 +233,49 @@ where
             exprs: &exprs[k_min..],
         });
         Ok(())
+    }
+
+    fn min_required(pats: &PatSpan<'a, A>) -> usize {
+        pats.as_slice()
+            .iter()
+            .map(|p| match p {
+                Pattern::BlankNullSeq { .. } => 0,
+                Pattern::BlankSeq { .. }
+                | Pattern::Blank { .. }
+                | Pattern::Compound { .. }
+                | Pattern::Literal { .. } => 1,
+            })
+            .sum()
+    }
+
+    fn match_blank_seq(
+        &mut self,
+        exprs: &'a [Expr<A>],
+        rest_pats: PatSpan<'a, A>,
+        bind_name: Option<&'a str>,
+    ) -> Result<(), MatchFail> {
+        self.match_blank_seq_or_blank_null_seq(
+            exprs,
+            1,
+            Self::min_required(&rest_pats),
+            rest_pats,
+            bind_name,
+        )
+    }
+
+    fn match_blank_null_seq(
+        &mut self,
+        exprs: &'a [Expr<A>],
+        rest_pats: PatSpan<'a, A>,
+        bind_name: Option<&'a str>,
+    ) -> Result<(), MatchFail> {
+        self.match_blank_seq_or_blank_null_seq(
+            exprs,
+            0,
+            Self::min_required(&rest_pats),
+            rest_pats,
+            bind_name,
+        )
     }
 
     fn task_match_one(
@@ -247,7 +296,15 @@ where
                 match_head,
                 predicate,
             } => self.match_blank(expr, bind_name, match_head, predicate),
-            Pattern::Compound { head, args } => {
+            Pattern::Compound {
+                head,
+                args,
+                predicate,
+            } => {
+                if predicate.is_some() {
+                    todo!()
+                }
+
                 if let Expr::Compound {
                     head: ehead,
                     args: eargs,
@@ -267,7 +324,7 @@ where
                     Err(MatchFail)
                 }
             }
-            Pattern::BlankSeq { .. } => Err(MatchFail),
+            Pattern::BlankSeq { .. } | Pattern::BlankNullSeq { .. } => Err(MatchFail),
         }
     }
 
@@ -285,13 +342,21 @@ where
         }
 
         match patterns.first().unwrap() {
-            Pattern::BlankSeq { bind_name, .. } => self.match_blank_seq(
-                exprs,
-                patterns.len() - 1,
-                patterns.clone().rest(),
-                *bind_name,
-            ),
-            _ => {
+            Pattern::BlankSeq {
+                bind_name,
+                match_head,
+                predicate,
+            } => {
+                if match_head.is_some() || predicate.is_some() {
+                    todo!()
+                }
+
+                self.match_blank_seq(exprs, patterns.clone().rest(), *bind_name)
+            }
+            Pattern::Literal { .. }
+            | Pattern::Compound { .. }
+            | Pattern::BlankNullSeq { .. }
+            | Pattern::Blank { .. } => {
                 // non-seq: need at least one expr
                 let (e0, erest) = exprs.split_first().ok_or(MatchFail)?;
                 self.tasks.push(Task::MatchSeq {
