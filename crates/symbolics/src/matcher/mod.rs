@@ -3,20 +3,24 @@ use std::{
     fmt::{Debug, Formatter},
 };
 
-use crate::{expr::Expr, pattern::Pattern};
-
-pub enum Bound<'a, A> {
-    One(&'a Expr<A>),
-    Seq(&'a [Expr<A>]),
-}
+use crate::{
+    expr::{self, Expr},
+    pattern::Pattern,
+};
 
 enum BindAction {
     Bind(String),
 }
 
 #[derive(Clone)]
+pub enum Bound<'a, A> {
+    One(&'a Expr<A>),
+    Seq(&'a [Expr<A>]),
+}
+
+#[derive(Clone)]
 pub struct Binding<'a, A> {
-    expr: &'a Expr<A>,
+    content: Bound<'a, A>,
     rc: u32,
 }
 
@@ -25,13 +29,27 @@ pub struct BindingDecError;
 
 impl<'a, A: Clone + Debug + PartialEq> Debug for Binding<'a, A> {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
-        write!(f, "{:?}", *self.expr)
+        use Bound::*;
+        match self.content {
+            One(expr) => write!(f, "{:?}", expr),
+            Seq(seq) => write!(f, "{:?}", seq),
+        }
     }
 }
 
 impl<'a, A> Binding<'a, A> {
-    pub fn new(expr: &'a Expr<A>) -> Self {
-        Self { expr, rc: 1 }
+    pub fn new_one(expr: &'a Expr<A>) -> Self {
+        Self {
+            content: Bound::One(expr),
+            rc: 1,
+        }
+    }
+
+    pub fn new_seq(expr_arr: &'a [Expr<A>]) -> Self {
+        Self {
+            content: Bound::Seq(expr_arr),
+            rc: 1,
+        }
     }
 
     pub fn inc_bindings(&mut self) {
@@ -51,8 +69,20 @@ impl<'a, A> Binding<'a, A> {
         self.rc == 0
     }
 
-    pub fn get_expr(&self) -> &'a Expr<A> {
-        self.expr
+    pub fn get_one(&self) -> Option<&'a Expr<A>> {
+        use Bound::*;
+        match self.content {
+            One(expr) => Some(expr),
+            Seq(_) => None,
+        }
+    }
+
+    pub fn get_seq(&self) -> Option<&'a [Expr<A>]> {
+        use Bound::*;
+        match self.content {
+            One(_) => None,
+            Seq(seq) => Some(seq),
+        }
     }
 }
 
@@ -71,13 +101,15 @@ impl<'a, A> MatchContext<'a, A>
 where
     A: PartialEq + Clone + Debug,
 {
-    pub fn bind<T: AsRef<str>>(
+    pub fn bind_one<T: AsRef<str>>(
         &mut self,
         name: T,
         expr: &'a Expr<A>,
     ) -> Result<(), MatchContextBindError> {
         if let Some(b) = self.bindings.get_mut(name.as_ref()) {
-            if b.expr == expr {
+            let e = b.get_one().ok_or(MatchContextBindError)?;
+
+            if e == expr {
                 b.inc_bindings();
                 Ok(())
             } else {
@@ -85,8 +117,45 @@ where
             }
         } else {
             self.bindings
-                .insert(name.as_ref().to_string(), Binding::new(expr));
+                .insert(name.as_ref().to_string(), Binding::new_one(expr));
             Ok(())
+        }
+    }
+
+    pub fn get_one<T: AsRef<str>>(&self, name: T) -> Option<&'a Expr<A>> {
+        if let Some(e) = self.bindings.get(name.as_ref()) {
+            e.get_one()
+        } else {
+            None
+        }
+    }
+
+    pub fn bind_seq<T: AsRef<str>>(
+        &mut self,
+        name: T,
+        expr_arr: &'a [Expr<A>],
+    ) -> Result<(), MatchContextBindError> {
+        if let Some(b) = self.bindings.get_mut(name.as_ref()) {
+            let ea = b.get_seq().ok_or(MatchContextBindError)?;
+
+            if ea.iter().zip(expr_arr).all(|(e1, e2)| e1 == e2) {
+                b.inc_bindings();
+                Ok(())
+            } else {
+                Err(MatchContextBindError)
+            }
+        } else {
+            self.bindings
+                .insert(name.as_ref().to_string(), Binding::new_seq(expr_arr));
+            Ok(())
+        }
+    }
+
+    pub fn get_seq<T: AsRef<str>>(&self, name: T) -> Option<&'a [Expr<A>]> {
+        if let Some(e) = self.bindings.get(name.as_ref()) {
+            e.get_seq()
+        } else {
+            None
         }
     }
 
@@ -96,14 +165,6 @@ where
             if b.has_no_bindings() {
                 self.bindings.remove(name.as_ref());
             }
-        }
-    }
-
-    pub fn get<T: AsRef<str>>(&self, name: T) -> Option<&'a Expr<A>> {
-        if let Some(e) = self.bindings.get(name.as_ref()) {
-            Some(e.expr)
-        } else {
-            None
         }
     }
 
@@ -168,11 +229,22 @@ where
     }
 
     fn bind_one(&mut self, name: &str, expr: &'a Expr<A>) -> Result<(), MatchContextBindError> {
+        self.ctx.bind_one(name, expr)?;
         self.undo_log.push(BindAction::Bind(name.to_string()));
-        self.ctx.bind(name, expr)
+        Ok(())
     }
 
-    fn rollback_to(&mut self, undo_len: usize) {
+    fn bind_seq(
+        &mut self,
+        name: &str,
+        expr_arr: &'a [Expr<A>],
+    ) -> Result<(), MatchContextBindError> {
+        self.ctx.bind_seq(name, expr_arr)?;
+        self.undo_log.push(BindAction::Bind(name.to_string()));
+        Ok(())
+    }
+
+    fn rollback_binds(&mut self, undo_len: usize) {
         while self.undo_log.len() > undo_len {
             match self.undo_log.pop().unwrap() {
                 BindAction::Bind(name) => self.ctx.unbind(name),
@@ -183,7 +255,7 @@ where
     fn backtrack(&mut self) -> bool {
         while let Some(cp) = self.back_track.pop() {
             self.tasks.truncate(cp.todo_len);
-            self.rollback_to(cp.undo_len);
+            self.rollback_binds(cp.undo_len);
 
             // recompute bounds for remaining choices
             let patterns = cp.rest_pats;
@@ -192,8 +264,9 @@ where
             let min_left = patterns.len();
             let k_max = exprs.len().saturating_sub(min_left);
             let k = cp.k_next;
+
             if k < 1 || k > k_max {
-                continue; // this choicepoint exhausted, keep popping
+                continue; // choicepoint exhausted
             }
 
             // if there are further ks, push updated choicepoint back
@@ -205,8 +278,13 @@ where
             }
 
             // apply this k
-            if let Some(_name) = cp.seq_name {
-                todo!("seq binding support");
+            if let Some(name) = cp.seq_name
+                && self
+                    .bind_seq(name, &exprs[..k])
+                    .map_err(|_| MatchFail)
+                    .is_err()
+            {
+                continue;
             }
 
             self.tasks.push(Task::OrderedList {
@@ -273,8 +351,6 @@ where
                     Err(MatchFail)
                 }
             }
-
-            // no seq blanks here; see match_args
             Pattern::BlankSeq { .. } => Err(MatchFail),
         }
     }
@@ -307,8 +383,8 @@ where
                     return Err(MatchFail);
                 }
 
-                let k_min = 1;
-                let k_max = exprs.len() - min_left;
+                let k_min = 1; // At least one element in BlankSeq pattern
+                let k_max = exprs.len() - min_left; // At most k_max lements in BlankSeq pattern
 
                 // Try the first split k_min now, but save choicepoint for k_min+1..=k_max
                 if k_min < k_max {
@@ -322,12 +398,9 @@ where
                     });
                 }
 
-                // Apply k = k_min
-                // You don’t yet support seq bindings in MatchContext; for now:
-                // either (a) extend Bindings to allow slices, or (b) delay and just implement __ without binding.
-                // I'd recommend (a). But since your Pattern::BlankSeq example had no name, do (b) for now:
-                if let Some(_name) = bind_name {
-                    todo!("add seq binding support (slice) to MatchContext");
+                if let Some(name) = bind_name {
+                    self.bind_seq(name, &exprs[..k_min])
+                        .map_err(|_| MatchFail)?;
                 }
 
                 self.tasks.push(Task::OrderedList {
@@ -336,7 +409,6 @@ where
                 });
                 Ok(())
             }
-
             _ => {
                 // non-seq: need at least one expr
                 let (e0, erest) = exprs.split_first().ok_or(MatchFail)?;
@@ -388,15 +460,11 @@ where
             }
         }
 
-        // todo empty => full match found!
-        let out = self.ctx.clone();
-
-        // IMPORTANT: to find more matches on next call, force backtracking now
         if !self.backtrack() {
             self.done = true;
         }
 
-        Some(out)
+        Some(self.ctx.clone())
     }
 }
 
@@ -437,7 +505,10 @@ mod tests {
         let matches: Vec<MatchContext<'_, ()>> = MatchIter::new(&expr1, &pat).into_iter().collect();
 
         assert!(matches.len() == 1);
-        assert_eq!(matches.first().unwrap().get("a"), Some(1.into()).as_ref());
+        assert_eq!(
+            matches.first().unwrap().get_one("a"),
+            Some(1.into()).as_ref()
+        );
     }
 
     #[test]
@@ -474,18 +545,18 @@ mod tests {
         let pe = blank(None) + pattern("a", blank(None));
         let p = pat(&pe);
         let m = one(&e, &p);
-        assert_eq!(m.get("a"), Some(1.into()).as_ref());
+        assert_eq!(m.get_one("a"), Some(1.into()).as_ref());
 
         let pe2 = blank(None) + blank(None);
         let p2 = pat(&pe2);
         let m2 = one(&e, &p2);
-        assert!(m2.get("a").is_none());
+        assert!(m2.get_one("a").is_none());
 
         let e31 = Expr::from_i64(1) + 1;
         let pe3 = pattern("a", blank(None)) + pattern("a", blank(None));
         let p3 = pat(&pe3);
         let m31 = one(&e31, &p3);
-        assert_eq!(m31.get("a"), Some(1.into()).as_ref());
+        assert_eq!(m31.get_one("a"), Some(1.into()).as_ref());
 
         let e32 = Expr::from_i64(1) + 2;
         assert_eq!(collect(&e32, &p3).len(), 0);

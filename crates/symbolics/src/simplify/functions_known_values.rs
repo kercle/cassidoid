@@ -21,7 +21,7 @@ pub fn simplify_evaluation_at_zero(expr: Expr) -> Expr {
 
     expr.map_bottom_up(&|e| {
         if let Some(ctx) = MatchIter::new(&e, &pattern).next() {
-            let head_symbol = ctx.get("h").unwrap().get_symbol().unwrap();
+            let head_symbol = ctx.get_one("h").unwrap().get_symbol().unwrap();
             match head_symbol {
                 CANNONICAL_HEAD_EXP => Expr::new_number(1),
                 CANNONICAL_HEAD_LOG => Expr::new_compound(

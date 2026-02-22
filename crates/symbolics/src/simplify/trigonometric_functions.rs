@@ -32,7 +32,7 @@ impl Expr {
             if let Some(ctx) = MatchIter::new(&e, &pattern).next() {
                 let mut new_term = replacement.clone();
                 for (k, v) in ctx.iter() {
-                    new_term = new_term.replace_symbols(k, v.get_expr());
+                    new_term = new_term.replace_symbols(k, v.get_one().unwrap());
                 }
                 new_term
             } else {

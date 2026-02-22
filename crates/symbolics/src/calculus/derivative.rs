@@ -23,8 +23,8 @@ where
 
     expr.map_bottom_up(&|e| {
         if let Some(ctx) = MatchIter::new(&e, &pattern).next() {
-            let f = ctx.get("f").unwrap();
-            let x = ctx.get("x").unwrap().get_symbol().unwrap();
+            let f = ctx.get_one("f").unwrap();
+            let x = ctx.get_one("x").unwrap().get_symbol().unwrap();
 
             derivative(NormalizedExpr::new(f.clone()), x)
         } else {
