@@ -126,7 +126,7 @@ where
     pub fn bind_seq<T: AsRef<str>>(
         &mut self,
         name: T,
-        expr_arr: &'a [Expr<A>],
+        expr_arr: Vec<&'a Expr<A>>,
     ) -> Result<(), MatchContextBindError> {
         if let Some(b) = self.bindings.get_mut(name.as_ref()) {
             let ea = b.get_seq().ok_or(MatchContextBindError)?;
@@ -140,7 +140,7 @@ where
         } else {
             self.bindings.insert(
                 name.as_ref().to_string(),
-                Binding::new_seq(expr_arr.iter().collect()),
+                Binding::new_seq(expr_arr),
             );
             Ok(())
         }

@@ -60,7 +60,7 @@ where
         name: &'a str,
         expr_arr: &'a [Expr<A>],
     ) -> Result<(), MatchContextBindError> {
-        self.ctx.bind_seq(name, expr_arr)?;
+        self.ctx.bind_seq(name, expr_arr.iter().collect())?;
         self.bind_action_log.push(name);
         Ok(())
     }
