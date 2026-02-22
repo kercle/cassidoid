@@ -109,7 +109,7 @@ where
             exprs: &cp.rest_exprs[k..],
         });
 
-        return true;
+        true
     }
 
     fn backtrack_step_unordered_seq(&mut self, _cp: ChoicePointUnorderedSplit<'a, A>) -> bool {
@@ -197,7 +197,7 @@ where
                 todo_len: self.tasks.len(),
                 undo_len: self.bind_action_log.len(),
                 seq_name: bind_name,
-                k_min: k_min,
+                k_min,
                 k_next: k_min + 1,
                 rest_pats: rest_pats.clone(),
                 rest_exprs: exprs,

@@ -93,7 +93,7 @@ where
             format!(r#"\text{{{name}}}"#)
         }
         Symbol { name, .. } if name == CANNONICAL_SYM_PLUS_INFINITY => {
-            format!(r#"\infty"#)
+            r#"\infty"#.to_string()
         }
         Symbol { name, .. } => greek_letter(name),
         Negation { arg, .. } => {
