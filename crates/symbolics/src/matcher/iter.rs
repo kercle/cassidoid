@@ -3,23 +3,12 @@ use std::fmt::Debug;
 use crate::{
     expr::Expr,
     matcher::{
-        choice_point::{ChoicePoint, ChoicePointOrderedSplit, ChoicePointUnorderedSplit},
         context::{MatchContext, MatchContextBindError},
         pattern_span::PatSpan,
+        task::{ChoicePoint, Task},
     },
     pattern::{Pattern, PatternPredicate},
 };
-
-enum Task<'a, A> {
-    MatchOne {
-        pattern: Pattern<'a, A>,
-        expr: &'a Expr<A>,
-    },
-    MatchSeq {
-        patterns: PatSpan<'a, A>,
-        exprs: &'a [Expr<A>],
-    },
-}
 
 #[derive(Debug, Clone, Copy)]
 struct MatchFail;
@@ -71,72 +60,16 @@ where
         }
     }
 
-    fn backtrack_step_ordered_seq(&mut self, cp: ChoicePointOrderedSplit<'a, A>) -> bool {
-        self.tasks.truncate(cp.todo_len);
-        self.rollback_binds(cp.undo_len);
-
-        let min_left = Self::min_required(&cp.rest_pats);
-        let k_max = cp.rest_exprs.len().saturating_sub(min_left);
-        let k = cp.k_next;
-
-        if k < cp.k_min || k > k_max {
-            return false; // choicepoint exhausted
-        }
-
-        // if there are further ks, push updated choicepoint back
-        if k < k_max {
-            let cpos = ChoicePointOrderedSplit {
-                k_next: k + 1,
-                rest_pats: cp.rest_pats.clone(),
-                ..cp
-            };
-
-            self.back_track.push(cpos.to_choice_point());
-        }
-
-        // apply this k
-        if let Some(&name) = cp.seq_name.as_ref()
-            && self
-                .bind_seq(name, &cp.rest_exprs[..k])
-                .map_err(|_| MatchFail)
-                .is_err()
-        {
-            return false;
-        }
-
-        self.tasks.push(Task::MatchSeq {
-            patterns: cp.rest_pats,
-            exprs: &cp.rest_exprs[k..],
-        });
-
-        true
-    }
-
-    fn backtrack_step_unordered_seq(&mut self, _cp: ChoicePointUnorderedSplit<'a, A>) -> bool {
-        todo!()
-    }
-
     fn backtrack(&mut self) -> bool {
-        while let Some(cp) = self.back_track.pop() {
-            match cp {
-                ChoicePoint::OrderedSplit(cpos) => {
-                    if self.backtrack_step_ordered_seq(cpos) {
-                        return true;
-                    } else {
-                        continue;
-                    }
-                }
-                ChoicePoint::UnorderedSplit(cpus) => {
-                    if self.backtrack_step_unordered_seq(cpus) {
-                        return true;
-                    } else {
-                        continue;
-                    }
-                }
-            }
-        }
+        if let Some(cp) = self.back_track.pop() {
+            self.tasks.truncate(cp.todo_len);
+            self.rollback_binds(cp.undo_len);
+            self.tasks.push(cp.resume);
 
-        false
+            true
+        } else {
+            false
+        }
     }
 
     fn match_blank(
@@ -184,26 +117,28 @@ where
             return Err(MatchFail);
         }
 
-        // We need to leave a few exprs for remaining patterns
+        // A few exprs for remaining patterns
         if exprs.len() < k_min + min_left {
             return Err(MatchFail);
         }
 
-        let k_max = exprs.len() - min_left; // At most k_max lements in BlankSeq pattern
+        // At most k_max lements in BlankSeq pattern
+        let k_max = exprs.len() - min_left;
 
-        // Try the first split k_min now, but save choicepoint for k_min+1..=k_max
         if k_min < k_max {
-            let cpos = ChoicePointOrderedSplit {
+            let cp = ChoicePoint {
                 todo_len: self.tasks.len(),
                 undo_len: self.bind_action_log.len(),
-                seq_name: bind_name,
-                k_min,
-                k_next: k_min + 1,
-                rest_pats: rest_pats.clone(),
-                rest_exprs: exprs,
+                resume: Task::ResumeOrderedSplit {
+                    seq_name: bind_name,
+                    k_min,
+                    k: k_min + 1,
+                    rest_pats: rest_pats.clone(),
+                    rest_exprs: exprs,
+                },
             };
 
-            self.back_track.push(cpos.to_choice_point());
+            self.back_track.push(cp);
         }
 
         if let Some(name) = bind_name {
@@ -365,6 +300,51 @@ where
             }
         }
     }
+
+    fn task_resume_ordered_split(
+        &mut self,
+        seq_name: Option<&'a str>,
+        k_min: usize,
+        k: usize,
+        rest_pats: PatSpan<'a, A>,
+        rest_exprs: &'a [Expr<A>],
+    ) -> Result<(), MatchFail> {
+        let min_left = Self::min_required(&rest_pats);
+        let k_max = rest_exprs.len().saturating_sub(min_left);
+
+        if k < k_min || k > k_max {
+            return Err(MatchFail); // exhausted / invalid
+        }
+
+        // If there are further ks, save a choicepoint that will resume with k+1
+        if k < k_max {
+            let cp = ChoicePoint {
+                todo_len: self.tasks.len(),
+                undo_len: self.bind_action_log.len(),
+                resume: Task::ResumeOrderedSplit {
+                    seq_name,
+                    k_min,
+                    k: k + 1,
+                    rest_pats: rest_pats.clone(),
+                    rest_exprs,
+                },
+            };
+            self.back_track.push(cp);
+        }
+
+        // Apply this k
+        if let Some(name) = seq_name {
+            self.bind_seq(name, &rest_exprs[..k])
+                .map_err(|_| MatchFail)?;
+        }
+
+        self.tasks.push(Task::MatchSeq {
+            patterns: rest_pats,
+            exprs: &rest_exprs[k..],
+        });
+
+        Ok(())
+    }
 }
 
 impl<'a, A> Iterator for MatchIter<'a, A>
@@ -382,6 +362,13 @@ where
             let r = match task {
                 Task::MatchOne { pattern, expr } => self.task_match_one(pattern, expr),
                 Task::MatchSeq { patterns, exprs } => self.task_match_seq(patterns, exprs),
+                Task::ResumeOrderedSplit {
+                    seq_name,
+                    k_min,
+                    k,
+                    rest_pats,
+                    rest_exprs,
+                } => self.task_resume_ordered_split(seq_name, k_min, k, rest_pats, rest_exprs),
             };
 
             if r.is_err() && !self.backtrack() {
