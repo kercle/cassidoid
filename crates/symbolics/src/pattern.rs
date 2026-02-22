@@ -6,6 +6,7 @@ pub const PATTERN_HEAD: &str = "Pattern";
 pub const PATTERN_TEST_HEAD: &str = "PatternTest";
 pub const BLANK_ONE_HEAD: &str = "Blank";
 pub const BLANK_SEQ_HEAD: &str = "BlankSeq";
+pub const BLANK_NULL_SEQ_HEAD: &str = "BlankNullSeq";
 
 #[derive(Debug, Clone, Copy)]
 pub enum PatternPredicate {
@@ -104,7 +105,10 @@ where
                 let e = args.last()?;
                 let h = e.head()?;
 
-                if h.matches_symbol(BLANK_ONE_HEAD) || h.matches_symbol(BLANK_SEQ_HEAD) {
+                if h.matches_symbol(BLANK_ONE_HEAD)
+                    || h.matches_symbol(BLANK_SEQ_HEAD)
+                    || h.matches_symbol(BLANK_NULL_SEQ_HEAD)
+                {
                     let bind_name = args.first()?.get_symbol()?;
                     Some(Self::from_pattern_compound(e)?.with_bind_name(bind_name))
                 } else {
@@ -124,6 +128,12 @@ where
                         match_head: args.first(),
                         predicate: None,
                     })
+                } else if head.matches_symbol(BLANK_NULL_SEQ_HEAD) {
+                    Some(Pattern::BlankNullSeq {
+                        bind_name: None,
+                        match_head: args.first(),
+                        predicate: None,
+                    })
                 } else {
                     None
                 }
@@ -136,8 +146,10 @@ where
         let mut descend = false;
         for e in ExprTopDownWalker::new(expr) {
             if let Expr::Compound { head, .. } = e
-                && (head.matches_symbol(PATTERN_HEAD) | head.matches_symbol(BLANK_ONE_HEAD)
-                    || head.matches_symbol(BLANK_SEQ_HEAD))
+                && (head.matches_symbol(PATTERN_HEAD)
+                    || head.matches_symbol(BLANK_ONE_HEAD)
+                    || head.matches_symbol(BLANK_SEQ_HEAD)
+                    || head.matches_symbol(BLANK_NULL_SEQ_HEAD))
             {
                 // There are possibly still non-literal patterns in tree -> descend
                 descend = true;

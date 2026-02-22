@@ -253,3 +253,128 @@ fn match_two_unordered_blankseq_backtracking_count() {
     let count = it.by_ref().count();
     assert_eq!(count, 3);
 }
+
+#[test]
+fn match_blanknullseq_allows_empty_single() {
+    // f[___] should match f[]
+    let expr = raw_expr! { f[] };
+    let matcher = Matcher::new(raw_expr! { f[BlankNullSeq[]] });
+
+    assert!(matcher.first_match(&expr).is_some());
+}
+
+#[test]
+fn match_blanknullseq_matches_nonempty_single() {
+    // f[___] should match f[1,2,3]
+    let expr = raw_expr! { f[1, 2, 3] };
+    let matcher = Matcher::new(raw_expr! { f[BlankNullSeq[]] });
+
+    assert!(matcher.first_match(&expr).is_some());
+}
+
+#[test]
+fn match_blanknullseq_prefix_suffix_empty_middle() {
+    // f[x_, ___, y_] should match f[1,2] with ___ = {}
+    let expr = raw_expr! { f[1, 2] };
+    let matcher = Matcher::new(raw_expr! { f[Blank[], BlankNullSeq[], Blank[]] });
+
+    assert!(matcher.first_match(&expr).is_some());
+}
+
+#[test]
+fn match_blanknullseq_prefix_suffix_nonempty_middle() {
+    // f[x_, ___, y_] should match f[1, 9, 8, 2] with ___ = {9,8}
+    let expr = raw_expr! { f[1, 9, 8, 2] };
+    let matcher = Matcher::new(raw_expr! { f[Blank[], BlankNullSeq[], Blank[]] });
+
+    assert!(matcher.first_match(&expr).is_some());
+}
+
+#[test]
+fn match_blanknullseq_fails_if_fixed_args_missing() {
+    // f[1, ___, 3] should NOT match f[1]
+    // because trailing 3 missing
+    let expr = raw_expr! { f[1] };
+    let matcher = Matcher::new(raw_expr! { f[1, BlankNullSeq[], 3] });
+
+    assert!(matcher.first_match(&expr).is_none());
+}
+
+#[test]
+fn match_blanknullseq_vs_blankseq_distinguish_empty() {
+    // f[__] should NOT match f[]
+    let expr = raw_expr! { f[] };
+    let matcher = Matcher::new(raw_expr! { f[BlankSeq[]] });
+
+    assert!(matcher.first_match(&expr).is_none());
+
+    // but f[___] SHOULD match f[]
+    let matcher2 = Matcher::new(raw_expr! { f[BlankNullSeq[]] });
+    assert!(matcher2.first_match(&expr).is_some());
+}
+
+#[test]
+fn match_two_unordered_blanknullseq_backtracking_count_len4() {
+    // f[a___, b___] against 4 args
+    // Number of splits = n+1 = 5:
+    // k=0..4 for a, rest to b
+    let expr = raw_expr! { Add[1, 2, 3, 4] };
+    let matcher = Matcher::new(raw_expr! {
+        Add[
+            Pattern[a, BlankNullSeq[]],
+            Pattern[b, BlankNullSeq[]]
+        ]
+    });
+
+    let count = matcher.iter_matches(&expr).count();
+    assert_eq!(count, 5);
+}
+
+#[test]
+fn match_blankseq_then_blanknullseq_backtracking_count_len4() {
+    // f[a__, b___] against 4 args
+    // a must be at least 1 => k=1..4 -> 4 solutions
+    let expr = raw_expr! { Add[1, 2, 3, 4] };
+    let matcher = Matcher::new(raw_expr! {
+        Add[
+            Pattern[a, BlankSeq[]],
+            Pattern[b, BlankNullSeq[]]
+        ]
+    });
+
+    let count = matcher.iter_matches(&expr).count();
+    assert_eq!(count, 4);
+}
+
+#[test]
+fn match_blanknullseq_then_blankseq_backtracking_count_len4() {
+    // f[a___, b__] against 4 args
+    // b must be at least 1, so a can take 0..3 => 4 solutions
+    let expr = raw_expr! { Add[1, 2, 3, 4] };
+    let matcher = Matcher::new(raw_expr! {
+        Add[
+            Pattern[a, BlankNullSeq[]],
+            Pattern[b, BlankSeq[]]
+        ]
+    });
+
+    let count = matcher.iter_matches(&expr).count();
+    assert_eq!(count, 4);
+}
+
+#[test]
+fn match_three_blanknullseq_count_len2() {
+    // f[a___, b___, c___] against 2 args
+    // Number of weak compositions of 2 into 3 parts = C(2+3-1, 3-1) = C(4,2)=6
+    let expr = raw_expr! { f[1, 2] };
+    let matcher = Matcher::new(raw_expr! {
+        f[
+            Pattern[a, BlankNullSeq[]],
+            Pattern[b, BlankNullSeq[]],
+            Pattern[c, BlankNullSeq[]]
+        ]
+    });
+
+    let count = matcher.iter_matches(&expr).count();
+    assert_eq!(count, 6);
+}

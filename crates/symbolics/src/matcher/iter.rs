@@ -21,25 +21,21 @@ impl<'a, A> PatSpan<'a, A> {
         }
     }
 
-    pub fn rest(mut self) -> Self {
-        self.start += 1;
-        self
-    }
-
-    pub fn len(&self) -> usize {
-        self.reference.len().saturating_sub(self.start)
-    }
-
-    pub fn is_empty(&self) -> bool {
-        self.start >= self.reference.len()
+    pub fn as_slice(&self) -> &[Pattern<'a, A>] {
+        &self.reference[self.start..]
     }
 
     pub fn first(&self) -> Option<&Pattern<'a, A>> {
         self.reference.get(self.start)
     }
 
-    pub fn as_slice(&self) -> &[Pattern<'a, A>] {
-        &self.reference[self.start..]
+    pub fn rest(mut self) -> Self {
+        self.start += 1;
+        self
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.start >= self.reference.len()
     }
 }
 
@@ -122,7 +118,7 @@ where
             self.tasks.truncate(cp.todo_len);
             self.rollback_binds(cp.undo_len);
 
-            let min_left = cp.rest_pats.len();
+            let min_left = Self::min_required(&cp.rest_pats);
             let k_max = cp.rest_exprs.len().saturating_sub(min_left);
             let k = cp.k_next;
 
@@ -199,7 +195,7 @@ where
         rest_pats: PatSpan<'a, A>,
         bind_name: Option<&'a str>,
     ) -> Result<(), MatchFail> {
-        if exprs.is_empty() {
+        if exprs.len() < k_min {
             return Err(MatchFail);
         }
 
@@ -216,7 +212,7 @@ where
                 todo_len: self.tasks.len(),
                 undo_len: self.bind_action_log.len(),
                 seq_name: bind_name,
-                k_min: 1,
+                k_min: k_min,
                 k_next: k_min + 1,
                 rest_pats: rest_pats.clone(),
                 rest_exprs: exprs,
@@ -353,10 +349,18 @@ where
 
                 self.match_blank_seq(exprs, patterns.clone().rest(), *bind_name)
             }
-            Pattern::Literal { .. }
-            | Pattern::Compound { .. }
-            | Pattern::BlankNullSeq { .. }
-            | Pattern::Blank { .. } => {
+            Pattern::BlankNullSeq {
+                bind_name,
+                match_head,
+                predicate,
+            } => {
+                if match_head.is_some() || predicate.is_some() {
+                    todo!()
+                }
+
+                self.match_blank_null_seq(exprs, patterns.clone().rest(), *bind_name)
+            }
+            Pattern::Literal { .. } | Pattern::Compound { .. } | Pattern::Blank { .. } => {
                 // non-seq: need at least one expr
                 let (e0, erest) = exprs.split_first().ok_or(MatchFail)?;
                 self.tasks.push(Task::MatchSeq {
