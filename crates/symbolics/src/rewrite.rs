@@ -5,13 +5,13 @@ use crate::{
     matcher::{CommutativePredicate, Matcher, context::MatchContext},
 };
 
-pub type RuleTransformer<A> = Box<dyn Fn(&mut MatchContext<'_, A>) -> Expr<A>>;
+pub type RuleTransformer<A> = Box<dyn Fn(&mut MatchContext<'_, A>) -> Expr<A> + Send + Sync>;
 
 pub struct Rule<A>
 where
     A: Clone + PartialEq,
 {
-    pub pattern: Expr<A>,
+    pub matcher: Matcher<A>,
     pub transform: RuleTransformer<A>,
 }
 
@@ -35,14 +35,29 @@ where
 
 impl<A> Rewriter<A>
 where
-    A: Clone + PartialEq,
+    A: Clone + PartialEq + Default + Debug,
 {
+    pub fn commutative_if<F>(mut self, f: F) -> Self
+    where
+        F: Fn(&Expr<A>) -> bool + 'static,
+    {
+        debug_assert!(
+            self.rules.is_empty(),
+            "call commutative_if() before adding rules"
+        );
+        self.is_commutative = Some(CommutativePredicate::new(f));
+        self
+    }
+
     pub fn with_rule<F>(mut self, pattern: NormalizedExpr<A>, transform: F) -> Self
     where
-        F: Fn(&mut MatchContext<'_, A>) -> Expr<A> + 'static,
+        F: Fn(&mut MatchContext<'_, A>) -> Expr<A> + Send + Sync + 'static,
     {
+        let matcher = Matcher::new(pattern.take_expr())
+            .with_commutative_predicate(self.is_commutative.clone());
+
         self.rules.push(Rule {
-            pattern: pattern.take_expr(),
+            matcher,
             transform: Box::new(transform),
         });
         self
@@ -51,7 +66,7 @@ where
     pub fn with_rules<I, F>(mut self, rules: I) -> Self
     where
         I: IntoIterator<Item = (NormalizedExpr<A>, F)>,
-        F: Fn(&mut MatchContext<'_, A>) -> Expr<A> + 'static,
+        F: Fn(&mut MatchContext<'_, A>) -> Expr<A> + Send + Sync + 'static,
     {
         for (p, t) in rules {
             self = self.with_rule(p, t);
@@ -59,37 +74,14 @@ where
         self
     }
 
-    pub fn commutative_if<F>(mut self, f: F) -> Self
-    where
-        F: Fn(&Expr<A>) -> bool + 'static,
-    {
-        self.is_commutative = Some(CommutativePredicate::new(f));
-        self
-    }
-}
-
-impl<A> Rewriter<A>
-where
-    A: Clone + PartialEq + Default + Debug,
-{
-    pub fn apply_first_match(self, expr: Expr<A>) -> Expr<A> {
-        let patterns: Vec<(Matcher<A>, RuleTransformer<A>)> = self
-            .rules
-            .into_iter()
-            .map(|r| {
-                (
-                    Matcher::new(r.pattern).with_commutative_predicate(self.is_commutative.clone()),
-                    r.transform,
-                )
-            })
-            .collect();
-
+    pub fn apply_first_match(&self, expr: Expr<A>) -> Expr<A> {
         expr.map_bottom_up(&|expr| {
             let mut res = expr;
 
-            for (m, transform) in &patterns {
-                if let Some(mut ctx) = m.first_match(&res) {
-                    res = transform(&mut ctx);
+            for rule in &self.rules {
+                if let Some(mut ctx) = rule.matcher.first_match(&res) {
+                    res = (rule.transform)(&mut ctx);
+                    break; // "first match" semantics
                 }
             }
 

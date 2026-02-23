@@ -2,7 +2,7 @@ mod functions_known_values;
 mod trigonometric_functions;
 
 use crate::{
-    calculus::derivative::resolve_derivatives,
+    calculus::{derivative::resolve_derivatives, integrate::resolve_indefinite_integrals},
     expr::{Expr, NormalizedExpr},
 };
 
@@ -17,8 +17,24 @@ impl Simplifier {
         }
     }
 
+    pub fn basic(self) -> Expr {
+        self.basic_normalized().take_expr()
+    }
+
+    pub fn basic_normalized(self) -> NormalizedExpr {
+        self.with_known_function_values()
+            .with_resolved_derivatives()
+            .with_resolved_indefinite_integrals()
+            .with_trigonometric_identities()
+            .finish_normalized()
+    }
+
     pub fn with_resolved_derivatives(self) -> Simplifier {
         Simplifier::new(resolve_derivatives(self.expr.take_expr()))
+    }
+
+    pub fn with_resolved_indefinite_integrals(self) -> Simplifier {
+        Simplifier::new(resolve_indefinite_integrals(self.expr.take_expr()))
     }
 
     pub fn with_trigonometric_identities(self) -> Simplifier {

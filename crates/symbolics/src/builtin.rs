@@ -44,6 +44,7 @@ pub fn is_application_of_tan<A>(expr: Expr<A>) -> bool {
 // Calculus
 
 pub const CANNONICAL_HEAD_DERIVATIVE: &str = "D";
+pub const CANNONICAL_HEAD_INTEGRATE: &str = "Integrate";
 
 // Other
 

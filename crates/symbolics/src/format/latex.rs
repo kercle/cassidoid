@@ -1,7 +1,8 @@
 use crate::{
     builtin::{
-        CANNONICAL_HEAD_COS, CANNONICAL_HEAD_DERIVATIVE, CANNONICAL_HEAD_SIN, CANNONICAL_HEAD_SQRT,
-        CANNONICAL_HEAD_TAN, CANNONICAL_SYM_INDETERMINATE, CANNONICAL_SYM_PLUS_INFINITY,
+        CANNONICAL_HEAD_COS, CANNONICAL_HEAD_DERIVATIVE, CANNONICAL_HEAD_INTEGRATE,
+        CANNONICAL_HEAD_SIN, CANNONICAL_HEAD_SQRT, CANNONICAL_HEAD_TAN,
+        CANNONICAL_SYM_INDETERMINATE, CANNONICAL_SYM_PLUS_INFINITY,
     },
     parser::ast::ParserAst,
 };
@@ -176,6 +177,19 @@ where
                 )
             } else {
                 format!("\\text{{D}}\\left[{f_latex}, {x_latex}\\right]")
+            }
+        }
+        FunctionCall { name, args, .. } if name == CANNONICAL_HEAD_INTEGRATE && args.len() == 2 => {
+            let f = args.first().unwrap();
+            let x = args.last().unwrap();
+
+            let f_latex = ast_to_latex(f, weight);
+            let x_latex = ast_to_latex(x, weight);
+
+            if x.is_symbol() {
+                format!("\\int {f_latex}\\,\\text{{d}}{x_latex}")
+            } else {
+                format!("\\text{{Integrate}}\\left[{f_latex}, {x_latex}\\right]")
             }
         }
         FunctionCall { name, args, .. } => {

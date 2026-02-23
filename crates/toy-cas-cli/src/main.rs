@@ -21,10 +21,7 @@ fn print_markdown(input: &str) {
     });
 
     let result = Simplifier::new(Expr::from_parser_ast(ast))
-        .with_known_function_values()
-        .with_resolved_derivatives()
-        .with_trigonometric_identities()
-        .finish_normalized()
+        .basic_normalized()
         .resugar()
         .canonicalize();
 
