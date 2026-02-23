@@ -1,6 +1,6 @@
 use numbers::Number;
 
-use crate::{atom::Atom, expr::Expr, pattern::BLANK_ONE_HEAD};
+use crate::{atom::Atom, builtin::CANNONICAL_HEAD_LIST, expr::Expr, pattern::BLANK_ONE_HEAD};
 
 impl<A> Expr<A> {
     pub fn new_compound_with_annotation(head: Expr<A>, args: Vec<Expr<A>>, ann: A) -> Self {
@@ -47,5 +47,9 @@ where
 
     pub fn new_blank() -> Self {
         Expr::new_compound(BLANK_ONE_HEAD, vec![])
+    }
+
+    pub fn new_list(args: Vec<Expr<A>>) -> Self {
+        Expr::new_compound(CANNONICAL_HEAD_LIST, args)
     }
 }

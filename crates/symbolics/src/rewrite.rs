@@ -74,14 +74,15 @@ where
         self
     }
 
-    pub fn apply_first_match(&self, expr: Expr<A>) -> NormalizedExpr<A> {
-        let res = expr.map_bottom_up(&|expr| {
+    pub fn apply_first_match(&self, expr: NormalizedExpr<A>) -> NormalizedExpr<A> {
+        let res = expr.take_expr().map_bottom_up(&|expr| {
             let mut res = expr;
 
             for rule in &self.rules {
                 if let Some(mut ctx) = rule.matcher.first_match(&res) {
-                    res = (rule.transform)(&mut ctx);
-                    break; // "first match" semantics
+                    let f = &rule.transform;
+                    res = f(&mut ctx).normalize();
+                    break;
                 }
             }
 

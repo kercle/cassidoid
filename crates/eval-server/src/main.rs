@@ -7,7 +7,7 @@ use axum::{
 use common::{ClientMessage, KernelMessage};
 use futures_util::{sink::SinkExt, stream::StreamExt};
 use symbolics::{
-    expr::Expr,
+    expr::{Expr, NormalizedExpr},
     format::MathDisplay,
     parser::{ast::ParserAst, parse},
     simplify::Simplifier,
@@ -79,10 +79,10 @@ fn process_message(inbound_msg: String) -> Result<KernelMessage, KernelMessage> 
     })?;
 
     let input_latex = ast_in.to_latex();
-    let input_expr = Expr::from_parser_ast(ast_in);
+    let input_expr = NormalizedExpr::new(Expr::from_parser_ast(ast_in));
 
     let result_expr = Simplifier::new(input_expr)
-        .basic_normalized()
+        .simple()
         .resugar()
         .canonicalize();
 

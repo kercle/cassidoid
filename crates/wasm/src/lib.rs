@@ -1,6 +1,6 @@
 mod util;
 
-use symbolics::expr::Expr;
+use symbolics::expr::{Expr, NormalizedExpr};
 use symbolics::parser::ast::ParserAst;
 use symbolics::simplify::Simplifier;
 use wasm_bindgen::prelude::*;
@@ -46,10 +46,10 @@ fn eval_inner(input: String) -> Result<KernelMessage, KernelMessage> {
     })?;
 
     let input_latex = ast_in.to_latex();
-    let input_expr = Expr::from_parser_ast(ast_in);
+    let input_expr = NormalizedExpr::new(Expr::from_parser_ast(ast_in));
 
     let result_expr = Simplifier::new(input_expr)
-        .basic_normalized()
+        .simple()
         .resugar()
         .canonicalize();
 

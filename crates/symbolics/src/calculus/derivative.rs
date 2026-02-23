@@ -12,7 +12,7 @@ use crate::{
     pattern::Pattern,
 };
 
-pub fn resolve_derivatives<A>(expr: Expr<A>) -> Expr
+pub fn resolve_derivatives<A>(expr: Expr<A>) -> NormalizedExpr
 where
     A: Default + Clone + PartialEq + Debug,
 {
@@ -20,7 +20,7 @@ where
     let pattern_expr =
         expr! { D[Pattern[f, Blank[]], PatternTest[Pattern[x, Blank[]], IsSymbolQ]] };
 
-    expr.map_bottom_up(&|e| {
+    let res = expr.map_bottom_up(&|e| {
         let pattern = Pattern::from_expr(&pattern_expr);
 
         if let Some(ctx) = MatchIter::new(&e, pattern).next() {
@@ -31,7 +31,9 @@ where
         } else {
             e
         }
-    })
+    });
+
+    NormalizedExpr::new(res)
 }
 
 pub fn derivative<A: Default + Clone + PartialEq>(expr: NormalizedExpr<A>, var: &str) -> Expr<A> {

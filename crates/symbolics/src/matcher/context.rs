@@ -80,7 +80,7 @@ impl<'a, A> Binding<'a, A> {
 }
 
 #[derive(Clone, Debug, Default)]
-pub struct MatchContext<'a, A>
+pub struct MatchContext<'a, A = ()>
 where
     A: PartialEq + Clone,
 {
@@ -192,35 +192,18 @@ impl<'a, A> MatchContext<'a, A>
 where
     A: PartialEq + Clone + Default,
 {
-    pub fn fill(&self, expr: Expr<A>) -> Expr<A> {
-        expr.map_bottom_up(&|expr| {
-            if let Some(x) = expr.get_symbol()
-                && let Some(repl) = self.get_one(x)
-            {
-                return repl.clone();
-            }
-
-            let Some(head) = expr.head().cloned() else {
-                return expr;
+    pub fn fill(&self, target_expr: Expr<A>) -> Expr<A> {
+        target_expr.replace(&|expr| {
+            let Some(name) = expr.get_symbol() else {
+                return None;
             };
 
-            if let Some(args) = expr.iter_args() {
-                let mut new_args = Vec::new();
-                for a in args {
-                    if let Some(x) = a.get_symbol() {
-                        if let Some(repl) = self.get_seq(x) {
-                            new_args.extend(repl.into_iter().cloned());
-                        } else {
-                            new_args.push(a.clone());
-                        }
-                    } else {
-                        new_args.push(a.clone());
-                    }
-                }
-
-                Expr::new_compound(head, new_args)
+            if let Some(e) = self.get_one(name) {
+                Some(e.clone())
+            } else if let Some(e) = self.get_seq(name) {
+                Some(Expr::new_list(e.into_iter().cloned().collect()))
             } else {
-                expr
+                None
             }
         })
     }

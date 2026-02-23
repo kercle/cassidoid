@@ -61,6 +61,48 @@ where
         }
     }
 
+    pub fn replace<F>(self, f: &F) -> Expr<A>
+    where
+        F: Fn(&Expr<A>) -> Option<Expr<A>> + Copy,
+    {
+        if let Some(replacement) = f(&self) {
+            return replacement;
+        }
+
+        match self {
+            Expr::Atom { .. } => f(&self).unwrap_or(self),
+            Expr::Compound {
+                head,
+                args,
+                annotation,
+            } => {
+                let head = f(&head).unwrap_or(head.replace(f));
+                let args = args
+                    .into_iter()
+                    .map(|arg| f(&arg).unwrap_or(arg.replace(f)))
+                    .collect();
+
+                Expr::new_compound(head, args).with_annotation(annotation)
+            }
+        }
+    }
+
+    pub fn map_top_down<F>(self, f: &F) -> Expr<A>
+    where
+        F: Fn(Expr<A>) -> Expr<A> + Copy,
+    {
+        let transformed = f(self);
+
+        match transformed {
+            Expr::Atom { .. } => transformed,
+            Expr::Compound { head, args, .. } => {
+                let head = head.map_top_down(f);
+                let args = args.into_iter().map(|a| a.map_top_down(f)).collect();
+                Expr::new_compound(head, args)
+            }
+        }
+    }
+
     pub fn map_bottom_up<F>(self, f: &F) -> Expr<A>
     where
         F: Fn(Expr<A>) -> Expr<A> + Copy,
@@ -68,8 +110,8 @@ where
         match self {
             Expr::Atom { .. } => f(self),
             Expr::Compound { head, args, .. } => {
-                let head = f(head.map_bottom_up(f));
-                let args = args.into_iter().map(|a| f(a.map_bottom_up(f))).collect();
+                let head = head.map_bottom_up(f);
+                let args = args.into_iter().map(|a| a.map_bottom_up(f)).collect();
                 f(Expr::new_compound(head, args))
             }
         }

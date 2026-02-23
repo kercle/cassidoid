@@ -14,7 +14,7 @@ pub enum Expr<A = ()> {
 }
 
 #[repr(transparent)]
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct NormalizedExpr<A = ()>(Expr<A>)
 where
     A: Clone + PartialEq;

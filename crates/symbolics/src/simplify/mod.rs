@@ -11,17 +11,13 @@ pub struct Simplifier {
 }
 
 impl Simplifier {
-    pub fn new(expr: Expr) -> Simplifier {
+    pub fn new(expr: NormalizedExpr) -> Simplifier {
         Simplifier {
-            expr: NormalizedExpr::new(expr).collect_like_terms(),
+            expr: expr.collect_like_terms(),
         }
     }
 
-    pub fn basic(self) -> Expr {
-        self.basic_normalized().take_expr()
-    }
-
-    pub fn basic_normalized(self) -> NormalizedExpr {
+    pub fn simple(self) -> NormalizedExpr {
         self.with_known_function_values()
             .with_resolved_derivatives()
             .with_resolved_indefinite_integrals()
@@ -38,15 +34,17 @@ impl Simplifier {
     }
 
     pub fn with_trigonometric_identities(self) -> Simplifier {
-        Simplifier::new(trigonometric_functions::simplify_trigon(
+        let expr = NormalizedExpr::new(trigonometric_functions::simplify_trigon(
             self.expr.take_expr(),
-        ))
+        ));
+        Simplifier::new(expr)
     }
 
     pub fn with_known_function_values(self) -> Simplifier {
-        Simplifier::new(functions_known_values::simplify_evaluation_at_zero(
+        let expr = NormalizedExpr::new(functions_known_values::simplify_evaluation_at_zero(
             self.expr.take_expr(),
-        ))
+        ));
+        Simplifier::new(expr)
     }
 
     pub fn finish(self) -> Expr {

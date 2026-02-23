@@ -7,7 +7,7 @@ use numbers::Number;
 
 use crate::{
     atom::Atom,
-    builtin::{CANNONICAL_HEAD_SQRT, CANNONICAL_SYM_INDETERMINATE},
+    builtin::{CANNONICAL_HEAD_APPLY, CANNONICAL_HEAD_SQRT, CANNONICAL_SYM_INDETERMINATE},
     expr::{Expr, NormalizedExpr, generator::pow},
     parser::ast::{ADD_HEAD, DIV_HEAD, MUL_HEAD, NEG_HEAD, POW_HEAD, SUB_HEAD},
 };
@@ -158,6 +158,7 @@ impl<A: Clone + PartialEq + Default> Expr<A> {
 
         self.apply_till_fixed_point(|e| {
             e.desugar()
+                .reduce_structure()
                 .flatten(head_predicate)
                 .apply_to_compounds(|head, args| cannonical_fold_op(head, args))
                 .sort_args(head_predicate)
@@ -168,10 +169,35 @@ impl<A: Clone + PartialEq + Default> Expr<A> {
         let head_predicate = |e: &Expr<A>| e.matches_symbol(ADD_HEAD) || e.matches_symbol(MUL_HEAD);
 
         self.apply_till_fixed_point(|e| {
-            e.flatten(head_predicate)
+            e.reduce_structure()
+                .flatten(head_predicate)
                 .apply_to_compounds(|head, args| cannonical_fold_op(head, args))
                 .sort_args(head_predicate)
         })
+    }
+
+    fn reduce_structure_apply(self) -> Self {
+        self.map_bottom_up(&|expr| {
+            use Expr::*;
+            match expr {
+                Compound { head, mut args, .. }
+                    if head.matches_symbol(CANNONICAL_HEAD_APPLY) && args.len() == 2 =>
+                {
+                    let rhs = args.pop().unwrap();
+                    let lhs = args.pop().unwrap();
+
+                    match rhs {
+                        Atom { .. } => rhs,
+                        Compound { args: args_rhs, .. } => Expr::new_compound(lhs, args_rhs),
+                    }
+                }
+                _ => expr,
+            }
+        })
+    }
+
+    pub fn reduce_structure(self) -> Self {
+        self.reduce_structure_apply()
     }
 
     /// Flattens nested compounds whenever `head_predicate`

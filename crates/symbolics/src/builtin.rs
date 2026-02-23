@@ -50,3 +50,9 @@ pub const CANNONICAL_HEAD_INTEGRATE: &str = "Integrate";
 
 pub const CANNONICAL_SYM_INDETERMINATE: &str = "Indeterminate";
 pub const CANNONICAL_SYM_PLUS_INFINITY: &str = "Infinity";
+
+// Structure
+
+pub const CANNONICAL_HEAD_APPLY: &str = "Apply";
+pub const CANNONICAL_HEAD_LIST: &str = "List";
+
