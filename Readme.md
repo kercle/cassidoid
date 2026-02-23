@@ -11,6 +11,7 @@ Since this is just a toy project of mine, I want to keep the core modules indepe
 - [x] Decouple `AstNode` from internal `Expr`
 - [x] Basic Pattern matching
 - [x] More advanced Pattern matching (commutative expressions with at most one sequence)
+- [ ] Make Expr into Merkle tree for quicker pattern matching
 - [ ] Allow more sequences in commutative patterns
 - [ ] Support for more flexible predicate in pattern matching
 - [x] Basic Rewrite engine
