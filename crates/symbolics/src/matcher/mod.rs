@@ -27,6 +27,11 @@ where
         }
     }
 
+    pub fn with_commutative_predicate(mut self, f: Option<CommutativePredicate<A>>) -> Self {
+        self.is_commutative = f;
+        self
+    }
+
     pub fn commutative_if<F>(mut self, f: F) -> Self
     where
         F: Fn(&Expr<A>) -> bool + 'static,

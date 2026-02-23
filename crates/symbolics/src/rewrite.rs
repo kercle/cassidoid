@@ -1,6 +1,8 @@
+use std::fmt::Debug;
+
 use crate::{
     expr::Expr,
-    matcher::{CommutativePredicate, context::MatchContext},
+    matcher::{CommutativePredicate, Matcher, context::MatchContext},
 };
 
 pub type RuleTransformer<A> = Box<dyn Fn(&MatchContext<'_, A>) -> Expr<A>>;
@@ -46,14 +48,32 @@ where
     }
 }
 
-
 impl<A> Rewriter<A>
 where
-    A: Clone + PartialEq + Default,
+    A: Clone + PartialEq + Default + Debug,
 {
-    pub fn apply_all(expr: Expr<A>) -> Expr<A> {
-        expr.map_bottom_up(&|_e| {
-            todo!()
+    pub fn apply_first_match(self, expr: Expr<A>) -> Expr<A> {
+        let patterns: Vec<(Matcher<A>, RuleTransformer<A>)> = self
+            .rules
+            .into_iter()
+            .map(|r| {
+                (
+                    Matcher::new(r.pattern).with_commutative_predicate(self.is_commutative.clone()),
+                    r.transform,
+                )
+            })
+            .collect();
+
+        expr.map_bottom_up(&|expr| {
+            let mut res = expr;
+
+            for (m, transform) in &patterns {
+                if let Some(ctx) = m.first_match(&res) {
+                    res = transform(&ctx);
+                }
+            }
+
+            res
         })
     }
 }
