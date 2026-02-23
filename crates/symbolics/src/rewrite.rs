@@ -74,8 +74,8 @@ where
         self
     }
 
-    pub fn apply_first_match(&self, expr: Expr<A>) -> Expr<A> {
-        expr.map_bottom_up(&|expr| {
+    pub fn apply_first_match(&self, expr: Expr<A>) -> NormalizedExpr<A> {
+        let res = expr.map_bottom_up(&|expr| {
             let mut res = expr;
 
             for rule in &self.rules {
@@ -86,6 +86,8 @@ where
             }
 
             res
-        })
+        });
+
+        NormalizedExpr::new(res)
     }
 }

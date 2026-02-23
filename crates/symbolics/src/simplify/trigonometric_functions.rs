@@ -77,5 +77,5 @@ pub fn simplify_trigon(expr: Expr) -> Expr {
         .with_rule(norm_expr! { Sqrt[1 - Sin[Pattern[x, Blank[]]]^2] }, |ctx| {
             ctx.fill(expr! { Cos[x] })
         })
-        .apply_first_match(expr)
+        .apply_first_match(expr).take_expr()
 }

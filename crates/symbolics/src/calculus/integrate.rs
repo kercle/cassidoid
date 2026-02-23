@@ -24,7 +24,7 @@ where
     let mut expr = expr.drop_annotation();
 
     loop {
-        let expr_next_iter = rw.apply_first_match(expr.clone());
+        let expr_next_iter = rw.apply_first_match(expr.clone()).take_expr();
 
         if expr != expr_next_iter {
             expr = expr_next_iter;
@@ -52,6 +52,14 @@ fn indefinite_integrals_rules() -> Vec<(NormalizedExpr, Expr)> {
                 PatternTest[Pattern[x, Blank[]], IsSymbolQ]
             ]),
             expr!(x ^ 2 / 2),
+        ),
+        (
+            norm_expr!(
+            Integrate[
+                PatternTest[Pattern[a, Blank[]], IsSymbolQ],
+                PatternTest[Pattern[x, Blank[]], IsSymbolQ]
+            ]),
+            expr!(a * x),
         ),
         // =============== Linearity ===============
         (
