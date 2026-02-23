@@ -36,31 +36,6 @@ where
 
 fn indefinite_integrals_rules() -> Vec<(NormalizedExpr, Expr)> {
     vec![
-        // =============== Basic ===============
-        (
-            norm_expr!(
-            Integrate[
-                PatternTest[Pattern[c, Blank[]], IsNumberQ],
-                PatternTest[Pattern[x, Blank[]], IsSymbolQ]
-            ]),
-            expr!(c * x),
-        ),
-        (
-            norm_expr!(
-            Integrate[
-                Pattern[x, Blank[]],
-                PatternTest[Pattern[x, Blank[]], IsSymbolQ]
-            ]),
-            expr!(x ^ 2 / 2),
-        ),
-        (
-            norm_expr!(
-            Integrate[
-                PatternTest[Pattern[a, Blank[]], IsSymbolQ],
-                PatternTest[Pattern[x, Blank[]], IsSymbolQ]
-            ]),
-            expr!(a * x),
-        ),
         // =============== Linearity ===============
         (
             norm_expr!(
@@ -81,6 +56,39 @@ fn indefinite_integrals_rules() -> Vec<(NormalizedExpr, Expr)> {
             expr!(
             c * Integrate[Mul[r],x]
             ),
+        ),
+        // =============== Basic ===============
+        (
+            norm_expr!(
+            Integrate[
+                PatternTest[Pattern[c, Blank[]], IsNumberQ],
+                PatternTest[Pattern[x, Blank[]], IsSymbolQ]
+            ]),
+            expr!(c * x),
+        ),
+        (
+            norm_expr!(
+            Integrate[
+                Pattern[x, Blank[]],
+                PatternTest[Pattern[x, Blank[]], IsSymbolQ]
+            ]),
+            expr!(x ^ 2 / 2),
+        ),
+        (
+            norm_expr!(
+            Integrate[
+                PatternTest[Pattern[c, Blank[]], IsSymbolQ],
+                PatternTest[Pattern[x, Blank[]], IsSymbolQ]
+            ]),
+            expr!(c * x),
+        ),
+        (
+            norm_expr!(
+            Integrate[
+                PatternTest[Pattern[a, Blank[]], IsSymbolQ],
+                PatternTest[Pattern[x, Blank[]], IsSymbolQ]
+            ]),
+            expr!(a * x),
         ),
         // =============== Powers ===============
         (
