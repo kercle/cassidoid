@@ -5,4 +5,4 @@ edition = "2024"
 
 [dependencies]
 numbers = { path = "../numbers" }
-expr_macro = { path = "../expr_macro" }
+expr_macro = { path = "../expr-macro" }
