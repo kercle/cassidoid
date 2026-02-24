@@ -1,4 +1,4 @@
-import { h, aQ as A, aR as v, N as S, aS as T, aT as M, aU as E, aV as x, aW as L } from "./YVIW7mlL.js";
+import { h, aQ as A, aR as v, N as S, aS as T, aT as M, aU as x, aV as E, aW as L } from "./YVIW7mlL.js";
 let Z, Q, m;
 let __tla = (async () => {
   const U = /* @__PURE__ */ Symbol("is custom element"), W = /* @__PURE__ */ Symbol("is html"), I = v ? "link" : "LINK";
@@ -35,13 +35,13 @@ let __tla = (async () => {
     if (n) return n;
     y.set(t, n = []);
     for (var s, r = e, a = Element.prototype; a !== r; ) {
-      s = x(r);
+      s = E(r);
       for (var o in s) s[o].set && n.push(o);
-      r = E(r);
+      r = x(r);
     }
     return n;
   }
-  const C = "" + new URL("../assets/kernel_bg.C5-EVf6r.wasm", import.meta.url).href, O = async (e = {}, t) => {
+  const B = "" + new URL("../assets/kernel_bg.BKnfJea_.wasm", import.meta.url).href, O = async (e = {}, t) => {
     let n;
     if (t.startsWith("data:")) {
       const s = t.replace(/^data:.*?base64,/, "");
@@ -63,7 +63,7 @@ let __tla = (async () => {
     }
     return n.instance.exports;
   };
-  function B(e) {
+  function C(e) {
     let t, n;
     try {
       const s = j(e, _.__wbindgen_malloc, _.__wbindgen_realloc), r = g, a = _.eval_input(s, r);
@@ -133,21 +133,21 @@ let __tla = (async () => {
     "./kernel_bg.js": {
       __wbindgen_init_externref_table: R
     }
-  }, C), V = f.memory, K = f.eval_input, P = f.__wbindgen_externrefs, X = f.__wbindgen_malloc, Y = f.__wbindgen_realloc, $ = f.__wbindgen_free, p = f.__wbindgen_start, q = Object.freeze(Object.defineProperty({
+  }, B), K = f.memory, J = f.eval_input, P = f.__wbindgen_externrefs, V = f.__wbindgen_malloc, X = f.__wbindgen_realloc, Y = f.__wbindgen_free, p = f.__wbindgen_start, $ = Object.freeze(Object.defineProperty({
     __proto__: null,
     __wbindgen_externrefs: P,
-    __wbindgen_free: $,
-    __wbindgen_malloc: X,
-    __wbindgen_realloc: Y,
+    __wbindgen_free: Y,
+    __wbindgen_malloc: V,
+    __wbindgen_realloc: X,
     __wbindgen_start: p,
-    eval_input: K,
-    memory: V
+    eval_input: J,
+    memory: K
   }, Symbol.toStringTag, {
     value: "Module"
   }));
-  H(q);
+  H($);
   p();
-  function z() {
+  function q() {
     const { subscribe: e, set: t, update: n } = L({
       data: {
         history: []
@@ -160,7 +160,7 @@ let __tla = (async () => {
         connected: true
       })), {
         send: async (a) => {
-          const o = await B(a), i = typeof o == "string" ? JSON.parse(o) : o;
+          const o = await C(a), i = typeof o == "string" ? JSON.parse(o) : o;
           n((c) => (c.data.history.push(i), {
             ...c,
             connected: true
@@ -177,7 +177,7 @@ let __tla = (async () => {
       send: (a) => r.send(a)
     };
   }
-  Z = z();
+  Z = q();
 })();
 export {
   __tla,
