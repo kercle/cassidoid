@@ -1,7 +1,7 @@
-import { h, aQ as v, aR as A, N as S, aS as T, aT as M, aU as x, aV as E, aW as L } from "./YVIW7mlL.js";
+import { h, aQ as A, aR as v, N as T, aS as S, aT as M, aU as x, aV as E, aW as L } from "./YVIW7mlL.js";
 let Z, Q, m;
 let __tla = (async () => {
-  const W = /* @__PURE__ */ Symbol("is custom element"), N = /* @__PURE__ */ Symbol("is html"), U = A ? "link" : "LINK";
+  const U = /* @__PURE__ */ Symbol("is custom element"), W = /* @__PURE__ */ Symbol("is html"), I = v ? "link" : "LINK";
   Q = function(e) {
     if (h) {
       var t = false, n = () => {
@@ -16,17 +16,17 @@ let __tla = (async () => {
           }
         }
       };
-      e.__on_r = n, S(n), T();
+      e.__on_r = n, T(n), S();
     }
   };
   m = function(e, t, n, s) {
-    var r = I(e);
-    h && (r[t] = e.getAttribute(t), t === "src" || t === "srcset" || t === "href" && e.nodeName === U) || r[t] !== (r[t] = n) && (t === "loading" && (e[M] = n), n == null ? e.removeAttribute(t) : typeof n != "string" && k(e).includes(t) ? e[t] = n : e.setAttribute(t, n));
+    var r = N(e);
+    h && (r[t] = e.getAttribute(t), t === "src" || t === "srcset" || t === "href" && e.nodeName === I) || r[t] !== (r[t] = n) && (t === "loading" && (e[M] = n), n == null ? e.removeAttribute(t) : typeof n != "string" && k(e).includes(t) ? e[t] = n : e.setAttribute(t, n));
   };
-  function I(e) {
+  function N(e) {
     return e.__attributes ?? (e.__attributes = {
-      [W]: e.nodeName.includes("-"),
-      [N]: e.namespaceURI === v
+      [U]: e.nodeName.includes("-"),
+      [W]: e.namespaceURI === A
     });
   }
   var y = /* @__PURE__ */ new Map();
@@ -41,7 +41,7 @@ let __tla = (async () => {
     }
     return n;
   }
-  const O = "" + new URL("../assets/kernel_bg.MbNjv3pW.wasm", import.meta.url).href, B = async (e = {}, t) => {
+  const O = "" + new URL("../assets/kernel_bg.jTaa-mAl.wasm", import.meta.url).href, B = async (e = {}, t) => {
     let n;
     if (t.startsWith("data:")) {
       const s = t.replace(/^data:.*?base64,/, "");
