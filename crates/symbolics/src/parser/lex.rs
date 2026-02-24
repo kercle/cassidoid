@@ -1,4 +1,4 @@
-use std::str::FromStr;
+use std::{collections::VecDeque, str::FromStr};
 
 use crate::parser::error::LexError;
 
@@ -51,36 +51,61 @@ pub enum Token {
 }
 
 struct CharIterator<'a> {
-    iter: std::iter::Peekable<std::str::Chars<'a>>,
+    iter: std::str::Chars<'a>,
     line: usize,
     column: usize,
+    lookahead_buffer: VecDeque<char>,
 }
 
 impl<'a> CharIterator<'a> {
     fn new(s: &'a str) -> Self {
         Self {
-            iter: s.chars().peekable(),
+            iter: s.chars(),
             line: 1,
             column: 1,
+            lookahead_buffer: VecDeque::new(),
         }
     }
 
     fn next(&mut self) -> Option<char> {
-        if let Some(c) = self.iter.next() {
+        let next_opt = if self.lookahead_buffer.is_empty() {
+            self.iter.next()
+        } else {
+            self.lookahead_buffer.pop_front()
+        };
+
+        if let Some(c) = next_opt {
             if c == '\n' {
                 self.line += 1;
                 self.column = 1;
             } else {
                 self.column += 1;
             }
-            Some(c)
-        } else {
+        }
+
+        next_opt
+    }
+
+    fn lookahead(&mut self, n: usize) -> Option<&char> {
+        if n == 0 {
             None
+        } else if n <= self.lookahead_buffer.len() {
+            self.lookahead_buffer.get(n - 1)
+        } else {
+            let missing_count = n - self.lookahead_buffer.len();
+            for _ in 0..missing_count {
+                if let Some(c) = self.iter.next() {
+                    self.lookahead_buffer.push_back(c);
+                } else {
+                    return None;
+                }
+            }
+            self.lookahead_buffer.get(n - 1)
         }
     }
 
     fn peek(&mut self) -> Option<&char> {
-        self.iter.peek()
+        self.lookahead(1)
     }
 
     fn pos(&self) -> TokenPos {
@@ -91,6 +116,7 @@ impl<'a> CharIterator<'a> {
     }
 }
 
+#[derive(Debug)]
 pub struct TokenStream {
     tokens: Vec<(Token, TokenPos)>,
     current: usize,
@@ -497,6 +523,13 @@ mod tests {
     use super::*;
 
     #[test]
+    fn test_simple_token_stream_from_str() {
+        let input = "1+3";
+        let token_stream = TokenStream::from_str(input).unwrap();
+        dbg!(token_stream);
+    }
+
+    #[test]
     fn test_token_stream_from_str() {
         let input = r#"
             c := 42;
@@ -585,4 +618,25 @@ mod tests {
             );
         }
     }
+
+    // #[test]
+    // fn test_pow_minus_one() {
+    //     let input = r#"a^-1"#;
+    //     let token_stream = TokenStream::from_str(input).unwrap();
+    //     dbg!(&token_stream);
+    //     assert_eq!(token_stream.tokens.len(), 3);
+
+    //     let expected = vec![
+    //         Token::Identifier("a".to_string()),
+    //         Token::Caret,
+    //         Token::Number("-1".to_string()),
+    //     ];
+    //     for ((token, _), expected_token) in token_stream.tokens.iter().zip(expected.iter()) {
+    //         assert_eq!(
+    //             token, expected_token,
+    //             "Token mismatch at position {:?}",
+    //             token
+    //         );
+    //     }
+    // }
 }
