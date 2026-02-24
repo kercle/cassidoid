@@ -1,3 +1,4 @@
+mod factorize;
 mod functions_known_values;
 mod trigonometric_functions;
 
@@ -8,21 +9,40 @@ use crate::{
 
 pub struct Simplifier {
     expr: NormalizedExpr,
+    limit_guard: u32,
 }
 
 impl Simplifier {
     pub fn new(expr: NormalizedExpr) -> Simplifier {
         Simplifier {
             expr: expr.collect_like_terms(),
+            limit_guard: 100,
         }
     }
 
     pub fn simple(self) -> NormalizedExpr {
-        self.with_known_function_values()
-            .with_resolved_derivatives()
-            .with_resolved_indefinite_integrals()
-            .with_trigonometric_identities()
-            .finish_normalized()
+        let limit_guard = self.limit_guard;
+        let mut current = self;
+
+        for _ in 0..limit_guard {
+            let prev_expr = current.expr.clone();
+
+            let next_expr = current
+                // .with_factorization() // TODO: There is a nasty bug in the matcher :(
+                .with_known_function_values()
+                .with_resolved_derivatives()
+                .with_resolved_indefinite_integrals()
+                .with_trigonometric_identities()
+                .finish_normalized();
+
+            if next_expr == prev_expr {
+                return next_expr;
+            }
+
+            current = Simplifier::new(next_expr);
+        }
+
+        current.finish_normalized()
     }
 
     pub fn with_resolved_derivatives(self) -> Simplifier {
@@ -45,6 +65,10 @@ impl Simplifier {
             self.expr.take_expr(),
         ));
         Simplifier::new(expr)
+    }
+
+    pub fn with_factorization(self) -> Simplifier {
+        Simplifier::new(factorize::factorize(self.expr.take_expr()))
     }
 
     pub fn finish(self) -> Expr {
