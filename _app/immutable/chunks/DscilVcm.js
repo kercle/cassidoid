@@ -1,4 +1,4 @@
-import { h, aQ as A, aR as v, N as T, aS as S, aT as M, aU as x, aV as E, aW as L } from "./YVIW7mlL.js";
+import { h, aQ as A, aR as v, N as S, aS as T, aT as M, aU as E, aV as x, aW as L } from "./YVIW7mlL.js";
 let Z, Q, m;
 let __tla = (async () => {
   const U = /* @__PURE__ */ Symbol("is custom element"), W = /* @__PURE__ */ Symbol("is html"), I = v ? "link" : "LINK";
@@ -16,7 +16,7 @@ let __tla = (async () => {
           }
         }
       };
-      e.__on_r = n, T(n), S();
+      e.__on_r = n, S(n), T();
     }
   };
   m = function(e, t, n, s) {
@@ -35,13 +35,13 @@ let __tla = (async () => {
     if (n) return n;
     y.set(t, n = []);
     for (var s, r = e, a = Element.prototype; a !== r; ) {
-      s = E(r);
+      s = x(r);
       for (var o in s) s[o].set && n.push(o);
-      r = x(r);
+      r = E(r);
     }
     return n;
   }
-  const O = "" + new URL("../assets/kernel_bg.jTaa-mAl.wasm", import.meta.url).href, B = async (e = {}, t) => {
+  const C = "" + new URL("../assets/kernel_bg.C5-EVf6r.wasm", import.meta.url).href, O = async (e = {}, t) => {
     let n;
     if (t.startsWith("data:")) {
       const s = t.replace(/^data:.*?base64,/, "");
@@ -63,7 +63,7 @@ let __tla = (async () => {
     }
     return n.instance.exports;
   };
-  function C(e) {
+  function B(e) {
     let t, n;
     try {
       const s = j(e, _.__wbindgen_malloc, _.__wbindgen_realloc), r = g, a = _.eval_input(s, r);
@@ -129,19 +129,19 @@ let __tla = (async () => {
     _ = e;
   }
   URL = globalThis.URL;
-  const f = await B({
+  const f = await O({
     "./kernel_bg.js": {
       __wbindgen_init_externref_table: R
     }
-  }, O), K = f.memory, P = f.eval_input, V = f.__wbindgen_externrefs, X = f.__wbindgen_malloc, Y = f.__wbindgen_realloc, $ = f.__wbindgen_free, p = f.__wbindgen_start, q = Object.freeze(Object.defineProperty({
+  }, C), V = f.memory, K = f.eval_input, P = f.__wbindgen_externrefs, X = f.__wbindgen_malloc, Y = f.__wbindgen_realloc, $ = f.__wbindgen_free, p = f.__wbindgen_start, q = Object.freeze(Object.defineProperty({
     __proto__: null,
-    __wbindgen_externrefs: V,
+    __wbindgen_externrefs: P,
     __wbindgen_free: $,
     __wbindgen_malloc: X,
     __wbindgen_realloc: Y,
     __wbindgen_start: p,
-    eval_input: P,
-    memory: K
+    eval_input: K,
+    memory: V
   }, Symbol.toStringTag, {
     value: "Module"
   }));
@@ -160,7 +160,7 @@ let __tla = (async () => {
         connected: true
       })), {
         send: async (a) => {
-          const o = await C(a), i = typeof o == "string" ? JSON.parse(o) : o;
+          const o = await B(a), i = typeof o == "string" ? JSON.parse(o) : o;
           n((c) => (c.data.history.push(i), {
             ...c,
             connected: true
