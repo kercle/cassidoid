@@ -644,8 +644,7 @@ where
         }
 
         // Apply choice 0
-        let chosen_idx = remaining[0];
-        remaining.swap_remove(0);
+        let chosen_idx = remaining.remove(0);
 
         self.tasks.push(Task::MatchUnorderedRest {
             patterns_rest,
