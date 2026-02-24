@@ -42,6 +42,7 @@ jobs:
       - name: Build WASM
         run: |
           wasm-pack build crates/wasm \
+            --release \
             --target bundler \
             --out-dir ../../web/frontend/src/lib/wasm \
             --out-name kernel
