@@ -27,7 +27,7 @@ pub enum Instruction<A> {
     Predicate {
         /* pred_id: PredId, */ inner: InstrId,
     },
-    Compound {
+    Node {
         head: InstrId,
         plan: ArgPlan<A>,
     },
@@ -140,7 +140,7 @@ impl<A: Clone + Default> Compiler<A> {
             }
         };
 
-        self.emit(Instruction::Compound { head, plan })
+        self.emit(Instruction::Node { head, plan })
     }
 
     fn compile_unordered(&mut self, children: &[Expr<A>]) -> MultisetPlan<A> {
