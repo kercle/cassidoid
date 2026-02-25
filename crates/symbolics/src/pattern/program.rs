@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use crate::expr::Expr;
+use crate::pattern::{PATTERN_HEAD, builtin::*};
 
 pub type InstrId = usize;
 pub type VarId = u32;
@@ -11,16 +12,30 @@ pub struct Program<T> {
     pub vars: Vec<String>,
 }
 
-pub enum Instruction<T> {
-    Literal(T),
-    VariadicOne { id: Option<VarId> },
-    VariadicMany { id: Option<VarId>, min: usize },
-    Compound { plan: ArgPlan<T> },
+pub enum Quantity {
+    One,
+    Many { min: usize },
 }
 
-pub enum ArgPlan<T> {
+pub enum Instruction<A> {
+    Literal(Expr<A>),
+    Variadic {
+        quantity: Quantity,
+        head_constraint: Option<Vec<Expr<A>>>,
+    },
+    Bind(VarId),
+    Predicate {
+        /* pred_id: PredId, */ inner: InstrId,
+    },
+    Compound {
+        head: InstrId,
+        plan: ArgPlan<A>,
+    },
+}
+
+pub enum ArgPlan<A> {
     Sequence(Vec<InstrId>),
-    Multiset(MultisetPlan<T>),
+    Multiset(MultisetPlan<A>),
 }
 
 enum ArgOrder {
@@ -28,8 +43,8 @@ enum ArgOrder {
     Multiset,
 }
 
-pub struct MultisetPlan<T> {
-    pub literals: Vec<T>,
+pub struct MultisetPlan<A> {
+    pub literals: Vec<Expr<A>>,
     pub fixed: Vec<InstrId>,
     pub rest: Vec<(VarId, usize)>,
 }
@@ -40,14 +55,14 @@ pub struct Compiler<A> {
     vars: Vec<String>,
 }
 
-impl<A: Clone> Compiler<A> {
+impl<A: Clone + Default> Compiler<A> {
     fn emit(&mut self, instr: Instruction<A>) -> InstrId {
         let id = self.instructions.len();
         self.instructions.push(instr);
         id
     }
 
-    fn var_id(&mut self, name: &str) -> VarId {
+    fn bind_name_id(&mut self, name: &str) -> VarId {
         if let Some(&id) = self.var_ids.get(name) {
             return id;
         }
@@ -68,20 +83,55 @@ impl<A: Clone> Compiler<A> {
     }
 
     fn compile_pat(&mut self, pat_expr: &Expr<A>) -> InstrId {
+        use Expr::*;
+        match pat_expr {
+            Atom { .. } => self.emit(Instruction::Literal(pat_expr.clone())),
+            Node { head, args, .. } if head.matches_symbol(HEAD_BLANK) => {
+                self.emit(Instruction::Variadic {
+                    quantity: Quantity::One,
+                    head_constraint: None,
+                })
+            }
+            Node { head, args, .. } if head.matches_symbol(HEAD_BLANK_SEQUENCE) => {
+                self.emit(Instruction::Variadic {
+                    quantity: Quantity::Many { min: 1 },
+                    head_constraint: None,
+                })
+            }
+            Node { head, args, .. } if head.matches_symbol(HEAD_BLANK_NULL_SEQUENCE) => self
+                .emit(Instruction::Variadic {
+                    quantity: Quantity::Many { min: 0 },
+                    head_constraint: None,
+                }),
+            Node { .. } => self.emit(Self::nested_expr_to_instr(pat_expr)),
+        }
+    }
+
+    fn nested_expr_to_instr(pat_expr: &Expr<A>) -> Instruction<A> {
+        use Expr::*;
+        match pat_expr {
+            Node { head, args, .. } if pat_expr.is_application_of(PATTERN_HEAD, 2) => {
+                todo!()
+            }
+            _ => Instruction::Literal(pat_expr.clone()),
+        }
+    }
+
+    fn compile_pat_var(&mut self, name: Option<&str>) -> InstrId {
         todo!()
     }
 
-    fn compile_pat_var(&mut self, name: &str) -> InstrId {
-        todo!()
-    }
+    fn compile_pat_node(
+        &mut self,
+        head: &Expr<A>,
+        arg_order: ArgOrder,
+        children: &[Expr<A>],
+    ) -> InstrId {
+        let head = Self::compile_pat(self, head);
 
-    fn compile_pat_node(&mut self, arg_order: ArgOrder, children: &[Expr<A>]) -> InstrId {
         let plan = match arg_order {
             ArgOrder::Sequence => {
-                let pats = children
-                    .iter()
-                    .map(|c| self.compile_pat(c))
-                    .collect();
+                let pats = children.iter().map(|c| self.compile_pat(c)).collect();
                 ArgPlan::Sequence(pats)
             }
             ArgOrder::Multiset => {
@@ -90,7 +140,7 @@ impl<A: Clone> Compiler<A> {
             }
         };
 
-        self.emit(Instruction::Compound { plan })
+        self.emit(Instruction::Compound { head, plan })
     }
 
     fn compile_unordered(&mut self, children: &[Expr<A>]) -> MultisetPlan<A> {
