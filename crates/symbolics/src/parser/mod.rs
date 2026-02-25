@@ -16,19 +16,17 @@ use crate::parser::{
 
 fn parse_identifier_or_call(stream: &mut TokenStream) -> Result<ParserAst, ParseError> {
     // <named_value_or_function_call> ::= <identifier>
-    //    | <identifier> "(" ")"
-    //    | <identifier> "(" <block> { "," <block> }* ")"
+    //    | <identifier> "[" "]"
+    //    | <identifier> "[" <block> { "," <block> }* ")"
 
     let identifier = stream.next_if_identifier();
 
-    if identifier.is_none() {
+    let Some(identifier) = identifier.map(|i| i.to_string()) else {
         return Err(ParseError {
             message: "Expected an identifier".to_string(),
             at_token: stream.peek().cloned(),
         });
-    }
-
-    let identifier = identifier.unwrap().to_owned();
+    };
 
     if stream.next_if_matches_token(&Token::LeftBracket).is_none() {
         return Ok(ParserAst::new_named_value(identifier));
@@ -126,13 +124,10 @@ fn parse_product(stream: &mut TokenStream) -> Result<ParserAst, ParseError> {
     loop {
         let c = stream.next_if_matches(|token| matches!(token, Token::Asterisk | Token::Slash));
 
-        if c.is_none() {
-            break; // No more operators
-        }
-
         result = match c {
             Some(Token::Asterisk) => ParserAst::new_mul_pair(result, parse_signed_power(stream)?),
             Some(Token::Slash) => ParserAst::new_div(result, parse_signed_power(stream)?),
+            None => break,
             _ => unreachable!(),
         };
     }
@@ -147,13 +142,11 @@ fn parse_sum(stream: &mut TokenStream) -> Result<ParserAst, ParseError> {
 
     loop {
         let op = stream.next_if_matches(|token| matches!(token, Token::Plus | Token::Minus));
-        if op.is_none() {
-            break; // No more operators
-        }
 
         result = match op {
             Some(Token::Plus) => ParserAst::new_add_pair(result, parse_product(stream)?),
             Some(Token::Minus) => ParserAst::new_sub(result, parse_product(stream)?),
+            None => break, // No more operators
             _ => unreachable!(),
         };
     }
