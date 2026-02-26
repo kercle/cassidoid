@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::fmt::Debug;
 
 use crate::expr::Expr;
 use crate::pattern::{PATTERN_HEAD, builtin::*};
@@ -6,18 +7,20 @@ use crate::pattern::{PATTERN_HEAD, builtin::*};
 pub type InstrId = usize;
 pub type VarId = u32;
 
-pub struct Program<T> {
+pub struct Program<A: Clone + PartialEq> {
     pub entry: InstrId,
-    pub instructions: Vec<Instruction<T>>,
+    pub instructions: Vec<Instruction<A>>,
     pub vars: Vec<String>,
 }
 
+#[derive(Debug)]
 pub enum Quantity {
     One,
     Many { min: usize },
 }
 
-pub enum Instruction<A> {
+#[derive(Debug)]
+pub enum Instruction<A: Clone + PartialEq> {
     Literal(Expr<A>),
     Variadic {
         quantity: Quantity,
@@ -33,29 +36,32 @@ pub enum Instruction<A> {
     },
 }
 
-pub enum ArgPlan<A> {
+#[derive(Debug)]
+pub enum ArgPlan<A: Clone + PartialEq> {
     Sequence(Vec<InstrId>),
     Multiset(MultisetPlan<A>),
 }
 
+#[derive(Debug)]
 enum ArgOrder {
     Sequence,
     Multiset,
 }
 
-pub struct MultisetPlan<A> {
+#[derive(Debug)]
+pub struct MultisetPlan<A: Clone + PartialEq> {
     pub literals: Vec<Expr<A>>,
     pub fixed: Vec<InstrId>,
     pub rest: Vec<(VarId, usize)>,
 }
 
-pub struct Compiler<A> {
+pub struct Compiler<A: Clone + PartialEq> {
     instructions: Vec<Instruction<A>>,
     var_ids: HashMap<String, VarId>,
     vars: Vec<String>,
 }
 
-impl<A: Clone + Default> Compiler<A> {
+impl<A: Clone + PartialEq + Default> Compiler<A> {
     fn emit(&mut self, instr: Instruction<A>) -> InstrId {
         let id = self.instructions.len();
         self.instructions.push(instr);
@@ -98,11 +104,12 @@ impl<A: Clone + Default> Compiler<A> {
                     head_constraint: None,
                 })
             }
-            Node { head, args, .. } if head.matches_symbol(HEAD_BLANK_NULL_SEQUENCE) => self
-                .emit(Instruction::Variadic {
+            Node { head, args, .. } if head.matches_symbol(HEAD_BLANK_NULL_SEQUENCE) => {
+                self.emit(Instruction::Variadic {
                     quantity: Quantity::Many { min: 0 },
                     head_constraint: None,
-                }),
+                })
+            }
             Node { .. } => self.emit(Self::nested_expr_to_instr(pat_expr)),
         }
     }
