@@ -1,11 +1,8 @@
 use std::fmt::{Debug, Formatter};
 
-use crate::{
-    matcher::context::Binding,
-    pattern::{
-        program::{ArgPlan, Instruction, Program, Quantity, VarId},
-        runtime::EnvBinding,
-    },
+use crate::pattern::{
+    program::{ArgPlan, Instruction, Program, Quantity, VarId},
+    runtime::EnvBinding,
 };
 
 impl Debug for Quantity {
@@ -64,7 +61,6 @@ impl<A: Clone + PartialEq + Debug> Debug for Instruction<A> {
             } => {
                 write!(f, "pred{} {predicate:?} {inner:?}", format_bind(bind))
             }
-            _ => todo!(),
         }
     }
 }
