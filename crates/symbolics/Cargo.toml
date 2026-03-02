@@ -3,6 +3,9 @@ name = "symbolics"
 version = "0.1.0"
 edition = "2024"
 
+[features]
+debug_matcher = []
+
 [dependencies]
 numbers = { path = "../numbers" }
 expr_macro = { path = "../expr-macro" }

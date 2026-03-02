@@ -1,8 +1,11 @@
 use crate::{
     dbg_matcher,
-    pattern::program::{ArgPlan, Instruction},
+    pattern::program::{ArgPlan, Instruction, Quantity},
 };
-use std::collections::{HashMap, HashSet, hash_map::Keys};
+use std::{
+    collections::{HashMap, HashSet, hash_map::Keys},
+    fmt::Debug,
+};
 
 use crate::{
     expr::Expr,
@@ -14,6 +17,7 @@ struct ChoicePoint {
     pub bindings: HashSet<VarId>,
 }
 
+#[derive(Debug)]
 enum Frame<'p, 's, A: Clone + PartialEq> {
     Exec {
         instr: InstrId,
@@ -91,7 +95,7 @@ pub struct Runtime<'p, 's, A: Clone + PartialEq> {
     choice_points: Vec<ChoicePoint>,
 }
 
-impl<'p, 's, A: Clone + PartialEq> Runtime<'p, 's, A> {
+impl<'p, 's, A: Clone + PartialEq + Debug> Runtime<'p, 's, A> {
     pub fn new(program: &'p Program<A>, expr: &'s Expr<A>) -> Self {
         Runtime {
             program,
@@ -194,9 +198,38 @@ impl<'p, 's, A: Clone + PartialEq> Runtime<'p, 's, A> {
 
                 true
             }
-            Variadic { .. } => todo!(),
+            Variadic {
+                quantity: Quantity::One,
+                head_pattern,
+                bind,
+            } => {
+                if let Some(&bind_var) = bind.as_ref() {
+                    self.frame_stack.push(Frame::BindOne { bind_var, subject });
+                }
+
+                if let Some(head_pattern_instr) = head_pattern {
+                    self.match_head_pattern(*head_pattern_instr, subject)
+                } else {
+                    true
+                }
+            }
+            Variadic { .. } => unreachable!("Variadics with quantity Many not handled here."),
             Predicate { .. } => todo!(),
         }
+    }
+
+    fn match_head_pattern(&mut self, instr: InstrId, subject: &'s Expr<A>) -> bool {
+        let Some(head) = subject.head() else {
+            // Subject is Atom
+            return false;
+        };
+
+        self.frame_stack.push(Frame::Exec {
+            instr,
+            subject: head,
+        });
+
+        true
     }
 
     fn match_sequence(&mut self, instrs: &'p [InstrId], subjects: &'s [Expr<A>]) -> bool {
@@ -208,19 +241,133 @@ impl<'p, 's, A: Clone + PartialEq> Runtime<'p, 's, A> {
             return false;
         }
 
-        // Continue matching rest...
-        self.frame_stack.push(Frame::MatchSequence {
-            instrs: &instrs[1..],
-            subjects: &subjects[1..],
-        });
+        if let Some(rest_start) = self.find_first_var_many(instrs) {
+            let Some(rest_end) = self.find_last_var_many(instrs) else {
+                return false;
+            };
 
-        // ...after matching first.
-        self.frame_stack.push(Frame::Exec {
-            instr: *instrs.first().unwrap(),
-            subject: subjects.first().unwrap(),
-        });
+            let front_exact_len = rest_start;
+            let back_exact_len = instrs.len() - rest_end - 1;
+
+            if front_exact_len + back_exact_len > subjects.len() {
+                return false;
+            }
+
+            let rest_match_result = self.match_sequence_rest(
+                &instrs[rest_start..=rest_end],
+                &subjects[rest_start..subjects.len() - back_exact_len],
+            );
+
+            let front_match_result =
+                self.match_sequence_exact(&instrs[..front_exact_len], &subjects[..front_exact_len]);
+            let back_match_result = self.match_sequence_exact(
+                &instrs[rest_end + 1..],
+                &subjects[subjects.len() - back_exact_len..],
+            );
+
+            front_match_result && back_match_result && rest_match_result
+        } else {
+            self.match_sequence_exact(instrs, subjects)
+        }
+    }
+
+    pub fn match_sequence_exact(&mut self, instrs: &'p [InstrId], subjects: &'s [Expr<A>]) -> bool {
+        if instrs.len() != subjects.len() {
+            return false;
+        }
+
+        for (&instr, subject) in instrs.iter().zip(subjects) {
+            self.frame_stack.push(Frame::Exec { instr, subject });
+        }
 
         true
+    }
+
+    pub fn match_sequence_rest(&mut self, instrs: &'p [InstrId], subjects: &'s [Expr<A>]) -> bool {
+        if instrs.len() == 1 {
+            let &instr = instrs.first().unwrap();
+
+            let Some(Instruction::Variadic {
+                quantity: Quantity::Many { min },
+                head_pattern,
+                bind,
+            }) = self.program.instructions.get(instr)
+            else {
+                unreachable!("Rest with only one instruction is required to be variadic many");
+            };
+
+            if subjects.len() < *min {
+                return false;
+            }
+
+            if let Some(&bind_var) = bind.as_ref() {
+                self.frame_stack.push(Frame::BindSeq {
+                    bind_var,
+                    subjects: subjects.iter().collect(),
+                });
+            }
+
+            if let Some(head_pattern_instr) = head_pattern {
+                for subject in subjects {
+                    if !self.match_head_pattern(*head_pattern_instr, subject) {
+                        return false;
+                    }
+                }
+            }
+
+            true
+        } else if instrs.len() > 1 {
+            todo!("Multiple many-variadics. Require backtracking.")
+        } else {
+            true
+        }
+    }
+
+    fn find_first_var_many(&mut self, instrs: &'p [InstrId]) -> Option<usize> {
+        self.find_var_many(instrs, 0, 1)
+    }
+
+    fn find_last_var_many(&mut self, instrs: &'p [InstrId]) -> Option<usize> {
+        self.find_var_many(instrs, instrs.len() - 1, -1)
+    }
+
+    fn find_var_many(
+        &mut self,
+        instrs: &'p [InstrId],
+        mut pos: usize,
+        delta: isize,
+    ) -> Option<usize> {
+        // As long as we don't encounter a variadic pattern with more
+        // that can match multiple subjects, the front matching of
+        // the sequence is fully deterministic.
+
+        assert!(
+            !instrs.is_empty(),
+            "Empty instrs should be handled in match_sequence"
+        );
+
+        loop {
+            if pos >= instrs.len() {
+                return None;
+            }
+
+            let instr = instrs[pos];
+
+            match self.program.instructions.get(instr) {
+                None => return None,
+                Some(Instruction::Variadic {
+                    quantity: Quantity::Many { .. },
+                    ..
+                }) => return Some(pos),
+                _ => {}
+            }
+
+            if pos == 0 && delta < 0 {
+                return None;
+            } else {
+                pos = pos.saturating_add_signed(delta);
+            }
+        }
     }
 
     fn match_multiset(

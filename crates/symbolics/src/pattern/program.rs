@@ -150,8 +150,8 @@ where
                 let Some(bind_var_name) = lhs.get_symbol() else {
                     return self.compile_node(
                         head,
-                        (&self.arg_order_predicate)(pat_expr),
-                        &args,
+                        (self.arg_order_predicate)(pat_expr),
+                        args,
                         bind,
                     );
                 };
@@ -160,7 +160,7 @@ where
                 self.compile_pattern(rhs, Some(var_id))
             }
             Node { head, args, .. } => {
-                self.compile_node(head, (&self.arg_order_predicate)(pat_expr), &args, bind)
+                self.compile_node(head, (self.arg_order_predicate)(pat_expr), args, bind)
             }
         }
     }
@@ -171,11 +171,7 @@ where
         head_pattern: Option<&Expr<A>>,
         bind: Option<VarId>,
     ) -> InstrId {
-        let head_pattern = if let Some(e) = head_pattern {
-            Some(self.compile_pattern(e, None))
-        } else {
-            None
-        };
+        let head_pattern = head_pattern.map(|e| self.compile_pattern(e, None));
 
         self.emit(Instruction::Variadic {
             quantity,

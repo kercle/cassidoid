@@ -86,14 +86,14 @@ impl<A: Clone + PartialEq + Debug> Debug for Program<A> {
     }
 }
 
-impl<'p, 'a, A: Clone + PartialEq + Debug> Debug for EnvBinding<'a, A> {
+impl<'a, A: Clone + PartialEq + Debug> Debug for EnvBinding<'a, A> {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
         match self {
             EnvBinding::One(s) => write!(f, "{s:?}"),
             EnvBinding::Many(subjects) => {
                 let mut leading_char = '[';
                 for s in subjects.iter() {
-                    write!(f, "{s:?}")?;
+                    write!(f, "{leading_char}{s:?}")?;
                     leading_char = ',';
                 }
                 if leading_char == '[' {

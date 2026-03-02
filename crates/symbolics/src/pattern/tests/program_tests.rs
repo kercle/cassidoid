@@ -29,3 +29,19 @@ fn test_program_executation_no_blanks_no_multiset() {
     let mut runtime = Runtime::new(&program, &subject);
     dbg!(runtime.next_match());
 }
+
+#[test]
+fn test_program_executation_one_blank_no_multiset() {
+    let pattern = expr! {
+        f[g[Pattern[x, Blank[]], b], Pattern[y, BlankSeq[]], Pattern[z, Blank[]]]
+    };
+
+    let program = Compiler::new(|_| ArgOrder::Sequence).compile(&pattern);
+    dbg!(&program);
+
+    let subject = expr! {
+        f[g[h[2, 4, 8], b], 10, x, 5]
+    };
+    let mut runtime = Runtime::new(&program, &subject);
+    dbg!(runtime.next_match());
+}
