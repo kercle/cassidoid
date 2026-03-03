@@ -213,9 +213,11 @@ impl<'p, 's, A: Clone + PartialEq + Debug> Runtime<'p, 's, A> {
     }
 
     fn exec(&mut self, instr: InstrId, subject: &'s Expr<A>) -> bool {
-        let Some(instr) = self.program.instructions.get(instr) else {
-            return false;
-        };
+        let instr = self
+            .program
+            .instructions
+            .get(instr)
+            .expect("Program is corrupted. Trying to execute non-existent instruction");
 
         use Instruction::*;
         match instr {
