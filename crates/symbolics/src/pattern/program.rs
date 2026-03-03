@@ -26,7 +26,11 @@ pub enum Instruction<A: Clone + PartialEq> {
         bind: Option<VarId>,
     },
     Variadic {
-        quantity: Quantity,
+        min_len: usize,
+        head_pattern: Option<InstrId>,
+        bind: Option<VarId>,
+    },
+    Wildcard {
         head_pattern: Option<InstrId>,
         bind: Option<VarId>,
     },
@@ -204,11 +208,14 @@ where
     ) -> InstrId {
         let head_pattern = head_pattern.map(|e| self.compile_pattern(e, None));
 
-        self.emit(Instruction::Variadic {
-            quantity,
-            head_pattern,
-            bind,
-        })
+        match quantity {
+            Quantity::Many { min } => self.emit(Instruction::Variadic {
+                min_len: min,
+                head_pattern,
+                bind,
+            }),
+            Quantity::One => self.emit(Instruction::Wildcard { head_pattern, bind }),
+        }
     }
 
     fn compile_node(

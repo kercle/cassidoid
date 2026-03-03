@@ -275,11 +275,7 @@ impl<'p, 's, A: Clone + PartialEq + Debug> Runtime<'p, 's, A> {
 
                 true
             }
-            Variadic {
-                quantity: Quantity::One,
-                head_pattern,
-                bind,
-            } => {
+            Wildcard { head_pattern, bind } => {
                 if let Some(&bind_var) = bind.as_ref() {
                     self.frame_stack.push(Frame::BindOne { bind_var, subject });
                 }
@@ -349,9 +345,14 @@ impl<'p, 's, A: Clone + PartialEq + Debug> Runtime<'p, 's, A> {
         }
 
         if front_exact_len == 0 && back_exact_len == 0 {
-            // if sequence starts and ends with variadic, we work through
-            // all possible remaining choices. This guarantees that the
-            // front and back is already bound before we enter backtracking.
+            // There are no patterns at the start or the end that are either
+            // literals or wildcards. Thus sequence starts and ends with
+            // variadic pattern. We needs to work through all possible remaining
+            // choices.
+            // This guarantees that the front and back is already matcheds before
+            // we enter backtracking, which improves performance and makes
+            // sure that all obvious bindings are in place before pushing
+            // choicepoint.
 
             self.match_sequence_rest(
                 &instrs[rest_start..=rest_end],
@@ -360,6 +361,7 @@ impl<'p, 's, A: Clone + PartialEq + Debug> Runtime<'p, 's, A> {
         } else {
             // Defer matching rest of the sequence before we match all
             // deterministic match options.
+            // The rest starts and ends with a variadic pattern.
 
             self.frame_stack.push(Frame::MatchSequence {
                 instrs: &instrs[rest_start..=rest_end],
@@ -390,29 +392,29 @@ impl<'p, 's, A: Clone + PartialEq + Debug> Runtime<'p, 's, A> {
     }
 
     fn match_sequence_rest(&mut self, instrs: &'p [InstrId], subjects: &'s [Expr<A>]) -> bool {
-        if instrs.len() >= 1 {
-            let &instr = instrs.first().unwrap();
+        if instrs.is_empty() {
+            return true;
+        }
 
-            let Some(Instruction::Variadic {
-                quantity: Quantity::Many { min },
-                head_pattern,
-                bind,
-            }) = self.program.instructions.get(instr)
-            else {
-                unreachable!("Rest with only one instruction is required to be variadic many");
-            };
+        let &instr = instrs.first().unwrap();
 
-            if subjects.len() < *min {
-                return false;
-            }
+        let Some(Instruction::Variadic {
+            min_len,
+            head_pattern,
+            bind,
+        }) = self.program.instructions.get(instr)
+        else {
+            unreachable!("Rest with only one instruction is required to be variadic many");
+        };
 
-            if instrs.len() == 1 {
-                self.match_sequence_single_variadic(subjects, head_pattern, bind)
-            } else {
-                self.match_sequence_multiple_variadic(instrs, subjects, *min, head_pattern, bind)
-            }
+        if subjects.len() < *min_len {
+            return false;
+        }
+
+        if instrs.len() == 1 {
+            self.match_sequence_single_variadic(subjects, head_pattern, bind)
         } else {
-            true
+            self.match_sequence_multiple_variadic(instrs, subjects, *min_len, head_pattern, bind)
         }
     }
 
@@ -460,7 +462,7 @@ impl<'p, 's, A: Clone + PartialEq + Debug> Runtime<'p, 's, A> {
             return false;
         }
 
-        if required_min_len + 1 <= subjects.len() {
+        if required_min_len < subjects.len() {
             // we can afford to add one more subject to first sequence
             self.push_choice_point(Frame::ResumeMatchSequence {
                 instrs,
@@ -487,12 +489,11 @@ impl<'p, 's, A: Clone + PartialEq + Debug> Runtime<'p, 's, A> {
         let mut sum = 0usize;
         for &id in instrs {
             let instr = self.program.instructions.get(id)?;
-            match instr {
-                Variadic {
-                    quantity: Quantity::Many { min },
-                    ..
-                } => sum = sum.checked_add(*min)?,
-                _ => sum = sum.checked_add(1)?,
+
+            if let Variadic { min_len, .. } = instr {
+                sum = sum.checked_add(*min_len)?;
+            } else {
+                sum = sum.checked_add(1)?;
             }
         }
         Some(sum)
@@ -530,10 +531,7 @@ impl<'p, 's, A: Clone + PartialEq + Debug> Runtime<'p, 's, A> {
 
             match self.program.instructions.get(instr) {
                 None => return None,
-                Some(Instruction::Variadic {
-                    quantity: Quantity::Many { .. },
-                    ..
-                }) => return Some(pos),
+                Some(Instruction::Variadic { .. }) => return Some(pos),
                 _ => {}
             }
 
@@ -547,9 +545,9 @@ impl<'p, 's, A: Clone + PartialEq + Debug> Runtime<'p, 's, A> {
 
     fn match_multiset(
         &mut self,
-        literals: &[Expr<A>],
-        fixed: &[InstrId],
-        rest: &[(VarId, usize)],
+        _literals: &[Expr<A>],
+        _fixed: &[InstrId],
+        _rest: &[(VarId, usize)],
     ) -> bool {
         todo!()
     }
