@@ -322,7 +322,7 @@ impl<'p, 's, A: Clone + PartialEq + Debug> Runtime<'p, 's, A> {
 
     fn match_sequence(&mut self, instrs: &'p [InstrId], subjects: &'s [Expr<A>]) -> bool {
         if instrs.is_empty() {
-            return true;
+            return subjects.is_empty();
         }
 
         let Some(rest_start) = self.position_first_variadic(instrs) else {
@@ -545,13 +545,21 @@ impl<'p, 's, A: Clone + PartialEq + Debug> Runtime<'p, 's, A> {
     }
 
     fn bind_one(&mut self, bind_var: VarId, subject: &'s Expr<A>) -> bool {
-        self.bind_stack.push(bind_var);
-        self.environment.bind_one(bind_var, subject)
+        if self.environment.bind_one(bind_var, subject) {
+            self.bind_stack.push(bind_var);
+            true
+        } else {
+            false
+        }
     }
 
     fn bind_seq(&mut self, bind_var: VarId, subjects: Vec<&'s Expr<A>>) -> bool {
-        self.bind_stack.push(bind_var);
-        self.environment.bind_seq(bind_var, subjects)
+        if self.environment.bind_seq(bind_var, subjects) {
+            self.bind_stack.push(bind_var);
+            true
+        } else {
+            false
+        }
     }
 
     fn push_choice_point(&mut self, resume_frame: Frame<'p, 's, A>) {

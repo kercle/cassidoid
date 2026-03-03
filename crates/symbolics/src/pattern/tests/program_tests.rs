@@ -64,15 +64,43 @@ fn test_predicate_matching() {
 
 #[test]
 fn test_multiple_blank_sequences() {
-    let pattern = expr! { f[Pattern[x, BlankSeq[]], Pattern[y, Blank[]], Pattern[z, BlankNullSeq[]], Pattern[w, BlankNullSeq[]]] };
+    let pattern = expr! { f[Pattern[x, BlankSeq[]], Blank[], Pattern[z, BlankNullSeq[]], Pattern[w, BlankNullSeq[]]] };
     let program = Compiler::new(|_| ArgOrder::Sequence).compile(&pattern);
 
     let subject = expr! { f[a,b,c,d,e] };
     let mut runtime = Runtime::new(&program, &subject);
 
-    dbg!(&program);
-    while let Some(m) = runtime.next_match() {
-        println!("\n=== NEW MATCH ===");
-        m.dbg_print_bindings();
+    let mut counter = 0;
+    while runtime.next_match().is_some() {
+        counter += 1;
     }
+
+    assert_eq!(
+        counter, 10,
+        "f[x__,_,z___,w___] matched against f[a,b,c,d,e] should produce 10 pattern."
+    );
+}
+
+#[test]
+fn test_variadic_empty_instrs_nonempty_subjects() {
+    let pattern = expr! { f[] };
+    let program = Compiler::new(|_| ArgOrder::Sequence).compile(&pattern);
+    let subject = expr! { f[a, b] };
+    let mut runtime = Runtime::new(&program, &subject);
+    assert!(
+        runtime.next_match().is_none(),
+        "f[] should not match f[a,b]"
+    );
+}
+
+#[test]
+fn test_no_spurious_match_after_length_mismatch() {
+    let pattern = expr! { f[a, Pattern[x, BlankNullSeq[]], b, c] };
+    let program = Compiler::new(|_| ArgOrder::Sequence).compile(&pattern);
+    let subject = expr! { f[a, b] };
+    let mut runtime = Runtime::new(&program, &subject);
+    assert!(
+        runtime.next_match().is_none(),
+        "Should not match when back literals cannot be satisfied"
+    );
 }
