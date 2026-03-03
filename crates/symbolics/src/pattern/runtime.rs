@@ -197,7 +197,7 @@ impl<'p, 's, A: Clone + PartialEq + Debug> Runtime<'p, 's, A> {
                 first_consume_count,
                 first_head_pattern,
                 first_bind,
-            } => self.match_sequence_multiple_variadic(
+            } => self.try_split_variadic_subsequence(
                 instrs,
                 subjects,
                 first_consume_count,
@@ -322,10 +322,10 @@ impl<'p, 's, A: Clone + PartialEq + Debug> Runtime<'p, 's, A> {
             return true;
         }
 
-        let Some(rest_start) = self.find_first_variadic(instrs) else {
+        let Some(rest_start) = self.position_first_variadic(instrs) else {
             return self.match_subseq_lits_and_wildcards(instrs, subjects);
         };
-        let Some(rest_end) = self.find_last_variadic(instrs) else {
+        let Some(rest_end) = self.position_last_variadic(instrs) else {
             return false;
         };
 
@@ -346,7 +346,7 @@ impl<'p, 's, A: Clone + PartialEq + Debug> Runtime<'p, 's, A> {
             // sure that all obvious bindings are in place before pushing
             // choicepoint.
 
-            self.match_subseq_start_end_with_variadic(
+            self.match_variadic_subsequence(
                 &instrs[rest_start..=rest_end],
                 &subjects[rest_start..subjects.len() - back_exact_len],
             )
@@ -389,7 +389,7 @@ impl<'p, 's, A: Clone + PartialEq + Debug> Runtime<'p, 's, A> {
         true
     }
 
-    fn match_subseq_start_end_with_variadic(
+    fn match_variadic_subsequence(
         &mut self,
         instrs: &'p [InstrId],
         subjects: &'s [Expr<A>],
@@ -418,11 +418,11 @@ impl<'p, 's, A: Clone + PartialEq + Debug> Runtime<'p, 's, A> {
             self.match_sequence_single_variadic(subjects, head_pattern, bind)
         } else {
             // Multiple variadics require backtracking
-            self.match_sequence_multiple_variadic(instrs, subjects, *min_len, head_pattern, bind)
+            self.try_split_variadic_subsequence(instrs, subjects, *min_len, head_pattern, bind)
         }
     }
 
-    fn match_sequence_multiple_variadic(
+    fn try_split_variadic_subsequence(
         &mut self,
         instrs: &'p [InstrId],
         subjects: &'s [Expr<A>],
@@ -432,10 +432,7 @@ impl<'p, 's, A: Clone + PartialEq + Debug> Runtime<'p, 's, A> {
     ) -> bool {
         debug_assert!(instrs.len() >= 2);
 
-        let Some(suffix_min) = self.min_subjects_needed(&instrs[1..]) else {
-            return false;
-        };
-
+        let suffix_min = self.min_subjects_needed(&instrs[1..]);
         let required_min_len = first_seq_len + suffix_min;
 
         if subjects.len() < required_min_len {
@@ -487,64 +484,36 @@ impl<'p, 's, A: Clone + PartialEq + Debug> Runtime<'p, 's, A> {
         true
     }
 
-    fn min_subjects_needed(&self, instrs: &'p [InstrId]) -> Option<usize> {
+    fn min_subjects_needed(&self, instrs: &'p [InstrId]) -> usize {
         use Instruction::*;
 
         let mut sum = 0usize;
         for &id in instrs {
-            let instr = self.program.instructions.get(id)?;
+            let instr = self.program.instructions.get(id).unwrap();
 
             if let Variadic { min_len, .. } = instr {
-                sum = sum.checked_add(*min_len)?;
+                sum = sum + *min_len;
             } else {
-                sum = sum.checked_add(1)?;
+                sum = sum + 1;
             }
         }
-        Some(sum)
+
+        sum
     }
 
-    fn find_first_variadic(&mut self, instrs: &'p [InstrId]) -> Option<usize> {
-        self.find_variadic(instrs, 0, 1)
+    fn position_first_variadic(&self, instrs: &'p [InstrId]) -> Option<usize> {
+        instrs.iter().position(|&instr| self.is_variadic(instr))
     }
 
-    fn find_last_variadic(&mut self, instrs: &'p [InstrId]) -> Option<usize> {
-        self.find_variadic(instrs, instrs.len() - 1, -1)
+    fn position_last_variadic(&self, instrs: &'p [InstrId]) -> Option<usize> {
+        instrs.iter().rposition(|&instr| self.is_variadic(instr))
     }
 
-    fn find_variadic(
-        &mut self,
-        instrs: &'p [InstrId],
-        mut pos: usize,
-        delta: isize,
-    ) -> Option<usize> {
-        // As long as we don't encounter a variadic pattern with more
-        // that can match multiple subjects, the front matching of
-        // the sequence is fully deterministic.
-
-        assert!(
-            !instrs.is_empty(),
-            "Empty instrs should be handled in match_sequence"
-        );
-
-        loop {
-            if pos >= instrs.len() {
-                return None;
-            }
-
-            let instr = instrs[pos];
-
-            match self.program.instructions.get(instr) {
-                None => return None,
-                Some(Instruction::Variadic { .. }) => return Some(pos),
-                _ => {}
-            }
-
-            if pos == 0 && delta < 0 {
-                return None;
-            } else {
-                pos = pos.saturating_add_signed(delta);
-            }
-        }
+    fn is_variadic(&self, instr: InstrId) -> bool {
+        matches!(
+            self.program.instructions.get(instr),
+            Some(Instruction::Variadic { .. })
+        )
     }
 
     fn match_multiset(
