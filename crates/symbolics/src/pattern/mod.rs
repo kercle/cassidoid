@@ -1,5 +1,6 @@
 mod builtin;
 mod fmt;
+mod bit_mask;
 pub mod program;
 pub mod runtime;
 

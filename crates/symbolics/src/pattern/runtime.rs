@@ -2,10 +2,10 @@ use std::{collections::HashMap, fmt::Debug};
 
 use crate::{
     expr::Expr,
-    pattern::program::{InstrId, Program, VarId},
     pattern::{
         PatternPredicate,
-        program::{ArgPlan, Instruction},
+        bit_mask::BitMask,
+        program::{ArgPlan, InstrId, Instruction, Program, VarId},
     },
 };
 
@@ -36,6 +36,8 @@ enum Frame<'p, 's, A: Clone + PartialEq> {
     MatchMultiset {
         instrs: &'p [InstrId],
         subjects: &'s [Expr<A>],
+        instrs_mask: BitMask,
+        subjects_mask: BitMask,
     },
     BindOne {
         bind_var: VarId,
@@ -206,7 +208,12 @@ impl<'p, 's, A: Clone + PartialEq + Debug> Runtime<'p, 's, A> {
         match frame {
             Frame::Exec { instr, subject } => self.exec(instr, subject),
             Frame::MatchSequence { instrs, subjects } => self.match_sequence(instrs, subjects),
-            Frame::MatchMultiset { instrs, subjects } => self.match_multiset(instrs, subjects),
+            Frame::MatchMultiset {
+                instrs,
+                subjects,
+                instrs_mask,
+                subjects_mask,
+            } => self.match_multiset(instrs, subjects, instrs_mask, subjects_mask),
             Frame::BindOne { bind_var, subject } => self.bind_one(bind_var, subject),
             Frame::BindSeq { bind_var, subjects } => self.bind_seq(bind_var, subjects),
             Frame::TestPredicate { subject, predicate } => self.test_predicate(subject, predicate),
@@ -274,6 +281,8 @@ impl<'p, 's, A: Clone + PartialEq + Debug> Runtime<'p, 's, A> {
                         self.frame_stack.push(Frame::MatchMultiset {
                             instrs: pattern_args.as_slice(),
                             subjects: subject_args,
+                            instrs_mask: BitMask::new(pattern_args.len()),
+                            subjects_mask: BitMask::new(subject_args.len()),
                         });
                     }
                 }
@@ -518,7 +527,13 @@ impl<'p, 's, A: Clone + PartialEq + Debug> Runtime<'p, 's, A> {
 
     // ---- Multiset Matching ----
 
-    fn match_multiset(&mut self, instrs: &'p [InstrId], subjects: &'s [Expr<A>]) -> bool {
+    fn match_multiset(
+        &mut self,
+        instrs: &'p [InstrId],
+        subjects: &'s [Expr<A>],
+        instrs_mask: BitMask,
+        subjects_mask: BitMask,
+    ) -> bool {
         todo!()
     }
 
