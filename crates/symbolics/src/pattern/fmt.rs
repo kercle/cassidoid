@@ -40,17 +40,20 @@ impl<A: Clone + PartialEq + Debug> Debug for Instruction<A> {
         use Instruction::*;
         match self {
             Literal { inner, bind } => {
-                write!(f, "lit{} {inner:?}", format_bind(bind))
+                write!(f, "literal{} {inner:?}", format_bind(bind))
             }
             Variadic {
-                quantity,
+                min_len,
                 head_pattern,
                 bind,
             } => write!(
                 f,
-                "var{} {quantity:?} head={head_pattern:?}",
+                "variadic{} {min_len} head={head_pattern:?}",
                 format_bind(bind)
             ),
+            Wildcard { head_pattern, bind } => {
+                write!(f, "wildcard{} head={head_pattern:?}", format_bind(bind))
+            }
             Node { head, plan, bind } => {
                 write!(f, "node{} head={head:?} plan={plan:?}", format_bind(bind))
             }
@@ -59,7 +62,7 @@ impl<A: Clone + PartialEq + Debug> Debug for Instruction<A> {
                 inner,
                 bind,
             } => {
-                write!(f, "pred{} {predicate:?} {inner:?}", format_bind(bind))
+                write!(f, "predicate{} {predicate:?} {inner:?}", format_bind(bind))
             }
         }
     }

@@ -9,7 +9,7 @@ use crate::{
     pattern::program::{InstrId, Program, VarId},
     pattern::{
         PatternPredicate,
-        program::{ArgPlan, Instruction, Quantity},
+        program::{ArgPlan, Instruction},
     },
 };
 
@@ -76,7 +76,6 @@ impl<'p, 's, A: Clone + PartialEq> Environment<'p, 's, A> {
     }
 
     fn bind_one(&mut self, bind_var: VarId, subject: &'s Expr<A>) -> bool {
-        // eprintln!("BIND: {bind_var:?}");
         match self.bindings.get(&bind_var) {
             Some(EnvBinding::One(_bound_subject)) => todo!(),
             None => {
@@ -88,7 +87,6 @@ impl<'p, 's, A: Clone + PartialEq> Environment<'p, 's, A> {
     }
 
     fn bind_seq(&mut self, bind_var: VarId, subjects: Vec<&'s Expr<A>>) -> bool {
-        // eprintln!("BIND: {bind_var:?}");
         match self.bindings.get(&bind_var) {
             Some(EnvBinding::Many(_bound_subject)) => {
                 todo!()
@@ -324,10 +322,10 @@ impl<'p, 's, A: Clone + PartialEq + Debug> Runtime<'p, 's, A> {
             return true;
         }
 
-        let Some(rest_start) = self.find_first_var_many(instrs) else {
-            return self.match_sequence_exact(instrs, subjects);
+        let Some(rest_start) = self.find_first_variadic(instrs) else {
+            return self.match_subseq_lits_and_wildcards(instrs, subjects);
         };
-        let Some(rest_end) = self.find_last_var_many(instrs) else {
+        let Some(rest_end) = self.find_last_variadic(instrs) else {
             return false;
         };
 
@@ -348,7 +346,7 @@ impl<'p, 's, A: Clone + PartialEq + Debug> Runtime<'p, 's, A> {
             // sure that all obvious bindings are in place before pushing
             // choicepoint.
 
-            self.match_sequence_rest(
+            self.match_subseq_start_end_with_variadic(
                 &instrs[rest_start..=rest_end],
                 &subjects[rest_start..subjects.len() - back_exact_len],
             )
@@ -362,9 +360,11 @@ impl<'p, 's, A: Clone + PartialEq + Debug> Runtime<'p, 's, A> {
                 subjects: &subjects[rest_start..subjects.len() - back_exact_len],
             });
 
-            let front_match_result =
-                self.match_sequence_exact(&instrs[..front_exact_len], &subjects[..front_exact_len]);
-            let back_match_result = self.match_sequence_exact(
+            let front_match_result = self.match_subseq_lits_and_wildcards(
+                &instrs[..front_exact_len],
+                &subjects[..front_exact_len],
+            );
+            let back_match_result = self.match_subseq_lits_and_wildcards(
                 &instrs[rest_end + 1..],
                 &subjects[subjects.len() - back_exact_len..],
             );
@@ -373,7 +373,11 @@ impl<'p, 's, A: Clone + PartialEq + Debug> Runtime<'p, 's, A> {
         }
     }
 
-    fn match_sequence_exact(&mut self, instrs: &'p [InstrId], subjects: &'s [Expr<A>]) -> bool {
+    fn match_subseq_lits_and_wildcards(
+        &mut self,
+        instrs: &'p [InstrId],
+        subjects: &'s [Expr<A>],
+    ) -> bool {
         if instrs.len() != subjects.len() {
             return false;
         }
@@ -385,7 +389,11 @@ impl<'p, 's, A: Clone + PartialEq + Debug> Runtime<'p, 's, A> {
         true
     }
 
-    fn match_sequence_rest(&mut self, instrs: &'p [InstrId], subjects: &'s [Expr<A>]) -> bool {
+    fn match_subseq_start_end_with_variadic(
+        &mut self,
+        instrs: &'p [InstrId],
+        subjects: &'s [Expr<A>],
+    ) -> bool {
         if instrs.is_empty() {
             return true;
         }
@@ -406,34 +414,12 @@ impl<'p, 's, A: Clone + PartialEq + Debug> Runtime<'p, 's, A> {
         }
 
         if instrs.len() == 1 {
+            // Single variadics are deterministic -> no backtracking
             self.match_sequence_single_variadic(subjects, head_pattern, bind)
         } else {
+            // Multiple variadics require backtracking
             self.match_sequence_multiple_variadic(instrs, subjects, *min_len, head_pattern, bind)
         }
-    }
-
-    fn match_sequence_single_variadic(
-        &mut self,
-        subjects: &'s [Expr<A>],
-        head_pattern: &Option<InstrId>,
-        bind: &Option<VarId>,
-    ) -> bool {
-        if let Some(&bind_var) = bind.as_ref() {
-            self.frame_stack.push(Frame::BindSeq {
-                bind_var,
-                subjects: subjects.iter().collect(),
-            });
-        }
-
-        if let Some(head_pattern_instr) = head_pattern {
-            for subject in subjects {
-                if !self.match_head_pattern(*head_pattern_instr, subject) {
-                    return false;
-                }
-            }
-        }
-
-        true
     }
 
     fn match_sequence_multiple_variadic(
@@ -477,6 +463,30 @@ impl<'p, 's, A: Clone + PartialEq + Debug> Runtime<'p, 's, A> {
         self.match_sequence_single_variadic(first_chunk, first_head_pattern, first_bind)
     }
 
+    fn match_sequence_single_variadic(
+        &mut self,
+        subjects: &'s [Expr<A>],
+        head_pattern: &Option<InstrId>,
+        bind: &Option<VarId>,
+    ) -> bool {
+        if let Some(&bind_var) = bind.as_ref() {
+            self.frame_stack.push(Frame::BindSeq {
+                bind_var,
+                subjects: subjects.iter().collect(),
+            });
+        }
+
+        if let Some(head_pattern_instr) = head_pattern {
+            for subject in subjects {
+                if !self.match_head_pattern(*head_pattern_instr, subject) {
+                    return false;
+                }
+            }
+        }
+
+        true
+    }
+
     fn min_subjects_needed(&self, instrs: &'p [InstrId]) -> Option<usize> {
         use Instruction::*;
 
@@ -493,15 +503,15 @@ impl<'p, 's, A: Clone + PartialEq + Debug> Runtime<'p, 's, A> {
         Some(sum)
     }
 
-    fn find_first_var_many(&mut self, instrs: &'p [InstrId]) -> Option<usize> {
-        self.find_var_many(instrs, 0, 1)
+    fn find_first_variadic(&mut self, instrs: &'p [InstrId]) -> Option<usize> {
+        self.find_variadic(instrs, 0, 1)
     }
 
-    fn find_last_var_many(&mut self, instrs: &'p [InstrId]) -> Option<usize> {
-        self.find_var_many(instrs, instrs.len() - 1, -1)
+    fn find_last_variadic(&mut self, instrs: &'p [InstrId]) -> Option<usize> {
+        self.find_variadic(instrs, instrs.len() - 1, -1)
     }
 
-    fn find_var_many(
+    fn find_variadic(
         &mut self,
         instrs: &'p [InstrId],
         mut pos: usize,
@@ -561,18 +571,14 @@ impl<'p, 's, A: Clone + PartialEq + Debug> Runtime<'p, 's, A> {
             resume_frame,
         };
 
-        // eprint!("PUSH CHOICEPOINT:");
         for &v_id in self.environment.bindings.keys() {
-            // eprint!(" {v_id:?}");
             choice_point.bindings.insert(v_id);
         }
-        // eprintln!("");
 
         self.choice_points.push(choice_point);
     }
 
     fn backtrack(&mut self) -> bool {
-        // eprintln!("BACKTRACK");
         let Some(choice_point) = self.choice_points.pop() else {
             return false;
         };
