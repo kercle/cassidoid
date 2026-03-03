@@ -77,7 +77,7 @@ impl<'p, 's, A: Clone + PartialEq> Environment<'p, 's, A> {
 
     fn bind_one(&mut self, bind_var: VarId, subject: &'s Expr<A>) -> bool {
         match self.bindings.get(&bind_var) {
-            Some(EnvBinding::One(_bound_subject)) => todo!(),
+            Some(EnvBinding::One(bound_subject)) => subject == *bound_subject,
             None => {
                 self.bindings.insert(bind_var, EnvBinding::One(subject));
                 true
@@ -88,8 +88,12 @@ impl<'p, 's, A: Clone + PartialEq> Environment<'p, 's, A> {
 
     fn bind_seq(&mut self, bind_var: VarId, subjects: Vec<&'s Expr<A>>) -> bool {
         match self.bindings.get(&bind_var) {
-            Some(EnvBinding::Many(_bound_subject)) => {
-                todo!()
+            Some(EnvBinding::Many(bound_subjects)) => {
+                if bound_subjects.len() != subjects.len() {
+                    return false;
+                }
+
+                bound_subjects.iter().zip(subjects).all(|(a, b)| *a == b)
             }
             None => {
                 self.bindings.insert(bind_var, EnvBinding::Many(subjects));
