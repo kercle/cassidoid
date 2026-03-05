@@ -4,6 +4,7 @@ use std::str::FromStr;
 
 use crate::expr::Expr;
 use crate::expr::walk::ExprTopDownWalker;
+use crate::parser::ast::{ADD_HEAD, MUL_HEAD};
 use crate::pattern::{PatternPredicate, builtin::*};
 
 pub type InstrId = usize;
@@ -65,29 +66,39 @@ pub struct MultisetPlan<A: Clone + PartialEq> {
     pub rest: Vec<(VarId, usize)>,
 }
 
-pub struct Compiler<A, F>
+pub struct Compiler<A>
 where
     A: Clone + PartialEq,
-    F: Fn(&Expr<A>) -> ArgOrder,
 {
     instructions: Vec<Instruction<A>>,
     var_ids: HashMap<String, VarId>,
     vars: Vec<String>,
-    arg_order_predicate: F,
+    is_multiset: fn(&Expr<A>) -> bool,
 }
 
-impl<A, F> Compiler<A, F>
+fn is_multiset_default<A>(expr: &Expr<A>) -> bool
+where
+    A: Clone + PartialEq,
+{
+    expr.has_head_symbol(ADD_HEAD) || expr.has_head_symbol(MUL_HEAD)
+}
+
+impl<A> Compiler<A>
 where
     A: Clone + PartialEq + Default,
-    F: Fn(&Expr<A>) -> ArgOrder,
 {
-    pub fn new(arg_order_predicate: F) -> Self {
+    pub fn new() -> Self {
         Compiler {
             instructions: Vec::new(),
             var_ids: HashMap::new(),
             vars: Vec::new(),
-            arg_order_predicate,
+            is_multiset: is_multiset_default,
         }
+    }
+
+    pub fn with_multiset_predicate(mut self, f: fn(&Expr<A>) -> bool) -> Self {
+        self.is_multiset = f;
+        self
     }
 
     fn emit(&mut self, instr: Instruction<A>) -> InstrId {
@@ -153,12 +164,7 @@ where
                 let Ok(predicate) = PatternPredicate::from_str(predicate_symbol) else {
                     // Maybe error reporting instead?
 
-                    return self.compile_node(
-                        head,
-                        (self.arg_order_predicate)(pat_expr),
-                        args,
-                        bind,
-                    );
+                    return self.compile_node(head, self.arg_order(pat_expr), args, bind);
                 };
 
                 let inner = self.compile_pattern(lhs, None);
@@ -176,7 +182,7 @@ where
                         bind,
                     })
                 } else {
-                    self.compile_node(head, (self.arg_order_predicate)(pat_expr), args, bind)
+                    self.compile_node(head, self.arg_order(pat_expr), args, bind)
                 }
             }
         }
@@ -221,6 +227,14 @@ where
         self.emit(Instruction::Node { head, plan, bind })
     }
 
+    fn arg_order(&self, expr: &Expr<A>) -> ArgOrder {
+        if (self.is_multiset)(expr) {
+            ArgOrder::Multiset
+        } else {
+            ArgOrder::Sequence
+        }
+    }
+
     fn is_blank(expr: &Expr<A>) -> bool {
         if let Expr::Node { head, args, .. } = expr {
             head.matches_symbol(HEAD_BLANK) && args.len() <= 1
@@ -263,7 +277,7 @@ where
 
     fn is_literal(&self, root: &Expr<A>) -> bool {
         for expr in ExprTopDownWalker::new(root) {
-            if matches!((self.arg_order_predicate)(expr), ArgOrder::Multiset) {
+            if matches!(self.arg_order(expr), ArgOrder::Multiset) {
                 // Since multisets can be ordered arbitrary
                 // expressions can match, even if the don't
                 // map 1:1 onto each other.
