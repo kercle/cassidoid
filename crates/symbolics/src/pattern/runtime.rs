@@ -12,7 +12,6 @@ use crate::{
 
 #[derive(Debug)]
 struct ChoicePoint<'p, 's, A: Clone + PartialEq> {
-    // pub frame_stack_snapshot: Vec<Frame<'p, 's, A>>,
     pub frame_stack: Rc<FrameStack<'p, 's, A>>,
     pub bind_stack_len: usize,
     pub resume_frame: Frame<'p, 's, A>,
@@ -72,7 +71,6 @@ enum Frame<'p, 's, A: Clone + PartialEq> {
 pub struct Runtime<'p, 's, A: Clone + PartialEq> {
     program: &'p Program<A>,
     environment: Environment<'p, 's, A>,
-    // frame_stack: Vec<Frame<'p, 's, A>>,
     frame_stack: Rc<FrameStack<'p, 's, A>>,
     choice_points: Vec<ChoicePoint<'p, 's, A>>,
     bind_stack: Vec<VarId>,
