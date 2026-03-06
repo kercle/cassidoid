@@ -6,6 +6,7 @@ use crate::{
     calculus::{derivative::derivative_rules, integrate::indefinite_integrals_rules},
     expr::{Expr, NormalizedExpr},
     matcher::context::MatchContext,
+    simplify::trigonometric_functions::trigonometric_rules,
 };
 
 pub struct Simplifier {
@@ -55,10 +56,7 @@ impl Simplifier {
     }
 
     pub fn with_trigonometric_identities(self) -> Simplifier {
-        let expr = NormalizedExpr::new(trigonometric_functions::simplify_trigon(
-            self.expr.take_expr(),
-        ));
-        Simplifier::new(expr)
+        Simplifier::new(self.simplify_with_rules_until_stable(trigonometric_rules()))
     }
 
     pub fn with_known_function_values(self) -> Simplifier {
