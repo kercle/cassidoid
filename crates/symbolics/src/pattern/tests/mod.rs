@@ -5,6 +5,7 @@ mod predicate;
 mod program;
 mod sequence;
 mod wildcards;
+mod utils;
 
 use expr_macro::expr;
 

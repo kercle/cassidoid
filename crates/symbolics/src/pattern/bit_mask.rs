@@ -12,8 +12,6 @@ impl BitMask {
     pub fn new(capacity: usize) -> Self {
         let max_cap = std::mem::size_of::<BitMaskBase>() * 8;
 
-        assert!(capacity >= 1, "Capacity needs to be at least 1.");
-
         assert!(
             capacity <= max_cap,
             "Allow for bit masks larger than {max_cap} bits."

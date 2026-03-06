@@ -101,6 +101,17 @@ where
         self
     }
 
+    pub fn compile(mut self, pattern: &Expr<A>) -> Program<A> {
+        let entry = self.compile_pattern(pattern, None);
+
+        Program {
+            entry,
+            instructions: self.instructions,
+            vars: self.vars,
+            var_ids: self.var_ids,
+        }
+    }
+
     fn emit(&mut self, instr: Instruction<A>) -> InstrId {
         let id = self.instructions.len();
         self.instructions.push(instr);
@@ -115,17 +126,6 @@ where
         self.vars.push(name.to_string());
         self.var_ids.insert(name.to_string(), id);
         id
-    }
-
-    pub fn compile(mut self, pattern: &Expr<A>) -> Program<A> {
-        let entry = self.compile_pattern(pattern, None);
-
-        Program {
-            entry,
-            instructions: self.instructions,
-            vars: self.vars,
-            var_ids: self.var_ids,
-        }
     }
 
     fn compile_pattern(&mut self, pat_expr: &Expr<A>, bind: Option<VarId>) -> InstrId {
