@@ -1,6 +1,6 @@
 use std::fmt;
 
-type BitMaskBase = u8;
+type BitMaskBase = u128;
 
 #[derive(Clone)]
 pub struct BitMask {
