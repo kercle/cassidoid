@@ -31,6 +31,14 @@ where
         Expr::new_node_with_annotation(head.into(), args, A::default())
     }
 
+    pub fn new_unary_node<T: Into<Expr<A>>>(head: T, arg: Expr<A>) -> Self {
+        Self::new_node(head, vec![arg])
+    }
+
+    pub fn new_binary_node<T: Into<Expr<A>>>(head: T, lhs: Expr<A>, rhs: Expr<A>) -> Self {
+        Self::new_node(head, vec![lhs, rhs])
+    }
+
     pub fn new_atom(entry: Atom) -> Self {
         Expr::new_atom_with_annotation(entry, A::default())
     }

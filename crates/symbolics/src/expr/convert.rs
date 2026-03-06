@@ -1,9 +1,13 @@
 use numbers::Number;
+use parser::ast::{DIV_HEAD, ParserAst, SUB_HEAD};
 
 use crate::{
     atom::Atom,
     expr::Expr,
-    parser::ast::{ADD_HEAD, MUL_HEAD, POW_HEAD, ParserAst},
+    parser::ast::{
+        ADD_HEAD, EQ_HEAD, GE_HEAD, GT_HEAD, LE_HEAD, LT_HEAD, MUL_HEAD, POW_HEAD,
+        ParserAst as ParserAstOld,
+    },
 };
 
 impl<A, T: Into<Atom>> From<T> for Expr<A>
@@ -15,6 +19,44 @@ where
     }
 }
 
+impl<A: Default> From<ParserAst> for Expr<A> {
+    fn from(ast: ParserAst) -> Self {
+        use ParserAst::*;
+        match ast {
+            Constant { value } => Self::new_number(value),
+            Symbol { name } => Self::new_symbol(name),
+            LesserThan { lhs, rhs } => {
+                Self::new_binary_node(LT_HEAD, Self::from(*lhs), Self::from(*rhs))
+            }
+            LesserEq { lhs, rhs } => {
+                Self::new_binary_node(LE_HEAD, Self::from(*lhs), Self::from(*rhs))
+            }
+            Equals { lhs, rhs } => {
+                Self::new_binary_node(EQ_HEAD, Self::from(*lhs), Self::from(*rhs))
+            }
+            GreaterEq { lhs, rhs } => {
+                Self::new_binary_node(GE_HEAD, Self::from(*lhs), Self::from(*rhs))
+            }
+            GreaterThan { lhs, rhs } => {
+                Self::new_binary_node(GT_HEAD, Self::from(*lhs), Self::from(*rhs))
+            }
+            Add { lhs, rhs } => Self::new_binary_node(ADD_HEAD, Self::from(*lhs), Self::from(*rhs)),
+            Sub { lhs, rhs } => Self::new_binary_node(SUB_HEAD, Self::from(*lhs), Self::from(*rhs)),
+            Negation { arg } => Self::new_unary_node(SUB_HEAD, Self::from(*arg)),
+            Mul { lhs, rhs } => Self::new_binary_node(MUL_HEAD, Self::from(*lhs), Self::from(*rhs)),
+            Div { lhs, rhs } => Self::new_binary_node(DIV_HEAD, Self::from(*lhs), Self::from(*rhs)),
+            Pow { lhs, rhs } => Self::new_binary_node(POW_HEAD, Self::from(*lhs), Self::from(*rhs)),
+            FunctionCall { name, args } => {
+                let head = Self::new_symbol(name);
+                let args = args.into_iter().map(|node| Self::from(node)).collect();
+
+                Self::new_node(head, args)
+            }
+            Block { .. } => todo!(),
+        }
+    }
+}
+
 impl<A> Expr<A>
 where
     A: Default + Clone + PartialEq,
@@ -23,15 +65,15 @@ where
         Self::new_number(Number::from_i64(value))
     }
 
-    pub fn from_parser_ast(parser_ast: ParserAst<A>) -> Self {
+    pub fn from_parser_ast(parser_ast: ParserAstOld<A>) -> Self {
         match parser_ast {
-            ParserAst::Constant { value, annotation } => {
+            ParserAstOld::Constant { value, annotation } => {
                 Self::new_number(value).with_annotation(annotation)
             }
-            ParserAst::Symbol { name, annotation } => {
+            ParserAstOld::Symbol { name, annotation } => {
                 Self::new_symbol(name).with_annotation(annotation)
             }
-            ParserAst::Add { nodes, annotation } => {
+            ParserAstOld::Add { nodes, annotation } => {
                 let head = Self::new_symbol(ADD_HEAD);
                 let args = nodes
                     .into_iter()
@@ -39,7 +81,7 @@ where
                     .collect();
                 Self::new_node(head, args).with_annotation(annotation.clone())
             }
-            ParserAst::Sub {
+            ParserAstOld::Sub {
                 lhs,
                 rhs,
                 annotation,
@@ -60,7 +102,7 @@ where
                 )
                 .with_annotation(annotation.clone())
             }
-            ParserAst::Negation { arg, annotation } => {
+            ParserAstOld::Negation { arg, annotation } => {
                 let arg = Self::from_parser_ast(*arg);
                 Self::new_node(
                     Self::new_symbol(MUL_HEAD),
@@ -68,7 +110,7 @@ where
                 )
                 .with_annotation(annotation.clone())
             }
-            ParserAst::Mul { nodes, annotation } => {
+            ParserAstOld::Mul { nodes, annotation } => {
                 let head = Self::new_symbol(MUL_HEAD);
                 let args = nodes
                     .into_iter()
@@ -76,7 +118,7 @@ where
                     .collect();
                 Self::new_node(head, args).with_annotation(annotation.clone())
             }
-            ParserAst::Div {
+            ParserAstOld::Div {
                 lhs,
                 rhs,
                 annotation,
@@ -97,7 +139,7 @@ where
                 )
                 .with_annotation(annotation.clone())
             }
-            ParserAst::Pow {
+            ParserAstOld::Pow {
                 lhs,
                 rhs,
                 annotation,
@@ -108,7 +150,7 @@ where
 
                 Self::new_node(head, vec![lhs, rhs]).with_annotation(annotation.clone())
             }
-            ParserAst::FunctionCall {
+            ParserAstOld::FunctionCall {
                 name,
                 args,
                 annotation,
@@ -121,7 +163,7 @@ where
 
                 Self::new_node(head, args).with_annotation(annotation.clone())
             }
-            ParserAst::Block { .. } => todo!(),
+            ParserAstOld::Block { .. } => todo!(),
         }
     }
 }
