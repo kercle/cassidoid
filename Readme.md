@@ -39,7 +39,8 @@ The syntax of the expressions is Mathematica inspired:
 - [x] Decouple `AstNode` from internal `Expr`
 - [x] Basic Pattern matching
 - [x] More advanced Pattern matching (commutative expressions with at most one sequence)
-- [ ] Make Expr into Merkle tree for quicker pattern matching
+- [x] Make Expr into Merkle tree for quicker pattern matching
+- [ ] Remove annotation from Expr, as the intended use case was solved differently
 - [ ] Allow more sequences in commutative patterns
 - [ ] Support for more flexible predicate in pattern matching
 - [x] Basic Rewrite engine
@@ -49,7 +50,7 @@ The syntax of the expressions is Mathematica inspired:
 - [x] Naive Integration with simple rules
 - [ ] More advanced integration
 - [ ] Matrix/Vector operations
-- [ ] Plotting and dynamical variables for dashboards
+- [ ] Numerical evaluation and dynamical variables for dashboards
 - [ ] Numerical integration and ODE/PDE solving
 - [ ] Numerical solver for equations
 - [ ] UI maybe with Tauri
