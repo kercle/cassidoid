@@ -1,4 +1,4 @@
-use std::{collections::HashMap, fmt::Debug};
+use std::{collections::HashMap, fmt::Debug, rc::Rc};
 
 use crate::{
     expr::Expr,
@@ -195,12 +195,12 @@ impl<'p, 's, A: Clone + PartialEq + Debug> Runtime<'p, 's, A> {
     }
 
     pub fn next_match(&mut self) -> Option<&Environment<'p, 's, A>> {
-        if self.frame_stack.is_empty() && !self.backtrack() {
+        if self.is_frame_stack_empty() && !self.backtrack() {
             return None;
         }
 
         loop {
-            let Some(frame) = self.frame_stack.pop() else {
+            let Some(frame) = self.pop_frame() else {
                 return Some(&self.environment);
             };
 
@@ -271,18 +271,18 @@ impl<'p, 's, A: Clone + PartialEq + Debug> Runtime<'p, 's, A> {
                 };
 
                 if let Some(&bind_var) = bind.as_ref() {
-                    self.frame_stack.push(Frame::BindOne { bind_var, subject });
+                    self.push_frame(Frame::BindOne { bind_var, subject });
                 }
 
                 match plan {
                     ArgPlan::Sequence(pattern_args) => {
-                        self.frame_stack.push(Frame::MatchSequence {
+                        self.push_frame(Frame::MatchSequence {
                             instrs: pattern_args.as_slice(),
                             subjects: subject_args,
                         });
                     }
                     ArgPlan::Multiset(pattern_args) => {
-                        self.frame_stack.push(Frame::MatchMultiset {
+                        self.push_frame(Frame::MatchMultiset {
                             instrs: pattern_args.as_slice(),
                             subjects: subject_args,
                             state: MultisetMatchState::new(pattern_args.len(), subject_args.len()),
@@ -290,7 +290,7 @@ impl<'p, 's, A: Clone + PartialEq + Debug> Runtime<'p, 's, A> {
                     }
                 }
 
-                self.frame_stack.push(Frame::Exec {
+                self.push_frame(Frame::Exec {
                     instr: *head,
                     subject: subject_head,
                 });
@@ -299,7 +299,7 @@ impl<'p, 's, A: Clone + PartialEq + Debug> Runtime<'p, 's, A> {
             }
             Wildcard { head_pattern, bind } => {
                 if let Some(&bind_var) = bind.as_ref() {
-                    self.frame_stack.push(Frame::BindOne { bind_var, subject });
+                    self.push_frame(Frame::BindOne { bind_var, subject });
                 }
 
                 if let Some(head_pattern_instr) = head_pattern {
@@ -315,15 +315,15 @@ impl<'p, 's, A: Clone + PartialEq + Debug> Runtime<'p, 's, A> {
                 bind,
             } => {
                 if let Some(&bind_var) = bind.as_ref() {
-                    self.frame_stack.push(Frame::BindOne { bind_var, subject });
+                    self.push_frame(Frame::BindOne { bind_var, subject });
                 }
 
-                self.frame_stack.push(Frame::TestPredicate {
+                self.push_frame(Frame::TestPredicate {
                     subject,
                     predicate: *predicate,
                 });
 
-                self.frame_stack.push(Frame::Exec {
+                self.push_frame(Frame::Exec {
                     instr: *inner,
                     subject,
                 });
@@ -339,7 +339,7 @@ impl<'p, 's, A: Clone + PartialEq + Debug> Runtime<'p, 's, A> {
             return false;
         };
 
-        self.frame_stack.push(Frame::Exec {
+        self.push_frame(Frame::Exec {
             instr,
             subject: head,
         });
@@ -416,7 +416,7 @@ impl<'p, 's, A: Clone + PartialEq + Debug> Runtime<'p, 's, A> {
             // deterministic match options.
 
             // queue matching of subsequence starting and ending in variadic.
-            self.frame_stack.push(Frame::MatchSequence {
+            self.push_frame(Frame::MatchSequence {
                 instrs: &instrs[first_variadic_pos..=last_variadic_pos],
                 subjects: &subjects[first_variadic_pos..subjects.len() - back_exact_len],
             });
@@ -446,7 +446,7 @@ impl<'p, 's, A: Clone + PartialEq + Debug> Runtime<'p, 's, A> {
         }
 
         for (&instr, subject) in instrs.iter().zip(subjects).rev() {
-            self.frame_stack.push(Frame::Exec { instr, subject });
+            self.push_frame(Frame::Exec { instr, subject });
         }
 
         true
@@ -495,7 +495,7 @@ impl<'p, 's, A: Clone + PartialEq + Debug> Runtime<'p, 's, A> {
         // Push bind before, so when the stack is popped, this is
         // executed after the head pattern check succeeds.
         if let Some(&bind_var) = bind.as_ref() {
-            self.frame_stack.push(Frame::BindSeq {
+            self.push_frame(Frame::BindSeq {
                 bind_var,
                 subjects: subjects.iter().collect(),
             });
@@ -543,7 +543,7 @@ impl<'p, 's, A: Clone + PartialEq + Debug> Runtime<'p, 's, A> {
 
         let (first_chunk, rest_subjects) = subjects.split_at(first_variadic_len);
 
-        self.frame_stack.push(Frame::MatchSequence {
+        self.push_frame(Frame::MatchSequence {
             instrs: &instrs[1..],
             subjects: rest_subjects,
         });
@@ -617,13 +617,13 @@ impl<'p, 's, A: Clone + PartialEq + Debug> Runtime<'p, 's, A> {
 
         state.set(next_instr_pos, next_subject_pos);
 
-        self.frame_stack.push(Frame::MatchMultiset {
+        self.push_frame(Frame::MatchMultiset {
             instrs,
             subjects,
             state,
         });
 
-        self.frame_stack.push(Frame::Exec {
+        self.push_frame(Frame::Exec {
             instr: instrs[next_instr_pos],
             subject: &subjects[next_subject_pos],
         });
@@ -682,7 +682,7 @@ impl<'p, 's, A: Clone + PartialEq + Debug> Runtime<'p, 's, A> {
                 })
                 .collect();
 
-            self.frame_stack.push(Frame::BindSeq {
+            self.push_frame(Frame::BindSeq {
                 bind_var,
                 subjects: rest,
             });
@@ -760,6 +760,18 @@ impl<'p, 's, A: Clone + PartialEq + Debug> Runtime<'p, 's, A> {
         }
     }
 
+    fn push_frame(&mut self, frame: Frame<'p, 's, A>) {
+        self.frame_stack.push(frame);
+    }
+
+    fn pop_frame(&mut self) -> Option<Frame<'p, 's, A>> {
+        self.frame_stack.pop()
+    }
+
+    fn is_frame_stack_empty(&self) -> bool {
+        self.frame_stack.is_empty()
+    }
+
     fn push_choice_point(&mut self, resume_frame: Frame<'p, 's, A>) {
         let choice_point = ChoicePoint {
             frame_stack_snapshot: self.frame_stack.clone(),
@@ -781,7 +793,7 @@ impl<'p, 's, A: Clone + PartialEq + Debug> Runtime<'p, 's, A> {
         }
 
         self.frame_stack = choice_point.frame_stack_snapshot;
-        self.frame_stack.push(choice_point.resume_frame);
+        self.push_frame(choice_point.resume_frame);
 
         true
     }
