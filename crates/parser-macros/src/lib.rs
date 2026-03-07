@@ -112,10 +112,8 @@ fn ast_to_token_stream(ast: ParserAst) -> proc_macro2::TokenStream {
             quote! { #ast_path::new_pow(#lhs, #rhs) }
         }
         FunctionCall { name, args } => {
-            let args: Vec<proc_macro2::TokenStream> = args
-                .into_iter()
-                .map(|node| ast_to_token_stream(node))
-                .collect();
+            let args: Vec<proc_macro2::TokenStream> =
+                args.into_iter().map(ast_to_token_stream).collect();
 
             quote! { #ast_path::new_function_call(#name, vec![#(#args),*]) }
         }

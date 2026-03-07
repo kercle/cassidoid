@@ -45,7 +45,7 @@ fn eval_inner(input: String) -> Result<KernelMessage, KernelMessage> {
 
     let input_expr = Expr::from(ast_in);
     let input_latex = input_expr.to_latex();
-    let input_expr = NormalizedExpr::new(Expr::from(input_expr));
+    let input_expr = NormalizedExpr::new(input_expr);
 
     let result_expr = Simplifier::new(input_expr).simple().resugar();
 

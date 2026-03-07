@@ -44,13 +44,9 @@ fn greek_letter(name: &str) -> String {
 fn node_weight(expr: &Expr) -> Option<u32> {
     if expr.is_application_of(NEG_HEAD, 1) {
         Some(3)
-    } else if expr.has_head_symbol(ADD_HEAD) {
+    } else if expr.has_head_symbol(ADD_HEAD) || expr.is_application_of(SUB_HEAD, 2) {
         Some(1)
-    } else if expr.is_application_of(SUB_HEAD, 2) {
-        Some(1)
-    } else if expr.has_head_symbol(MUL_HEAD) {
-        Some(2)
-    } else if expr.is_application_of(DIV_HEAD, 2) {
+    } else if expr.has_head_symbol(MUL_HEAD) || expr.is_application_of(DIV_HEAD, 2) {
         Some(2)
     } else if expr.is_application_of(POW_HEAD, 2) {
         Some(4)
@@ -121,8 +117,8 @@ pub fn expr_to_latex(expr: &Expr, parent_weight: Option<u32>) -> String {
         Expr::Node { args, .. } if expr.is_application_of(SUB_HEAD, 2) => wrap_with_parentheses(
             format!(
                 "{} - {}",
-                expr_to_latex(args.get(0).unwrap(), weight),
-                expr_to_latex(args.get(1).unwrap(), weight)
+                expr_to_latex(args.first().unwrap(), weight),
+                expr_to_latex(args.last().unwrap(), weight)
             ),
             weight,
             parent_weight,
@@ -138,8 +134,8 @@ pub fn expr_to_latex(expr: &Expr, parent_weight: Option<u32>) -> String {
         Expr::Node { args, .. } if expr.is_application_of(DIV_HEAD, 2) => wrap_with_parentheses(
             format!(
                 "\\frac{{{}}}{{{}}}",
-                expr_to_latex(args.get(0).unwrap(), weight),
-                expr_to_latex(args.get(1).unwrap(), weight)
+                expr_to_latex(args.first().unwrap(), weight),
+                expr_to_latex(args.last().unwrap(), weight)
             ),
             weight,
             parent_weight,
@@ -147,8 +143,8 @@ pub fn expr_to_latex(expr: &Expr, parent_weight: Option<u32>) -> String {
         Expr::Node { args, .. } if expr.is_application_of(POW_HEAD, 2) => wrap_with_parentheses(
             format!(
                 "{{{}}}^{{{}}}",
-                expr_to_latex(args.get(0).unwrap(), weight),
-                expr_to_latex(args.get(1).unwrap(), weight)
+                expr_to_latex(args.first().unwrap(), weight),
+                expr_to_latex(args.last().unwrap(), weight)
             ),
             weight,
             parent_weight,

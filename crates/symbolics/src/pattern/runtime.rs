@@ -280,7 +280,7 @@ impl<'p, 's, A: Clone + PartialEq + Debug> Runtime<'p, 's, A> {
             return false;
         }
 
-        return subject == inner;
+        subject == inner
     }
 
     fn literal_instr_matches_expr(&self, instr: InstrId, subject: &'s Expr<A>) -> bool {

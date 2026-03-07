@@ -53,11 +53,11 @@ impl<A: Clone + PartialEq> Instruction<A> {
     pub fn bind(&self) -> Option<VarId> {
         use Instruction::*;
         match self {
-            Literal { bind, .. } => bind.clone(),
-            Variadic { bind, .. } => bind.clone(),
-            Wildcard { bind, .. } => bind.clone(),
-            Predicate { bind, .. } => bind.clone(),
-            Node { bind, .. } => bind.clone(),
+            Literal { bind, .. } => *bind,
+            Variadic { bind, .. } => *bind,
+            Wildcard { bind, .. } => *bind,
+            Predicate { bind, .. } => *bind,
+            Node { bind, .. } => *bind,
         }
     }
 }

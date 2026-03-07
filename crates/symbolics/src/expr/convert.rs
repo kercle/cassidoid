@@ -44,7 +44,7 @@ impl<A: Default> From<ParserAst> for Expr<A> {
             Pow { lhs, rhs } => Self::new_binary_node(POW_HEAD, Self::from(*lhs), Self::from(*rhs)),
             FunctionCall { name, args } => {
                 let head = Self::new_symbol(name);
-                let args = args.into_iter().map(|node| Self::from(node)).collect();
+                let args = args.into_iter().map(Self::from).collect();
 
                 Self::new_node(head, args)
             }
