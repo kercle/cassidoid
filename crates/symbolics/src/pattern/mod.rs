@@ -83,7 +83,7 @@ impl<'a> Pattern<'a> {
 
     fn from_pattern_node(expr: &'a NormExpr) -> Option<Pattern<'a>> {
         match expr.kind() {
-            ExprKind::Node { head, args, .. }
+            ExprKind::Node { head, args }
                 if head.matches_symbol(PATTERN_TEST_HEAD) && args.len() == 2 =>
             {
                 let pat = args.first()?;
@@ -108,7 +108,7 @@ impl<'a> Pattern<'a> {
                     }
                 }
             }
-            ExprKind::Node { head, args, .. }
+            ExprKind::Node { head, args }
                 if head.matches_symbol(PATTERN_HEAD) && args.len() == 2 =>
             {
                 let e = args.last()?;
@@ -124,7 +124,7 @@ impl<'a> Pattern<'a> {
                     unimplemented!()
                 }
             }
-            ExprKind::Node { head, args, .. } if args.len() <= 1 => {
+            ExprKind::Node { head, args } if args.len() <= 1 => {
                 if head.matches_symbol(BLANK_ONE_HEAD) {
                     Some(Pattern::Blank {
                         bind_name: None,
@@ -168,7 +168,7 @@ impl<'a> Pattern<'a> {
 
         match expr.kind() {
             ExprKind::Atom { .. } => Pattern::Literal(expr),
-            ExprKind::Node { head, args, .. } if descend => {
+            ExprKind::Node { head, args } if descend => {
                 if let Some(p) = Self::from_pattern_node(expr) {
                     p
                 } else {

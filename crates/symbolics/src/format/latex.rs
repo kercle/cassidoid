@@ -215,7 +215,7 @@ pub fn expr_to_latex(expr: &RawExpr, parent_weight: Option<u32>) -> String {
                 format!("\\text{{Integrate}}\\left[{f_latex}, {x_latex}\\right]")
             }
         }
-        ExprKind::Node { head, args, .. } => {
+        ExprKind::Node { head, args } => {
             let Some(name) = head.get_symbol() else {
                 unimplemented!()
             };

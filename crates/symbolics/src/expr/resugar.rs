@@ -109,22 +109,16 @@ impl NormExpr {
 
     pub fn resugar(self) -> RawExpr {
         match self.kind {
-            ExprKind::Node { head, args, .. }
-                if head.matches_symbol(ADD_HEAD) && !args.is_empty() =>
-            {
+            ExprKind::Node { head, args } if head.matches_symbol(ADD_HEAD) && !args.is_empty() => {
                 let args = args.into_iter().map(|e| e.resugar()).collect();
                 Self::resugar_add(args)
             }
-            ExprKind::Node { head, args, .. }
-                if head.matches_symbol(MUL_HEAD) && !args.is_empty() =>
-            {
+            ExprKind::Node { head, args } if head.matches_symbol(MUL_HEAD) && !args.is_empty() => {
                 let args = args.into_iter().map(|e| e.resugar()).collect();
 
                 Self::resugar_mul(args)
             }
-            ExprKind::Node { head, args, .. }
-                if head.matches_symbol(POW_HEAD) && args.len() == 2 =>
-            {
+            ExprKind::Node { head, args } if head.matches_symbol(POW_HEAD) && args.len() == 2 => {
                 let one_half = Number::new_rational_from_i64(1, 2).unwrap();
                 if args
                     .last()

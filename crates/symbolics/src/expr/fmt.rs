@@ -5,8 +5,8 @@ use crate::expr::{Expr, ExprKind};
 impl<S> Debug for Expr<S> {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), Error> {
         let s = match self.kind() {
-            ExprKind::Atom { entry, .. } => format!("{entry:?}"),
-            ExprKind::Node { head, args, .. } => {
+            ExprKind::Atom { entry } => format!("{entry:?}"),
+            ExprKind::Node { head, args } => {
                 let head_str = if matches!(*head.kind(), ExprKind::Node { .. }) {
                     format!("({head:?})")
                 } else {

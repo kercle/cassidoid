@@ -6,10 +6,9 @@ use crate::{
 };
 
 impl<S> Expr<S> {
-
     pub fn as_atom(&self) -> Option<&Atom> {
         match self.kind() {
-            ExprKind::Atom { entry, .. } => Some(entry),
+            ExprKind::Atom { entry } => Some(entry),
             ExprKind::Node { .. } => None,
         }
     }

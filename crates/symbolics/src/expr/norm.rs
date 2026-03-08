@@ -170,7 +170,7 @@ impl RawExpr {
 
     fn reduce_structure_apply(self) -> Self {
         self.map_bottom_up(&|expr| match expr.kind {
-            ExprKind::Node { head, args, .. }
+            ExprKind::Node { head, args }
                 if head.matches_symbol(CANNONICAL_HEAD_APPLY) && args.len() == 2 =>
             {
                 let [lhs, rhs]: [RawExpr; 2] = args.try_into().unwrap();
@@ -204,14 +204,14 @@ impl RawExpr {
     pub fn flatten(self, head_predicate: impl Fn(&RawExpr) -> bool + Copy) -> Self {
         match self.kind {
             ExprKind::Atom { .. } => self,
-            ExprKind::Node { head, args, .. } if head_predicate(&head) => {
+            ExprKind::Node { head, args } if head_predicate(&head) => {
                 let mut new_args = Vec::with_capacity(args.len());
 
                 for arg in args.into_iter() {
                     let arg = arg.flatten(head_predicate);
 
                     match arg.kind {
-                        ExprKind::Node { head: ch, args, .. } if *ch == *head => {
+                        ExprKind::Node { head: ch, args } if *ch == *head => {
                             new_args.extend(args);
                         }
                         _ => {
@@ -222,7 +222,7 @@ impl RawExpr {
 
                 Self::new_node(*head, new_args)
             }
-            ExprKind::Node { head, args, .. } => Self::new_node(
+            ExprKind::Node { head, args } => Self::new_node(
                 *head,
                 args.into_iter()
                     .map(|a| a.flatten(head_predicate))
@@ -245,7 +245,7 @@ impl RawExpr {
     pub fn sort_args(self, head_predicate: impl Fn(&RawExpr) -> bool + Copy) -> Self {
         match self.kind {
             ExprKind::Atom { .. } => self,
-            ExprKind::Node { head, args, .. } => {
+            ExprKind::Node { head, args } => {
                 let mut args: Vec<Self> = args
                     .into_iter()
                     .map(|a| a.sort_args(head_predicate))
@@ -263,9 +263,7 @@ impl RawExpr {
     pub fn desugar(self) -> Self {
         match self.kind {
             ExprKind::Atom { .. } => self,
-            ExprKind::Node { head, args, .. }
-                if head.matches_symbol(SUB_HEAD) && args.len() == 2 =>
-            {
+            ExprKind::Node { head, args } if head.matches_symbol(SUB_HEAD) && args.len() == 2 => {
                 let [lhs, rhs]: [RawExpr; 2] = args.try_into().unwrap();
 
                 Self::new_node(
@@ -273,15 +271,13 @@ impl RawExpr {
                     vec![lhs, Self::new_node(MUL_HEAD, vec![(-1).into(), rhs])],
                 )
             }
-            ExprKind::Node { head, mut args, .. }
+            ExprKind::Node { head, mut args }
                 if head.matches_symbol(NEG_HEAD) && args.len() == 1 =>
             {
                 let arg = args.pop().unwrap().desugar();
                 Self::new_node(MUL_HEAD, vec![(-1).into(), arg])
             }
-            ExprKind::Node { head, args, .. }
-                if head.matches_symbol(DIV_HEAD) && args.len() == 2 =>
-            {
+            ExprKind::Node { head, args } if head.matches_symbol(DIV_HEAD) && args.len() == 2 => {
                 let [lhs, rhs]: [RawExpr; 2] = args.try_into().unwrap();
 
                 Self::new_node(
@@ -289,14 +285,14 @@ impl RawExpr {
                     vec![lhs, Self::new_node(POW_HEAD, vec![rhs, (-1).into()])],
                 )
             }
-            ExprKind::Node { head, mut args, .. }
+            ExprKind::Node { head, mut args }
                 if head.matches_symbol(CANNONICAL_HEAD_SQRT) && args.len() == 1 =>
             {
                 let arg = args.pop().unwrap().desugar();
                 let one_half = Number::new_rational_from_i64(1, 2).unwrap();
                 Self::new_node(POW_HEAD, vec![arg, one_half.into()])
             }
-            ExprKind::Node { head, args, .. } => {
+            ExprKind::Node { head, args } => {
                 let args: Vec<Self> = args.into_iter().map(|a| a.desugar()).collect();
                 Self::new_node(*head, args)
             }
@@ -306,7 +302,7 @@ impl RawExpr {
     fn apply_to_nodes(self, f: impl Fn(&RawExpr, &[RawExpr]) -> Option<RawExpr> + Copy) -> Self {
         match self.kind {
             ExprKind::Atom { .. } => self,
-            ExprKind::Node { head, args, .. } => {
+            ExprKind::Node { head, args } => {
                 let args: Vec<Self> = args.into_iter().map(|a| a.apply_to_nodes(f)).collect();
 
                 if let Some(e) = f(&head, &args) {
@@ -329,7 +325,7 @@ impl NormExpr {
                 entry: Atom::Number(val),
                 ..
             } => (val, Number::one().into()),
-            ExprKind::Node { head, mut args, .. } if head.matches_symbol(MUL_HEAD) => {
+            ExprKind::Node { head, mut args } if head.matches_symbol(MUL_HEAD) => {
                 if let Some(coeff) = args.first().and_then(|e| e.get_number()) {
                     let coeff = coeff.clone();
                     let _ = args.swap_remove(0);
@@ -401,7 +397,7 @@ impl NormExpr {
 
         match expr.kind {
             ExprKind::Atom { .. } => expr.normalize(),
-            ExprKind::Node { head, args, .. } => {
+            ExprKind::Node { head, args } => {
                 if head.matches_symbol(ADD_HEAD) {
                     Self::collect_like_terms_add_head(args).normalize()
                 } else if head.matches_symbol(MUL_HEAD) {

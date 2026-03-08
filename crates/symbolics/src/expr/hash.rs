@@ -13,11 +13,11 @@ impl<E: Hash> Hash for ExprKind<E> {
         use ExprKind::*;
 
         match self {
-            Atom { entry, .. } => {
+            Atom { entry } => {
                 0u8.hash(state);
                 entry.hash(state);
             }
-            Node { head, args, .. } => {
+            Node { head, args } => {
                 1u8.hash(state);
                 head.hash(state);
                 args.len().hash(state);

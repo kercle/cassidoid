@@ -10,12 +10,12 @@ impl<'a, S> ExprTopDownWalker<'a, S> {
     }
 }
 
-impl<'a,S> Iterator for ExprTopDownWalker<'a ,S> {
+impl<'a, S> Iterator for ExprTopDownWalker<'a, S> {
     type Item = &'a Expr<S>;
 
     fn next(&mut self) -> Option<Self::Item> {
         let node = self.stack.pop()?;
-        if let ExprKind::Node { head, args, .. } = node.kind() {
+        if let ExprKind::Node { head, args } = node.kind() {
             for a in args.iter().rev() {
                 self.stack.push(a);
             }
@@ -44,7 +44,7 @@ impl<'a, S> ExprBottomUpWalker<'a, S> {
 
     fn visit_enter(&mut self, node: &'a Expr<S>) {
         self.stack.push(Visit::Exit(node));
-        if let ExprKind::Node { head, args, .. } = node.kind() {
+        if let ExprKind::Node { head, args } = node.kind() {
             self.stack.push(Visit::Enter(head));
             for a in args.iter().rev() {
                 self.stack.push(Visit::Enter(a));

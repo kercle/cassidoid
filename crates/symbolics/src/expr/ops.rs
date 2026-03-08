@@ -6,7 +6,7 @@ fn cmp_expr<S>(lhs: &ExprKind<Expr<S>>, rhs: &ExprKind<Expr<S>>) -> Ordering {
     use ExprKind::*;
 
     match (lhs, rhs) {
-        (Atom { entry: ea, .. }, Atom { entry: eb, .. }) => ea.cmp(eb),
+        (Atom { entry: ea }, Atom { entry: eb }) => ea.cmp(eb),
         (Atom { .. }, Node { .. }) => Ordering::Less,
         (Node { .. }, Atom { .. }) => Ordering::Greater,
         (

@@ -105,7 +105,8 @@ fn test_no_spurious_match_after_length_mismatch() {
 
 #[test]
 fn test_confirming_rebind_not_wiped_on_backtrack() {
-    let pattern = norm_expr! { f[Pattern[x, Blank[]], Pattern[x, Blank[]], Pattern[y, BlankNullSeq[]]] };
+    let pattern =
+        norm_expr! { f[Pattern[x, Blank[]], Pattern[x, Blank[]], Pattern[y, BlankNullSeq[]]] };
     let program = Compiler::new().compile(&pattern);
     let subject = norm_expr! { f[a, a, b] };
     let mut runtime = Runtime::new(&program, &subject);
@@ -131,8 +132,7 @@ fn test_simple_multiset_matching_only_literals() {
 
 #[test]
 fn test_simple_multiset_matching() {
-    let pattern =
-        norm_expr! { Add[g[a], b, Pattern[x, Blank[]], Pattern[y, Blank[]], Pattern[z, BlankSeq[]]] };
+    let pattern = norm_expr! { Add[g[a], b, Pattern[x, Blank[]], Pattern[y, Blank[]], Pattern[z, BlankSeq[]]] };
 
     let program = Compiler::new().compile(&pattern);
     let subject = norm_expr! {

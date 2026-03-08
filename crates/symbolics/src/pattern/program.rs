@@ -163,7 +163,7 @@ impl Compiler {
                 let var_id = self.bind_name_id(bind_var_name);
                 self.compile_pattern(rhs, Some(var_id))
             }
-            Node { head, args, .. } if Self::is_pattern_test(pat_expr) => {
+            Node { head, args } if Self::is_pattern_test(pat_expr) => {
                 let [lhs, rhs] = args.as_slice() else {
                     unreachable!()
                 };
@@ -185,7 +185,7 @@ impl Compiler {
                     bind,
                 })
             }
-            Node { head, args, .. } => {
+            Node { head, args } => {
                 if self.is_literal(pat_expr) {
                     self.emit(Instruction::Literal {
                         inner: pat_expr.clone(),
@@ -246,7 +246,7 @@ impl Compiler {
     }
 
     fn is_blank(expr: &NormExpr) -> bool {
-        if let ExprKind::Node { head, args, .. } = expr.kind() {
+        if let ExprKind::Node { head, args } = expr.kind() {
             head.matches_symbol(HEAD_BLANK) && args.len() <= 1
         } else {
             false
@@ -254,7 +254,7 @@ impl Compiler {
     }
 
     fn is_blank_seq(expr: &NormExpr) -> bool {
-        if let ExprKind::Node { head, args, .. } = expr.kind() {
+        if let ExprKind::Node { head, args } = expr.kind() {
             head.matches_symbol(HEAD_BLANK_SEQUENCE) && args.len() <= 1
         } else {
             false
@@ -262,7 +262,7 @@ impl Compiler {
     }
 
     fn is_blank_null_seq(expr: &NormExpr) -> bool {
-        if let ExprKind::Node { head, args, .. } = expr.kind() {
+        if let ExprKind::Node { head, args } = expr.kind() {
             head.matches_symbol(HEAD_BLANK_NULL_SEQUENCE) && args.len() <= 1
         } else {
             false

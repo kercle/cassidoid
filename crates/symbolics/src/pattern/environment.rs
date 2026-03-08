@@ -122,7 +122,7 @@ impl<'p, 's> Environment<'p, 's> {
                     .map(NormExpr::into_raw)
                     .unwrap_or(RawExpr::new_symbol(name).into_raw())
             }
-            ExprKind::Node { head, args, .. } => {
+            ExprKind::Node { head, args } => {
                 let new_head = self.fill(*head);
                 let mut new_args = vec![];
 

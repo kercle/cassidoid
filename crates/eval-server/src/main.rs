@@ -7,11 +7,7 @@ use axum::{
 use common::{ClientMessage, KernelMessage};
 use futures_util::{sink::SinkExt, stream::StreamExt};
 use parser::parse;
-use symbolics::{
-    expr::RawExpr,
-    format::MathDisplay,
-    simplify::Simplifier,
-};
+use symbolics::{expr::RawExpr, format::MathDisplay, simplify::Simplifier};
 use tracing::Level;
 use tracing::{error, info};
 
