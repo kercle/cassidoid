@@ -8,6 +8,6 @@ pub trait MathDisplay {
 
 impl MathDisplay for RawExpr {
     fn to_latex(&self) -> String {
-        latex::expr_to_latex(self, None)
+        latex::expr_to_latex(self)
     }
 }

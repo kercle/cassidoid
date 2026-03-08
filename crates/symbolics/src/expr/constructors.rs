@@ -2,7 +2,7 @@ use numbers::Number;
 
 use crate::{
     atom::Atom,
-    builtin::{CANNONICAL_HEAD_LIST, MUL_HEAD},
+    builtin::{ADD_HEAD, CANNONICAL_HEAD_LIST, MUL_HEAD},
     expr::{ExprKind, RawExpr},
     pattern::BLANK_ONE_HEAD,
 };
@@ -58,7 +58,7 @@ impl RawExpr {
         match args.len() {
             0 => Number::zero().into(),
             1 => args.into_iter().next().unwrap(),
-            _ => RawExpr::new_node(MUL_HEAD, args),
+            _ => RawExpr::new_node(ADD_HEAD, args),
         }
     }
 

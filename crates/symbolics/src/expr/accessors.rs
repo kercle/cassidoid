@@ -52,14 +52,6 @@ impl<S> Expr<S> {
         matches!(self.kind(), ExprKind::Atom { entry: Atom::Symbol(t), .. } if t == s.as_ref())
     }
 
-    pub fn unpack_binary_node<T: AsRef<str>>(&self, s: T) -> Option<(&Self, &Self)> {
-        if self.head().map(|e| e.matches_symbol(s)).unwrap_or(false) && self.args_len() == 2 {
-            Some((self.get_arg(0).unwrap(), self.get_arg(1).unwrap()))
-        } else {
-            None
-        }
-    }
-
     pub fn is_symbol(&self) -> bool {
         matches!(
             self.kind(),

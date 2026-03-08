@@ -10,226 +10,286 @@ use crate::{
 };
 use numbers::Number;
 
+// Determines the placement of paranthesis, depending on
+// which position the term is placed at.
+#[derive(Clone, Copy)]
+enum Position {
+    Root,
+    AddOperand, // Either operand of Add
+    SubLhs,     // Left-hand side of Sub
+    SubRhs,     // Right-hand side of Sub; needs parens for add/sub/neg
+    MulOperand, // Any operand of Mul
+    DivChild,   // Numerator or denominator of Div
+    PowBase,    // Base of Pow
+    PowExp,     // Exponent of Pow
+    NegOperand, // Operand of unary Neg
+    FnArg,      // Argument of a function
+}
+
+fn needs_parens(expr: &RawExpr, pos: Position) -> bool {
+    match pos {
+        // No parens necessary for these:
+        Position::Root
+        | Position::DivChild
+        | Position::PowExp
+        | Position::FnArg
+        | Position::AddOperand
+        | Position::SubLhs => false,
+
+        Position::SubRhs => {
+            // a-(b+c),  a-(b-c),  a-(-c)
+            expr.has_head_symbol(ADD_HEAD)
+                || expr.is_application_of(SUB_HEAD, 2)
+                || expr.is_application_of(NEG_HEAD, 1)
+        }
+
+        Position::NegOperand => {
+            // -(a+b),  -(a-b)
+            expr.has_head_symbol(ADD_HEAD) || expr.is_application_of(SUB_HEAD, 2)
+        }
+
+        Position::MulOperand => {
+            // (a+b)*c
+            expr.has_head_symbol(ADD_HEAD) || expr.is_application_of(SUB_HEAD, 2)
+        }
+
+        Position::PowBase => {
+            // (a+b)^n,  (a*b)^n,  (a/b)^n,  (-a)^n
+            expr.has_head_symbol(ADD_HEAD)
+                || expr.is_application_of(SUB_HEAD, 2)
+                || expr.has_head_symbol(MUL_HEAD)
+                || expr.is_application_of(DIV_HEAD, 2)
+                || expr.is_application_of(NEG_HEAD, 1)
+        }
+    }
+}
+
+fn wrap(s: String, expr: &RawExpr, pos: Position) -> String {
+    if needs_parens(expr, pos) {
+        format!("\\left({}\\right)", s)
+    } else {
+        s
+    }
+}
+
 fn greek_letter(name: &str) -> String {
     match name {
-        "alpha" | "α" => "\\alpha".to_string(),
-        "beta" | "β" => "\\beta".to_string(),
-        "gamma" | "γ" => "\\gamma".to_string(),
-        "delta" | "δ" => "\\delta".to_string(),
-        "epsilon" | "ε" => "\\epsilon".to_string(),
-        "zeta" | "ζ" => "\\zeta".to_string(),
-        "eta" | "η" => "\\eta".to_string(),
-        "theta" | "θ" => "\\theta".to_string(),
-        "iota" | "ι" => "\\iota".to_string(),
-        "kappa" | "κ" => "\\kappa".to_string(),
-        "lambda" | "λ" => "\\lambda".to_string(),
-        "mu" | "μ" => "\\mu".to_string(),
-        "nu" | "ν" => "\\nu".to_string(),
-        "xi" | "ξ" => "\\xi".to_string(),
-        "omicron" | "ο" => "\\omicron".to_string(),
-        "pi" | "π" => "\\pi".to_string(),
-        "rho" | "ρ" => "\\rho".to_string(),
-        "sigma" | "σ" | "ς" => "\\sigma".to_string(),
-        "tau" | "τ" => "\\tau".to_string(),
-        "upsilon" | "υ" => "\\upsilon".to_string(),
-        "phi" | "φ" | "ϕ" => "\\phi".to_string(),
-        "chi" | "χ" => "\\chi".to_string(),
-        "psi" | "ψ" => "\\psi".to_string(),
-        "omega" | "ω" => "\\omega".to_string(),
-        _ => name.to_string(),
+        "alpha" | "α" => "\\alpha",
+        "beta" | "β" => "\\beta",
+        "gamma" | "γ" => "\\gamma",
+        "delta" | "δ" => "\\delta",
+        "epsilon" | "ε" => "\\epsilon",
+        "zeta" | "ζ" => "\\zeta",
+        "eta" | "η" => "\\eta",
+        "theta" | "θ" => "\\theta",
+        "iota" | "ι" => "\\iota",
+        "kappa" | "κ" => "\\kappa",
+        "lambda" | "λ" => "\\lambda",
+        "mu" | "μ" => "\\mu",
+        "nu" | "ν" => "\\nu",
+        "xi" | "ξ" => "\\xi",
+        "omicron" | "ο" => "\\omicron",
+        "pi" | "π" => "\\pi",
+        "rho" | "ρ" => "\\rho",
+        "sigma" | "σ" | "ς" => "\\sigma",
+        "tau" | "τ" => "\\tau",
+        "upsilon" | "υ" => "\\upsilon",
+        "phi" | "φ" | "ϕ" => "\\phi",
+        "chi" | "χ" => "\\chi",
+        "psi" | "ψ" => "\\psi",
+        "omega" | "ω" => "\\omega",
+        _ => return name.to_string(),
     }
+    .to_string()
 }
 
-fn node_weight(expr: &RawExpr) -> Option<u32> {
-    if expr.is_application_of(NEG_HEAD, 1) {
-        Some(3)
-    } else if expr.has_head_symbol(ADD_HEAD) || expr.is_application_of(SUB_HEAD, 2) {
-        Some(1)
-    } else if expr.has_head_symbol(MUL_HEAD) || expr.is_application_of(DIV_HEAD, 2) {
-        Some(2)
-    } else if expr.is_application_of(POW_HEAD, 2) {
-        Some(4)
+fn render_text(value: &str) -> String {
+    format!(r#"\text{{{value}}}"#)
+}
+
+// ---- Atom rendering ----
+
+fn number_to_latex(value: &Number) -> String {
+    if let Number::Rational(rational) = value {
+        if rational.is_zero() {
+            return "0".to_string();
+        } else if rational.denominator().is_one() {
+            return rational.numerator().to_string();
+        } else {
+            return format!(
+                "\\frac{{{}}}{{{}}}",
+                rational.numerator(),
+                rational.denominator()
+            );
+        }
+    }
+    greek_letter(&value.to_string())
+}
+
+// ---- Node rendering ----
+
+fn render_one_arg(cmd: &str, arg: &RawExpr) -> String {
+    format!(
+        "{}\\left({}\\right)",
+        cmd,
+        expr_to_latex_with_pos(arg, Position::FnArg)
+    )
+}
+
+fn render_derivative(args: &[RawExpr]) -> String {
+    let f = &args[0];
+    let x = &args[1];
+    let f_latex = expr_to_latex_with_pos(f, Position::FnArg);
+    let x_latex = expr_to_latex_with_pos(x, Position::FnArg);
+    if x.is_symbol() {
+        format!("\\frac{{ \\text{{d}} }}{{ \\text{{d}} {x_latex} }}\\left({f_latex}\\right)")
     } else {
-        None
+        format!("\\text{{D}}\\left[{f_latex}, {x_latex}\\right]")
     }
 }
 
-fn wrap_with_parentheses(
-    sub_tree_str: String,
-    weight: Option<u32>,
-    parent_weight: Option<u32>,
-) -> String {
-    if parent_weight > weight {
-        format!("\\left({}\\right)", sub_tree_str)
+fn render_integrate(args: &[RawExpr]) -> String {
+    let f = &args[0];
+    let x = &args[1];
+    let f_latex = expr_to_latex_with_pos(f, Position::FnArg);
+    let x_latex = expr_to_latex_with_pos(x, Position::FnArg);
+    if x.is_symbol() {
+        format!("\\int {f_latex}\\,\\text{{d}}{x_latex}")
     } else {
-        sub_tree_str
+        format!("\\text{{Integrate}}\\left[{f_latex}, {x_latex}\\right]")
     }
 }
 
-pub fn expr_to_latex(expr: &RawExpr, parent_weight: Option<u32>) -> String {
-    let weight = node_weight(expr);
+fn render_generic_node(head_name: &str, args: &[RawExpr]) -> String {
+    let args_str = args
+        .iter()
+        .map(|arg| expr_to_latex_with_pos(arg, Position::FnArg))
+        .collect::<Vec<_>>()
+        .join(", ");
+    format!("\\text{{{head_name}}}\\left[{args_str}\\right]")
+}
 
+// ---- Main ----
+
+fn expr_to_latex_with_pos(expr: &RawExpr, pos: Position) -> String {
+    let latex = expr_to_latex_inner(expr);
+    wrap(latex, expr, pos)
+}
+
+fn expr_to_latex_inner(expr: &RawExpr) -> String {
     match expr.kind() {
         ExprKind::Atom {
             entry: Atom::Number(value),
             ..
-        } => {
-            if let Number::Rational(rational) = value {
-                if rational.is_zero() {
-                    "0".to_string()
-                } else if rational.denominator().is_one() {
-                    rational.numerator().to_string()
-                } else {
-                    format!(
-                        "\\frac{{{}}}{{{}}}",
-                        rational.numerator(),
-                        rational.denominator()
-                    )
-                }
-            } else {
-                greek_letter(&value.to_string())
-            }
-        }
+        } => number_to_latex(value),
+
         ExprKind::Atom {
             entry: Atom::Symbol(name),
             ..
-        } if name == CANNONICAL_SYM_INDETERMINATE => format!(r#"\text{{{name}}}"#),
+        } if name == CANNONICAL_SYM_INDETERMINATE => render_text(name),
+
         ExprKind::Atom {
             entry: Atom::Symbol(name),
             ..
         } if name == CANNONICAL_SYM_PLUS_INFINITY => r#"\infty"#.to_string(),
+
         ExprKind::Atom {
             entry: Atom::Symbol(name),
             ..
         } => greek_letter(name),
+
         ExprKind::Node { args, .. } if expr.is_application_of(NEG_HEAD, 1) => {
-            format!("-{}", expr_to_latex(args.first().unwrap(), weight))
-        }
-        ExprKind::Node { args, .. } if expr.has_head_symbol(ADD_HEAD) => {
-            let args_str = args
-                .iter()
-                .map(|arg| expr_to_latex(arg, weight))
-                .collect::<Vec<_>>()
-                .join(" + ");
-            wrap_with_parentheses(args_str, weight, parent_weight)
-        }
-        ExprKind::Node { args, .. } if expr.is_application_of(SUB_HEAD, 2) => {
-            wrap_with_parentheses(
-                format!(
-                    "{} - {}",
-                    expr_to_latex(args.first().unwrap(), weight),
-                    expr_to_latex(args.last().unwrap(), weight)
-                ),
-                weight,
-                parent_weight,
-            )
-        }
-        ExprKind::Node { args, .. } if expr.is_application_of(MUL_HEAD, 2) => {
-            let args_str = args
-                .iter()
-                .map(|arg| expr_to_latex(arg, weight))
-                .collect::<Vec<_>>()
-                .join(" \\cdot ");
-            wrap_with_parentheses(args_str, weight, parent_weight)
-        }
-        ExprKind::Node { args, .. } if expr.is_application_of(DIV_HEAD, 2) => {
-            wrap_with_parentheses(
-                format!(
-                    "\\frac{{{}}}{{{}}}",
-                    expr_to_latex(args.first().unwrap(), weight),
-                    expr_to_latex(args.last().unwrap(), weight)
-                ),
-                weight,
-                parent_weight,
-            )
-        }
-        ExprKind::Node { args, .. } if expr.is_application_of(POW_HEAD, 2) => {
-            wrap_with_parentheses(
-                format!(
-                    "{{{}}}^{{{}}}",
-                    expr_to_latex(args.first().unwrap(), weight),
-                    expr_to_latex(args.last().unwrap(), weight)
-                ),
-                weight,
-                parent_weight,
-            )
-        }
-        ExprKind::Node { args, .. } if expr.is_application_of(CANNONICAL_HEAD_EXP, 1) => {
             format!(
-                "\\exp\\left({}\\right)",
-                expr_to_latex(args.first().unwrap(), weight)
+                "-{}",
+                expr_to_latex_with_pos(&args[0], Position::NegOperand)
             )
+        }
+
+        ExprKind::Node { args, .. } if expr.has_head_symbol(ADD_HEAD) => args
+            .iter()
+            .map(|arg| expr_to_latex_with_pos(arg, Position::AddOperand))
+            .collect::<Vec<_>>()
+            .join(" + "),
+
+        ExprKind::Node { args, .. } if expr.is_application_of(SUB_HEAD, 2) => {
+            let lhs = expr_to_latex_with_pos(&args[0], Position::SubLhs);
+            let rhs = expr_to_latex_with_pos(&args[1], Position::SubRhs);
+            format!("{lhs} - {rhs}")
+        }
+
+        ExprKind::Node { args, .. } if expr.has_head_symbol(MUL_HEAD) => args
+            .iter()
+            .map(|arg| {
+                wrap(
+                    expr_to_latex_with_pos(arg, Position::MulOperand),
+                    arg,
+                    Position::MulOperand,
+                )
+            })
+            .collect::<Vec<_>>()
+            .join(" \\cdot "),
+
+        ExprKind::Node { args, .. } if expr.is_application_of(DIV_HEAD, 2) => format!(
+            "\\frac{{{}}}{{{}}}",
+            expr_to_latex_with_pos(&args[0], Position::DivChild),
+            expr_to_latex_with_pos(&args[1], Position::DivChild),
+        ),
+
+        ExprKind::Node { args, .. } if expr.is_application_of(POW_HEAD, 2) => {
+            let base = wrap(
+                expr_to_latex_with_pos(&args[0], Position::PowBase),
+                &args[0],
+                Position::PowBase,
+            );
+            let exp = expr_to_latex_with_pos(&args[1], Position::PowExp);
+            format!("{{{base}}}^{{{exp}}}")
+        }
+
+        ExprKind::Node { args, .. } if expr.is_application_of(CANNONICAL_HEAD_SQRT, 1) => {
+            format!(
+                "\\sqrt{{{}}}",
+                expr_to_latex_with_pos(&args[0], Position::FnArg)
+            )
+        }
+
+        ExprKind::Node { args, .. } if expr.is_application_of(CANNONICAL_HEAD_EXP, 1) => {
+            render_one_arg("\\exp", &args[0])
         }
         ExprKind::Node { args, .. } if expr.is_application_of(CANNONICAL_HEAD_LOG, 1) => {
-            format!(
-                "\\log\\left({}\\right)",
-                expr_to_latex(args.first().unwrap(), weight)
-            )
+            render_one_arg("\\log", &args[0])
         }
         ExprKind::Node { args, .. } if expr.is_application_of(CANNONICAL_HEAD_SIN, 1) => {
-            format!(
-                "\\sin\\left({}\\right)",
-                expr_to_latex(args.first().unwrap(), weight)
-            )
+            render_one_arg("\\sin", &args[0])
         }
         ExprKind::Node { args, .. } if expr.is_application_of(CANNONICAL_HEAD_COS, 1) => {
-            format!(
-                "\\cos\\left({}\\right)",
-                expr_to_latex(args.first().unwrap(), weight)
-            )
+            render_one_arg("\\cos", &args[0])
         }
         ExprKind::Node { args, .. } if expr.is_application_of(CANNONICAL_HEAD_TAN, 1) => {
-            format!(
-                "\\tan\\left({}\\right)",
-                expr_to_latex(args.first().unwrap(), weight)
-            )
+            render_one_arg("\\tan", &args[0])
         }
-        ExprKind::Node { args, .. } if expr.is_application_of(CANNONICAL_HEAD_SQRT, 1) => {
-            format!("\\sqrt{{{}}}", expr_to_latex(args.first().unwrap(), weight))
-        }
+
         ExprKind::Node { args, .. } if expr.is_application_of(CANNONICAL_HEAD_DERIVATIVE, 2) => {
-            let f = args.first().unwrap();
-            let x = args.last().unwrap();
-
-            let f_latex = expr_to_latex(f, weight);
-            let x_latex = expr_to_latex(x, weight);
-
-            if x.is_symbol() {
-                format!(
-                    "\\frac{{ \\text{{d}} }}{{ \\text{{d}} {x_latex} }}\\left({f_latex}\\right)"
-                )
-            } else {
-                format!("\\text{{D}}\\left[{f_latex}, {x_latex}\\right]")
-            }
+            render_derivative(args)
         }
+
         ExprKind::Node { args, .. } if expr.is_application_of(CANNONICAL_HEAD_INTEGRATE, 2) => {
-            let f = args.first().unwrap();
-            let x = args.last().unwrap();
-
-            let f_latex = expr_to_latex(f, weight);
-            let x_latex = expr_to_latex(x, weight);
-
-            if x.is_symbol() {
-                format!("\\int {f_latex}\\,\\text{{d}}{x_latex}")
-            } else {
-                format!("\\text{{Integrate}}\\left[{f_latex}, {x_latex}\\right]")
-            }
+            render_integrate(args)
         }
+
         ExprKind::Node { head, args } => {
             let Some(name) = head.get_symbol() else {
                 unimplemented!()
             };
-
-            let args_str = args
-                .iter()
-                .map(|arg| expr_to_latex(arg, None))
-                .collect::<Vec<_>>()
-                .join(", ");
-
-            format!("\\text{{{name}}}\\left[{args_str}\\right]")
+            render_generic_node(name, args)
         }
+
         _ => todo!(),
     }
+}
+
+pub fn expr_to_latex(expr: &RawExpr) -> String {
+    dbg!(&expr);
+    expr_to_latex_with_pos(expr, Position::Root)
 }
 
 #[cfg(test)]
@@ -239,48 +299,65 @@ mod tests {
 
     #[test]
     fn test_expr_to_latex() {
-        let ast = parse("2 + 3").unwrap();
-        let expr = RawExpr::from(ast);
+        let expr = RawExpr::from(parse("2 + 3").unwrap());
         assert_eq!(expr.to_latex(), "2 + 3");
     }
 
     #[test]
     fn test_expr_to_latex_with_parenthesis() {
-        let ast = parse("(2 + 3) * 6").unwrap();
-        let expr = RawExpr::from(ast);
+        let expr = RawExpr::from(parse("(2 + 3) * 6").unwrap());
         assert_eq!(expr.to_latex(), "\\left(2 + 3\\right) \\cdot 6");
     }
 
     #[test]
     fn test_expr_to_latex_multiple_adds() {
-        let ast = parse("1+2+3+4").unwrap();
-        let expr = RawExpr::from(ast);
+        let expr = RawExpr::from(parse("1+2+3+4").unwrap());
         assert_eq!(expr.to_latex(), "1 + 2 + 3 + 4");
     }
 
     #[test]
     fn test_expr_to_latex_with_unary_op() {
-        let ast = parse("-2 + 3").unwrap();
-        let expr = RawExpr::from(ast);
-        dbg!(&expr);
+        let expr = RawExpr::from(parse("-2 + 3").unwrap());
         assert_eq!(expr.to_latex(), "-2 + 3");
     }
 
     #[test]
     fn test_expr_to_latex_with_pow() {
-        let ast = parse("pi^2").unwrap();
-        let expr = RawExpr::from(ast);
-        dbg!(&expr);
+        let expr = RawExpr::from(parse("pi^2").unwrap());
         assert_eq!(expr.to_latex(), "{\\pi}^{2}");
     }
 
     #[test]
     fn test_expr_to_latex_with_function_call() {
-        let ast = parse("5*pi^2/4*cos[pi*x/2]*sin[π*y/2]").unwrap();
-        let expr = RawExpr::from(ast);
+        let expr = RawExpr::from(parse("5*pi^2/4*cos[pi*x/2]*sin[π*y/2]").unwrap());
         assert_eq!(
             expr.to_latex(),
-            "\\frac{5 \\cdot {\\pi}^{2}}{4} \\cdot \\text{cos}\\left[\\frac{\\pi \\cdot x}{2}\\right] \\cdot \\text{sin}\\left[\\frac{\\pi \\cdot y}{2}\\right]"
+            "\\frac{5 \\cdot {\\pi}^{2}}{4} \\cdot \\cos\\left(\\frac{\\pi \\cdot x}{2}\\right) \\cdot \\sin\\left(\\frac{\\pi \\cdot y}{2}\\right)"
         );
+    }
+
+    // New tests exercising position-sensitive parenthesization
+    #[test]
+    fn test_sub_rhs_parens() {
+        let expr = RawExpr::from(parse("a - (b + c)").unwrap());
+        assert_eq!(expr.to_latex(), "a - \\left(b + c\\right)");
+    }
+
+    #[test]
+    fn test_sub_rhs_sub_parens() {
+        let expr = RawExpr::from(parse("a - (b - c)").unwrap());
+        assert_eq!(expr.to_latex(), "a - \\left(b - c\\right)");
+    }
+
+    #[test]
+    fn test_pow_base_sum_parens() {
+        let expr = RawExpr::from(parse("(a + b)^2").unwrap());
+        assert_eq!(expr.to_latex(), "{\\left(a + b\\right)}^{2}");
+    }
+
+    #[test]
+    fn test_neg_sum_parens() {
+        let expr = RawExpr::from(parse("-(a + b)").unwrap());
+        assert_eq!(expr.to_latex(), "-\\left(a + b\\right)");
     }
 }

@@ -1,143 +1,150 @@
 use crate::{
     builtin::*,
-    expr::{ExprKind, NormExpr, RawExpr},
+    expr::{Expr, ExprKind, NormExpr, RawExpr},
 };
 use numbers::Number;
 
-use crate::builtin::CANNONICAL_HEAD_SQRT;
-
 impl NormExpr {
-    fn resugar_add(mut args: Vec<RawExpr>) -> RawExpr {
-        args.reverse();
+    pub fn resugar(self) -> RawExpr {
+        Self::resugar_inner(self.into_raw())
+    }
 
-        let mut new_args = Vec::with_capacity(args.len());
-
-        let (coeff, term) = NormExpr::split_coefficient(args.pop().unwrap());
-        if coeff.is_one() {
-            new_args.push(term);
-        } else if coeff.is_minus_one() {
-            new_args.push(RawExpr::new_node(NEG_HEAD, vec![term]));
-        } else if coeff.is_zero() {
-            // In normalized expression, this should not happen
-            unreachable!()
-        } else {
-            new_args.push(RawExpr::collapse_mul(vec![coeff.into(), term]));
-        }
-
-        while let Some(arg) = args.pop() {
-            let (coeff, term) = NormExpr::split_coefficient(arg);
-
-            if coeff.is_one() {
-                new_args.push(term);
-            } else if coeff.is_minus_one() {
-                let lhs = new_args.pop().unwrap();
-                new_args.push(RawExpr::new_node(SUB_HEAD, vec![lhs, term]));
-            } else if coeff.is_negative() {
-                let lhs = new_args.pop().unwrap();
-                new_args.push(RawExpr::new_node(
-                    SUB_HEAD,
-                    vec![lhs, RawExpr::collapse_mul(vec![coeff.abs().into(), term])],
-                ));
-            } else if coeff.is_zero() {
-                // In normalized expression, this should not happen
-                unreachable!()
-            } else {
-                new_args.push(RawExpr::collapse_mul(vec![coeff.into(), term]));
+    fn resugar_inner(expr: RawExpr) -> RawExpr {
+        match expr.kind {
+            ExprKind::Node { head, args } if head.matches_symbol(ADD_HEAD) => {
+                Self::resugar_add(args)
             }
-        }
-
-        if new_args.len() == 1 {
-            new_args.pop().unwrap()
-        } else {
-            RawExpr::collapse_add(new_args)
+            ExprKind::Node { head, args } if head.matches_symbol(MUL_HEAD) => {
+                Self::resugar_mul(args)
+            }
+            // ExprKind::Node { head, args } if head.matches_symbol(POW_HEAD) && args.len() == 2 => {
+            //     let [lhs, rhs]: [RawExpr; 2] =
+            //         args.into_iter().map(|e| e.into_raw()).try_into().unwrap();
+            //     Self::resugar_pow(lhs, rhs)
+            // }
+            ExprKind::Node { head, args } => {
+                let args: Vec<super::Expr<super::Raw>> =
+                    args.into_iter().map(Self::resugar_inner).collect();
+                RawExpr::new_node(*head, args)
+            }
+            _ => expr,
         }
     }
 
+    fn resugar_add(args: Vec<RawExpr>) -> RawExpr {
+        assert!(!args.is_empty());
+
+        let mut positives = Vec::new();
+        let mut negatives = Vec::new();
+
+        for arg in args {
+            let (coeff, term) = NormExpr::split_coefficient(arg);
+
+            if coeff.is_negative() {
+                let rhs = if coeff.is_minus_one() {
+                    term
+                } else {
+                    RawExpr::new_binary_node(MUL_HEAD, coeff.abs().into(), term)
+                };
+                negatives.push(rhs);
+            } else if coeff.is_one() {
+                positives.push(term);
+            } else {
+                positives.push(RawExpr::new_binary_node(MUL_HEAD, coeff.into(), term));
+            }
+        }
+
+        if positives.is_empty() {
+            RawExpr::new_unary_node(NEG_HEAD, RawExpr::collapse_add(negatives))
+        } else if negatives.is_empty() {
+            RawExpr::collapse_add(positives)
+        } else {
+            RawExpr::new_binary_node(
+                SUB_HEAD,
+                RawExpr::collapse_add(positives),
+                RawExpr::collapse_add(negatives),
+            )
+        }
+    }
     fn resugar_mul(args: Vec<RawExpr>) -> RawExpr {
+        let mut has_sign = false;
         let mut numerator = Vec::with_capacity(args.len());
         let mut denominator = Vec::with_capacity(args.len());
 
-        for a in args.into_iter() {
-            if let Some((lhs, rhs)) = a.unpack_binary_node(POW_HEAD) {
-                let (mut coeff, rhs_rest) = NormExpr::split_coefficient(rhs.clone());
-                if coeff.is_negative() {
-                    coeff.flip_sign();
-                    denominator.push(RawExpr::new_node(
-                        POW_HEAD,
-                        vec![
-                            lhs.clone(),
-                            RawExpr::collapse_mul(vec![coeff.into(), rhs_rest]),
-                        ],
-                    ));
-                } else {
-                    numerator.push(a);
+        for a in args {
+            if a.is_number_negative() {
+                let num = a.get_number().unwrap();
+                has_sign = !has_sign;
+
+                match num.abs() {
+                    num @ Number::Integer(_) => numerator.push(Expr::new_number(num)),
+                    Number::Rational(r) => {
+                        let num_n = Number::Integer(r.numerator().clone());
+                        let num_d = Number::Integer(r.denominator().clone());
+
+                        numerator.push(Expr::new_number(num_n));
+                        denominator.push(Expr::new_number(num_d));
+                    }
                 }
-            } else if let Some((lhs, rhs)) = a.unpack_binary_node(DIV_HEAD) {
-                numerator.push(lhs.clone());
-                denominator.push(rhs.clone());
-            } else {
+
+                continue;
+            }
+
+            if !a.matches_head(POW_HEAD) || a.args_len() != 2 {
                 numerator.push(a);
+                continue;
+            }
+
+            let base = a.get_arg(0).unwrap().clone();
+            let exp = a.get_arg(1).unwrap().clone();
+
+            let (coeff, exp_rest) = NormExpr::split_coefficient(exp);
+
+            if coeff.is_negative() {
+                let denom_exp = RawExpr::collapse_mul(vec![coeff.abs().into(), exp_rest]);
+                denominator.push(RawExpr::new_binary_node(POW_HEAD, base, denom_exp));
+            } else {
+                // coeff is positive, put back as-is
+                numerator.push(RawExpr::new_binary_node(
+                    POW_HEAD,
+                    base,
+                    RawExpr::collapse_mul(vec![coeff.into(), exp_rest]),
+                ));
             }
         }
 
-        if denominator.is_empty() {
-            RawExpr::collapse_mul(numerator)
-        } else if numerator.is_empty() {
-            RawExpr::new_node(
+        let ret_unsigned = match (numerator.is_empty(), denominator.is_empty()) {
+            (_, true) => RawExpr::collapse_mul(numerator),
+            (true, _) => RawExpr::new_binary_node(
                 DIV_HEAD,
-                vec![
-                    RawExpr::new_number(Number::one()),
-                    RawExpr::collapse_mul(denominator),
-                ],
-            )
+                RawExpr::new_number(Number::one()),
+                RawExpr::collapse_mul(denominator),
+            ),
+            (false, false) => RawExpr::new_binary_node(
+                DIV_HEAD,
+                RawExpr::collapse_mul(numerator),
+                RawExpr::collapse_mul(denominator),
+            ),
+        };
+
+        if has_sign {
+            RawExpr::new_unary_node(NEG_HEAD, ret_unsigned)
         } else {
-            let lhs = if numerator.len() >= 2 {
-                RawExpr::collapse_mul(numerator)
-            } else {
-                numerator.pop().unwrap()
-            };
-
-            let rhs = if denominator.len() >= 2 {
-                RawExpr::collapse_mul(denominator)
-            } else {
-                denominator.pop().unwrap()
-            };
-
-            RawExpr::new_node(DIV_HEAD, vec![lhs, rhs])
+            ret_unsigned
         }
     }
 
-    pub fn resugar(self) -> RawExpr {
-        match self.kind {
-            ExprKind::Node { head, args } if head.matches_symbol(ADD_HEAD) && !args.is_empty() => {
-                let args = args.into_iter().map(|e| e.resugar()).collect();
-                Self::resugar_add(args)
-            }
-            ExprKind::Node { head, args } if head.matches_symbol(MUL_HEAD) && !args.is_empty() => {
-                let args = args.into_iter().map(|e| e.resugar()).collect();
+    // fn resugar_pow(lhs: RawExpr, rhs: RawExpr) -> RawExpr {
+    //     let one_half = Number::new_rational_from_i64(1, 2).unwrap();
+    //     if rhs == one_half {
+    //         return RawExpr::new_node(
+    //             CANNONICAL_HEAD_SQRT,
+    //             vec![args.first().unwrap().clone().into_raw()],
+    //         );
+    //     }
 
-                Self::resugar_mul(args)
-            }
-            ExprKind::Node { head, args } if head.matches_symbol(POW_HEAD) && args.len() == 2 => {
-                let one_half = Number::new_rational_from_i64(1, 2).unwrap();
-                if args
-                    .last()
-                    .unwrap()
-                    .get_number()
-                    .map(|e| e == &one_half)
-                    .unwrap_or(false)
-                {
-                    return RawExpr::new_node(
-                        CANNONICAL_HEAD_SQRT,
-                        vec![args.first().unwrap().clone().into_raw()],
-                    );
-                }
+    //     let args = args.into_iter().map(|e| e.resugar()).collect();
 
-                let args = args.into_iter().map(|e| e.resugar()).collect();
-
-                Self::resugar_mul(vec![RawExpr::new_node(head.into_raw(), args)])
-            }
-            _ => self.into_raw(),
-        }
-    }
+    //     Self::resugar_mul(vec![RawExpr::new_node(head.into_raw(), args)])
+    // }
 }
