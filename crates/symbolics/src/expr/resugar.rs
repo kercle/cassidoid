@@ -17,11 +17,10 @@ impl NormExpr {
             ExprKind::Node { head, args } if head.matches_symbol(MUL_HEAD) => {
                 Self::resugar_mul(args)
             }
-            // ExprKind::Node { head, args } if head.matches_symbol(POW_HEAD) && args.len() == 2 => {
-            //     let [lhs, rhs]: [RawExpr; 2] =
-            //         args.into_iter().map(|e| e.into_raw()).try_into().unwrap();
-            //     Self::resugar_pow(lhs, rhs)
-            // }
+            ExprKind::Node { head, args } if head.matches_symbol(POW_HEAD) && args.len() == 2 => {
+                let [lhs, rhs]: [RawExpr; 2] = args.try_into().unwrap();
+                Self::resugar_pow(lhs, rhs)
+            }
             ExprKind::Node { head, args } => {
                 let args: Vec<super::Expr<super::Raw>> =
                     args.into_iter().map(Self::resugar_inner).collect();
@@ -100,16 +99,22 @@ impl NormExpr {
 
             let (coeff, exp_rest) = NormExpr::split_coefficient(exp);
 
-            if coeff.is_negative() {
-                let denom_exp = RawExpr::collapse_mul(vec![coeff.abs().into(), exp_rest]);
-                denominator.push(RawExpr::new_binary_node(POW_HEAD, base, denom_exp));
+            let is_in_denominator = coeff.is_negative();
+            let coeff = coeff.abs();
+
+            let new_pow_expr = if exp_rest.is_number_one() {
+                RawExpr::new_binary_node(POW_HEAD, base, RawExpr::new_number(coeff))
+            } else if coeff.is_one() {
+                RawExpr::new_binary_node(POW_HEAD, base, exp_rest)
             } else {
-                // coeff is positive, put back as-is
-                numerator.push(RawExpr::new_binary_node(
-                    POW_HEAD,
-                    base,
-                    RawExpr::collapse_mul(vec![coeff.into(), exp_rest]),
-                ));
+                let exp = RawExpr::collapse_mul(vec![coeff.abs().into(), exp_rest]);
+                RawExpr::new_binary_node(POW_HEAD, base, exp)
+            };
+
+            if is_in_denominator {
+                denominator.push(new_pow_expr);
+            } else {
+                numerator.push(new_pow_expr);
             }
         }
 
@@ -134,17 +139,16 @@ impl NormExpr {
         }
     }
 
-    // fn resugar_pow(lhs: RawExpr, rhs: RawExpr) -> RawExpr {
-    //     let one_half = Number::new_rational_from_i64(1, 2).unwrap();
-    //     if rhs == one_half {
-    //         return RawExpr::new_node(
-    //             CANNONICAL_HEAD_SQRT,
-    //             vec![args.first().unwrap().clone().into_raw()],
-    //         );
-    //     }
+    fn resugar_pow(lhs: RawExpr, rhs: RawExpr) -> RawExpr {
+        let Some(rhs_num) = rhs.get_number() else {
+            return Self::resugar_mul(vec![RawExpr::new_binary_node(POW_HEAD, lhs, rhs)]);
+        };
 
-    //     let args = args.into_iter().map(|e| e.resugar()).collect();
+        let one_half = Number::new_rational_from_i64(1, 2).unwrap();
+        if *rhs_num == one_half {
+            return RawExpr::new_node(CANNONICAL_HEAD_SQRT, vec![lhs.into_raw()]);
+        }
 
-    //     Self::resugar_mul(vec![RawExpr::new_node(head.into_raw(), args)])
-    // }
+        return Self::resugar_mul(vec![RawExpr::new_binary_node(POW_HEAD, lhs, rhs)]);
+    }
 }

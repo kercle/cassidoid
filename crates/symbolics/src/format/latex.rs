@@ -219,13 +219,7 @@ fn expr_to_latex_inner(expr: &RawExpr) -> String {
 
         ExprKind::Node { args, .. } if expr.has_head_symbol(MUL_HEAD) => args
             .iter()
-            .map(|arg| {
-                wrap(
-                    expr_to_latex_with_pos(arg, Position::MulOperand),
-                    arg,
-                    Position::MulOperand,
-                )
-            })
+            .map(|arg| expr_to_latex_with_pos(arg, Position::MulOperand))
             .collect::<Vec<_>>()
             .join(" \\cdot "),
 
