@@ -41,7 +41,7 @@ let __tla = (async () => {
     }
     return n;
   }
-  const B = "" + new URL("../assets/kernel_bg.BGiUdiSa.wasm", import.meta.url).href, O = async (e = {}, t) => {
+  const B = "" + new URL("../assets/kernel_bg.BYpM90Pc.wasm", import.meta.url).href, O = async (e = {}, t) => {
     let n;
     if (t.startsWith("data:")) {
       const s = t.replace(/^data:.*?base64,/, "");
@@ -66,7 +66,7 @@ let __tla = (async () => {
   function C(e) {
     let t, n;
     try {
-      const s = G(e, _.__wbindgen_malloc, _.__wbindgen_realloc), r = g, a = _.eval_input(s, r);
+      const s = j(e, _.__wbindgen_malloc, _.__wbindgen_realloc), r = g, a = _.eval_input(s, r);
       return t = a[0], n = a[1], D(a[0], a[1]);
     } finally {
       _.__wbindgen_free(t, n, 1);
@@ -77,13 +77,13 @@ let __tla = (async () => {
     e.set(0, void 0), e.set(t + 0, void 0), e.set(t + 1, null), e.set(t + 2, true), e.set(t + 3, false);
   }
   function D(e, t) {
-    return e = e >>> 0, F(e, t);
+    return e = e >>> 0, G(e, t);
   }
   let l = null;
   function u() {
     return (l === null || l.byteLength === 0) && (l = new Uint8Array(_.memory.buffer)), l;
   }
-  function G(e, t, n) {
+  function j(e, t, n) {
     if (n === void 0) {
       const i = d.encode(e), c = t(i.length, 1) >>> 0;
       return u().subarray(c, c + i.length).set(i), g = i.length, c;
@@ -108,10 +108,10 @@ let __tla = (async () => {
     fatal: true
   });
   b.decode();
-  const j = 2146435072;
+  const F = 2146435072;
   let w = 0;
-  function F(e, t) {
-    return w += t, w >= j && (b = new TextDecoder("utf-8", {
+  function G(e, t) {
+    return w += t, w >= F && (b = new TextDecoder("utf-8", {
       ignoreBOM: true,
       fatal: true
     }), b.decode(), w = t), b.decode(u().subarray(e, e + t));
@@ -133,15 +133,15 @@ let __tla = (async () => {
     "./kernel_bg.js": {
       __wbindgen_init_externref_table: R
     }
-  }, B), K = f.memory, P = f.eval_input, V = f.__wbindgen_externrefs, X = f.__wbindgen_malloc, Y = f.__wbindgen_realloc, $ = f.__wbindgen_free, p = f.__wbindgen_start, q = Object.freeze(Object.defineProperty({
+  }, B), P = f.memory, Y = f.eval_input, K = f.__wbindgen_externrefs, V = f.__wbindgen_malloc, X = f.__wbindgen_realloc, $ = f.__wbindgen_free, p = f.__wbindgen_start, q = Object.freeze(Object.defineProperty({
     __proto__: null,
-    __wbindgen_externrefs: V,
+    __wbindgen_externrefs: K,
     __wbindgen_free: $,
-    __wbindgen_malloc: X,
-    __wbindgen_realloc: Y,
+    __wbindgen_malloc: V,
+    __wbindgen_realloc: X,
     __wbindgen_start: p,
-    eval_input: P,
-    memory: K
+    eval_input: Y,
+    memory: P
   }, Symbol.toStringTag, {
     value: "Module"
   }));
