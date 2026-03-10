@@ -198,3 +198,15 @@ impl NormExpr {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::{norm_expr, raw_expr};
+
+    #[test]
+    fn test_resugar() {
+        let expr = norm_expr! { x - y };
+
+        assert_eq!(expr.resugar(), raw_expr! { Sub[x, y] });
+    }
+}

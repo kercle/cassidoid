@@ -470,13 +470,6 @@ mod tests {
     }
 
     #[test]
-    fn test_resugar() {
-        let expr = norm_expr! { x - y };
-
-        assert_eq!(expr.resugar(), raw_expr! { Sub[x, y] });
-    }
-
-    #[test]
     fn test_hold() {
         let expr = norm_expr!(Hold[1 + 1]);
         let expected = raw_expr!(Hold[1 + 1]);
