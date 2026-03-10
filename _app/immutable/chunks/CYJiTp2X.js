@@ -1,36 +1,36 @@
-import { h as p, aQ as v, aR as S, N as T, aS as M, aT as E, aU as x, aV as L, aW as k } from "./KQ4vooii.js";
-let ee, Z, m;
+import { h as p, aQ as v, aR as S, N as T, aS as M, aT as E, aU as x, aV as L, aW as W } from "./KQ4vooii.js";
+let ee, Z, y;
 let __tla = (async () => {
-  const U = /* @__PURE__ */ Symbol("is custom element"), W = /* @__PURE__ */ Symbol("is html"), I = S ? "link" : "LINK";
+  const U = /* @__PURE__ */ Symbol("is custom element"), I = /* @__PURE__ */ Symbol("is html"), N = S ? "link" : "LINK";
   Z = function(e) {
     if (p) {
       var t = false, n = () => {
         if (!t) {
           if (t = true, e.hasAttribute("value")) {
             var o = e.value;
-            m(e, "value", null), e.value = o;
+            y(e, "value", null), e.value = o;
           }
           if (e.hasAttribute("checked")) {
             var s = e.checked;
-            m(e, "checked", null), e.checked = s;
+            y(e, "checked", null), e.checked = s;
           }
         }
       };
       e.__on_r = n, T(n), M();
     }
   };
-  m = function(e, t, n, o) {
-    var s = N(e);
-    p && (s[t] = e.getAttribute(t), t === "src" || t === "srcset" || t === "href" && e.nodeName === I) || s[t] !== (s[t] = n) && (t === "loading" && (e[E] = n), n == null ? e.removeAttribute(t) : typeof n != "string" && O(e).includes(t) ? e[t] = n : e.setAttribute(t, n));
+  y = function(e, t, n, o) {
+    var s = O(e);
+    p && (s[t] = e.getAttribute(t), t === "src" || t === "srcset" || t === "href" && e.nodeName === N) || s[t] !== (s[t] = n) && (t === "loading" && (e[E] = n), n == null ? e.removeAttribute(t) : typeof n != "string" && k(e).includes(t) ? e[t] = n : e.setAttribute(t, n));
   };
-  function N(e) {
+  function O(e) {
     return e.__attributes ?? (e.__attributes = {
       [U]: e.nodeName.includes("-"),
-      [W]: e.namespaceURI === v
+      [I]: e.namespaceURI === v
     });
   }
   var h = /* @__PURE__ */ new Map();
-  function O(e) {
+  function k(e) {
     var t = e.getAttribute("is") || e.nodeName, n = h.get(t);
     if (n) return n;
     h.set(t, n = []);
@@ -41,7 +41,7 @@ let __tla = (async () => {
     }
     return n;
   }
-  const B = "" + new URL("../assets/kernel_bg.BXkkAsOp.wasm", import.meta.url).href, C = async (e = {}, t) => {
+  const B = "" + new URL("../assets/kernel_bg.DAWmBrOq.wasm", import.meta.url).href, C = async (e = {}, t) => {
     let n;
     if (t.startsWith("data:")) {
       const o = t.replace(/^data:.*?base64,/, "");
@@ -125,7 +125,7 @@ let __tla = (async () => {
     };
   });
   let w = 0, _;
-  function X(e) {
+  function q(e) {
     _ = e;
   }
   URL = globalThis.URL;
@@ -133,22 +133,22 @@ let __tla = (async () => {
     "./kernel_bg.js": {
       __wbindgen_init_externref_table: D
     }
-  }, B), K = f.memory, P = f.eval_input, V = f.__wbindgen_externrefs, Y = f.__wbindgen_malloc, $ = f.__wbindgen_realloc, q = f.__wbindgen_free, A = f.__wbindgen_start, z = Object.freeze(Object.defineProperty({
+  }, B), K = f.memory, P = f.eval_input, V = f.__wbindgen_externrefs, X = f.__wbindgen_malloc, Y = f.__wbindgen_realloc, $ = f.__wbindgen_free, A = f.__wbindgen_start, z = Object.freeze(Object.defineProperty({
     __proto__: null,
     __wbindgen_externrefs: V,
-    __wbindgen_free: q,
-    __wbindgen_malloc: Y,
-    __wbindgen_realloc: $,
+    __wbindgen_free: $,
+    __wbindgen_malloc: X,
+    __wbindgen_realloc: Y,
     __wbindgen_start: A,
     eval_input: P,
     memory: K
   }, Symbol.toStringTag, {
     value: "Module"
   }));
-  X(z);
+  q(z);
   A();
   function J() {
-    const { subscribe: e, set: t, update: n } = k({
+    const { subscribe: e, set: t, update: n } = W({
       data: {
         history: []
       },
@@ -165,8 +165,8 @@ let __tla = (async () => {
       })), {
         send: async (r) => {
           const i = await R(r), c = typeof i == "string" ? JSON.parse(i) : i;
-          n((y) => (o(y.data, c), {
-            ...y,
+          n((m) => (o(m.data, c), {
+            ...m,
             connected: true
           }));
         }
@@ -187,5 +187,5 @@ export {
   __tla,
   ee as a,
   Z as r,
-  m as s
+  y as s
 };
