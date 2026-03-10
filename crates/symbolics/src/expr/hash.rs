@@ -2,9 +2,17 @@ use std::hash::{DefaultHasher, Hash, Hasher};
 
 use crate::expr::{Expr, ExprKind};
 
+impl<E: Hash> ExprKind<E> {
+    pub fn digest(&self) -> u64 {
+        let mut state = DefaultHasher::new();
+        self.hash(&mut state);
+        state.finish()
+    }
+}
+
 impl<S> Hash for Expr<S> {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        self.kind().hash(state);
+        self.fingerprint().hash(state);
     }
 }
 
@@ -26,13 +34,5 @@ impl<E: Hash> Hash for ExprKind<E> {
                 }
             }
         }
-    }
-}
-
-impl<E: Hash> ExprKind<E> {
-    pub fn digest(&self) -> u64 {
-        let mut state = DefaultHasher::new();
-        self.hash(&mut state);
-        state.finish()
     }
 }
