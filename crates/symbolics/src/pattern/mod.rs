@@ -4,6 +4,7 @@ mod fmt;
 mod utils;
 
 pub mod environment;
+pub mod predicates;
 pub mod program;
 pub mod runtime;
 
@@ -22,16 +23,24 @@ pub const BLANK_NULL_SEQ_HEAD: &str = "BlankNullSeq";
 
 #[derive(Debug, Clone, Copy)]
 pub enum PatternPredicate {
-    IsSymbolQ,
-    IsNumberQ,
+    IsSymbol,
+    IsNumber,
+    IsInteger,
+    IsRational,
+    IsPositive,
+    IsNegative,
 }
 
 impl PatternPredicate {
     pub fn check(&self, expr: &NormExpr) -> bool {
         use PatternPredicate::*;
         match self {
-            IsSymbolQ => expr.is_symbol(),
-            IsNumberQ => expr.is_number(),
+            IsSymbol => predicates::is_symbol(expr),
+            IsNumber => predicates::is_number(expr),
+            IsInteger => predicates::is_integer(expr),
+            IsRational => predicates::is_rational(expr),
+            IsPositive => predicates::is_positive(expr),
+            IsNegative => predicates::is_negative(expr),
         }
     }
 }
@@ -44,8 +53,12 @@ impl FromStr for PatternPredicate {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
-            "IsSymbolQ" => Ok(PatternPredicate::IsSymbolQ),
-            "IsNumberQ" => Ok(PatternPredicate::IsNumberQ),
+            "IsSymbol" => Ok(PatternPredicate::IsSymbol),
+            "IsNumber" => Ok(PatternPredicate::IsNumber),
+            "IsInteger" => Ok(PatternPredicate::IsInteger),
+            "IsRational" => Ok(PatternPredicate::IsRational),
+            "IsPositive" => Ok(PatternPredicate::IsPositive),
+            "IsNegative" => Ok(PatternPredicate::IsNegative),
             _ => Err(ParsePredicateError),
         }
     }

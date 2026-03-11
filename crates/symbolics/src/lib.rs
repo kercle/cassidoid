@@ -8,6 +8,7 @@ pub mod pattern;
 pub mod rewrite;
 pub mod simplify;
 pub mod eval;
+pub mod poly;
 
 #[cfg(test)]
 mod tests;

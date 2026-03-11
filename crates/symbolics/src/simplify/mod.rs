@@ -1,3 +1,4 @@
+mod expand;
 mod exponentials;
 mod factorize;
 mod functions_known_values;
@@ -11,7 +12,7 @@ use crate::{
     expr::NormExpr,
     pattern::environment::Environment,
     simplify::{
-        exponentials::exponentials_rules, factorize::factorization_rules,
+        expand::expansion_rules, exponentials::exponentials_rules, factorize::factorization_rules,
         functions_known_values::known_function_values_rules,
         trigonometric_functions::trigonometric_rules,
     },
@@ -74,6 +75,10 @@ impl Simplifier {
 
     pub fn with_factorization(self) -> Simplifier {
         Simplifier::new(self.simplify_with_rules_until_stable(factorization_rules()))
+    }
+
+    pub fn with_expansion(self) -> Simplifier {
+        Simplifier::new(self.simplify_with_rules_until_stable(expansion_rules()))
     }
 
     pub fn with_exponentials(self) -> Simplifier {

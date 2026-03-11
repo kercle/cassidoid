@@ -15,21 +15,21 @@ use super::*;
 #[test]
 fn test_built_pattern_from_expr() {
     let expr = norm_expr! {
-        PatternTest[Blank[], IsSymbolQ]
+        PatternTest[Blank[], IsSymbol]
     };
     let pattern = Pattern::from_expr(&expr);
     assert_eq!(
         format!("{pattern:?}"),
-        r#"Blank{None, None, Some(IsSymbolQ)}"#
+        r#"Blank{None, None, Some(IsSymbol)}"#
     );
 
     let expr = norm_expr! {
-        PatternTest[Pattern[x, Blank[]], IsSymbolQ]
+        PatternTest[Pattern[x, Blank[]], IsSymbol]
     };
     let pattern = Pattern::from_expr(&expr);
 
     assert_eq!(
         format!("{pattern:?}"),
-        r#"Blank{Some("x"), None, Some(IsSymbolQ)}"#
+        r#"Blank{Some("x"), None, Some(IsSymbol)}"#
     );
 }

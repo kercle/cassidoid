@@ -14,6 +14,9 @@ pub mod ops;
 pub mod integer;
 pub mod rational;
 
+pub static ZERO: std::sync::LazyLock<Number> = std::sync::LazyLock::new(Number::zero);
+pub static ONE: std::sync::LazyLock<Number> = std::sync::LazyLock::new(Number::one);
+
 #[derive(Debug, Clone, PartialEq)]
 pub enum Number {
     Integer(integer::BigInteger),

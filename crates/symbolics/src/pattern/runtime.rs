@@ -148,7 +148,7 @@ impl<'p, 's> Runtime<'p, 's> {
             } => self.match_multiset(instrs, subjects, state, already_tried_count),
             BindOne { bind_var, subject } => self.bind_one(bind_var, subject),
             BindSeq { bind_var, subjects } => self.bind_seq(bind_var, subjects),
-            TestPredicate { subject, predicate } => self.test_predicate(subject, predicate),
+            TestPredicate { subject, predicate } => predicate.check(subject),
         }
     }
 
@@ -240,14 +240,6 @@ impl<'p, 's> Runtime<'p, 's> {
         });
 
         true
-    }
-
-    fn test_predicate(&self, subject: &'s NormExpr, predicate: PatternPredicate) -> bool {
-        use PatternPredicate::*;
-        match predicate {
-            IsNumberQ => subject.is_number(),
-            IsSymbolQ => subject.is_symbol(),
-        }
     }
 
     fn schedule_bind_one_if_present(&mut self, instr: &Instruction, subject: &'s NormExpr) {

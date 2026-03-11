@@ -60,9 +60,9 @@ pub fn generate_data_if_plot(expr: &NormExpr) -> Option<Vec<(f64, f64)>> {
     let program = PatternCompiler::new().compile(&norm_expr!(
         Plot[
             f_,
-            PatternTest[x_, IsSymbolQ],
-            PatternTest[x0_, IsNumberQ],
-            PatternTest[x1_, IsNumberQ]
+            PatternTest[x_, IsSymbol],
+            PatternTest[x0_, IsNumber],
+            PatternTest[x1_, IsNumber]
         ]
     ));
 
