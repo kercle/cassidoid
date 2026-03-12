@@ -53,7 +53,7 @@ The syntax of the expressions is Mathematica inspired.
 - [x] Remove annotation from Expr, as the intended use case was solved differently
 - [ ] Allow more sequences in commutative patterns
 - [ ] Support for more flexible predicate in pattern matching
-- [ ] Rework normalization to make it both more efficient and maintainable
+- [x] Rework normalization to make it both more efficient and maintainable
 - [x] Basic Rewrite engine
 - [ ] Basic polynomial engine
 - [ ] Solve polynomial equations
@@ -66,7 +66,7 @@ The syntax of the expressions is Mathematica inspired.
 - [ ] Numerical solver for equations
 - [ ] UI maybe with Tauri
 - [x] Web frontend built with Svelte
-- [ ] Compile to Web-Assembly and bundle with frontend
+- [x] Compile to Web-Assembly and bundle with frontend
 
 ## Logo
 
