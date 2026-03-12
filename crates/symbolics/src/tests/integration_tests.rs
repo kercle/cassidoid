@@ -25,6 +25,7 @@ fn test_full_processing_chain() {
         ("(-1)*(-1)", "1"),
         ("2*r/r^2", "2/r"),
         ("r^3/r^2", "r"),
+        ("(-2*x)/(-3*y)", "2 * x/(3 * y)"),
         ("Integrate[f+r,x]", "x * (f + r)"),
         ("Integrate[1, x]", "x"),
         ("Integrate[x, x]", "x^2/2"),
@@ -60,6 +61,10 @@ fn test_full_processing_chain() {
         let expr = RawExpr::from(ast).normalize();
         let result = Simplifier::new(expr).simple();
 
-        assert_eq!(output, result.resugar().to_input_form(), "For expression `{input}`:")
+        assert_eq!(
+            output,
+            result.resugar().to_input_form(),
+            "For expression `{input}`:"
+        )
     }
 }

@@ -116,12 +116,10 @@ impl NormExpr {
                 } else {
                     negatives.push(RawExpr::new_binary_node(MUL_HEAD, coeff.abs().into(), term));
                 }
+            } else if coeff.is_positive() {
+                positives.push(coeff.into());
             } else {
-                if coeff.is_positive() {
-                    positives.push(coeff.into());
-                } else {
-                    negatives.push(coeff.abs().into());
-                }
+                negatives.push(coeff.abs().into());
             }
         }
 
@@ -204,8 +202,6 @@ impl NormExpr {
                 numerator.push(new_pow_expr);
             }
         }
-
-        dbg!(&denominator.factors);
 
         let ret_unsigned = match (numerator.factors.is_empty(), denominator.factors.is_empty()) {
             (_, true) => RawExpr::collapse_mul(numerator.factors),

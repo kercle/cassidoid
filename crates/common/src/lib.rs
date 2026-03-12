@@ -17,7 +17,7 @@ pub enum KernelMessage {
     },
     Plot {
         input: ExpressionForms,
-        data: Vec<(f64, f64)>
+        data: Vec<(f64, f64)>,
     },
     ParseError {
         input: String,

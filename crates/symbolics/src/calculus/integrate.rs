@@ -1,4 +1,4 @@
-use crate::{expr::NormExpr, norm_expr, hold_expr};
+use crate::{expr::NormExpr, hold_expr, norm_expr};
 
 pub(crate) fn indefinite_integrals_rules() -> Vec<(NormExpr, NormExpr)> {
     vec![
@@ -14,17 +14,15 @@ pub(crate) fn indefinite_integrals_rules() -> Vec<(NormExpr, NormExpr)> {
         // =============== Basic ===============
         (
             norm_expr!( Integrate[PatternTest[c_, IsNumber], PatternTest[x_, IsSymbol]] ),
-            hold_expr!( c * x ),
+            hold_expr!(c * x),
         ),
         (
             norm_expr!(
-                Integrate[
-                    x_,
-                    PatternTest[x_, IsSymbol]
-                ]),
-            hold_expr!(
-                x ^ 2 / 2
-            ),
+            Integrate[
+                x_,
+                PatternTest[x_, IsSymbol]
+            ]),
+            hold_expr!(x ^ 2 / 2),
         ),
         (
             norm_expr!(

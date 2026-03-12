@@ -14,12 +14,12 @@ use crate::{
 impl RawExpr {
     pub fn normalize(self) -> NormExpr {
         match self.kind {
-            ExprKind::Atom { .. } => self.to_normexpr_unsafe(),
+            ExprKind::Atom { .. } => self.into_normexpr_unsafe(),
             ExprKind::Node { head, args } => normalize_raw_node(*head, args),
         }
     }
 
-    fn to_normexpr_unsafe(self) -> NormExpr {
+    fn into_normexpr_unsafe(self) -> NormExpr {
         unsafe { std::mem::transmute(self) }
     }
 }
@@ -84,8 +84,8 @@ fn normalize_raw_node(head_expr: RawExpr, args: Vec<RawExpr>) -> NormExpr {
             RawExpr::new_binary_node(POW_HEAD, arg, one_half.into()).normalize()
         }
         Some(CANNONICAL_HEAD_HOLD) if args.len() == 1 => NormExpr::new_unchecked(ExprKind::Node {
-            head: Box::new(head_expr.to_normexpr_unsafe()),
-            args: args.into_iter().map(|a| a.to_normexpr_unsafe()).collect(),
+            head: Box::new(head_expr.into_normexpr_unsafe()),
+            args: args.into_iter().map(|a| a.into_normexpr_unsafe()).collect(),
         }),
         _ => NormExpr::new_unchecked(ExprKind::Node {
             head: Box::new(head_expr.normalize()),
@@ -141,7 +141,7 @@ fn normalize_raw_add(args: Vec<RawExpr>) -> NormExpr {
     let mut new_args = vec![];
 
     if !constant_term.is_zero() {
-        new_args.push(RawExpr::from(constant_term).to_normexpr_unsafe());
+        new_args.push(RawExpr::from(constant_term).into_normexpr_unsafe());
     }
 
     for (term, coeff) in terms.into_iter() {
@@ -178,7 +178,7 @@ fn normalize_raw_add(args: Vec<RawExpr>) -> NormExpr {
     }
 
     if new_args.is_empty() {
-        RawExpr::new_number_integer(0).to_normexpr_unsafe()
+        RawExpr::new_number_integer(0).into_normexpr_unsafe()
     } else if new_args.len() == 1 {
         new_args.pop().unwrap()
     } else {
@@ -197,7 +197,7 @@ pub(super) fn split_coefficient(expr: NormExpr) -> (Number, Option<NormExpr>) {
                 let coeff = coeff.clone();
                 let _ = args.remove(0);
 
-                if args.len() == 0 {
+                if args.is_empty() {
                     (coeff, None)
                 } else if args.len() == 1 {
                     (coeff, Some(args.pop().unwrap()))
@@ -268,7 +268,7 @@ fn normalize_raw_mul(args: Vec<RawExpr>) -> NormExpr {
     let mut new_args = Vec::new();
 
     if !constant_term.is_one() {
-        new_args.push(RawExpr::from(constant_term).to_normexpr_unsafe());
+        new_args.push(RawExpr::from(constant_term).into_normexpr_unsafe());
     }
 
     for (base, exponents) in terms.into_iter() {
@@ -294,7 +294,7 @@ fn normalize_raw_mul(args: Vec<RawExpr>) -> NormExpr {
     new_args.sort();
 
     if new_args.is_empty() {
-        RawExpr::new_number_integer(1).to_normexpr_unsafe()
+        RawExpr::new_number_integer(1).into_normexpr_unsafe()
     } else if new_args.len() == 1 {
         new_args.pop().unwrap()
     } else {
@@ -318,9 +318,9 @@ fn normalize_raw_pow(base: RawExpr, exponent: RawExpr) -> NormExpr {
     }
 
     if norm_exponent.is_number_one() {
-        return norm_base;
+        norm_base
     } else if norm_exponent.is_number_zero() {
-        return RawExpr::new_number(1).normalize();
+        RawExpr::new_number(1).normalize()
     } else if let Some(exp_num) = norm_exponent.get_number()
         && exp_num.is_integer()
     {

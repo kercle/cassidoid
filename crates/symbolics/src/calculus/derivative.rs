@@ -1,5 +1,5 @@
 use crate::expr::NormExpr;
-use crate::{norm_expr, hold_expr};
+use crate::{hold_expr, norm_expr};
 
 pub(crate) fn derivative_rules() -> Vec<(NormExpr, NormExpr)> {
     vec![

@@ -100,8 +100,7 @@ fn test_predicate_7() {
 
 #[test]
 fn test_predicate_8() {
-    let pattern =
-        norm_expr! { f[PatternTest[Blank[], IsNumber], PatternTest[Blank[], IsSymbol]] };
+    let pattern = norm_expr! { f[PatternTest[Blank[], IsNumber], PatternTest[Blank[], IsSymbol]] };
     let subject = norm_expr! { f[1, x] };
     assert_eq!(
         count_matches(&pattern, &subject),
@@ -112,8 +111,7 @@ fn test_predicate_8() {
 
 #[test]
 fn test_predicate_9() {
-    let pattern =
-        norm_expr! { f[PatternTest[Blank[], IsNumber], PatternTest[Blank[], IsSymbol]] };
+    let pattern = norm_expr! { f[PatternTest[Blank[], IsNumber], PatternTest[Blank[], IsSymbol]] };
     let subject = norm_expr! { f[x, 1] };
     assert_eq!(
         count_matches(&pattern, &subject),

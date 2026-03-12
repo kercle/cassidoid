@@ -1,14 +1,14 @@
 pub mod atom;
 pub mod builtin;
 pub mod calculus;
+pub mod eval;
 pub mod expr;
 pub mod format;
 pub mod macros;
 pub mod pattern;
+pub mod poly;
 pub mod rewrite;
 pub mod simplify;
-pub mod eval;
-pub mod poly;
 
 #[cfg(test)]
 mod tests;

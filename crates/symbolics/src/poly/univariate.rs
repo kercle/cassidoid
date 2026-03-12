@@ -1,6 +1,6 @@
 use numbers::Number;
 
-use crate::{expr::NormExpr};
+use crate::expr::NormExpr;
 
 #[derive(Clone)]
 pub struct UnivariatePolynomial(Vec<Number>);

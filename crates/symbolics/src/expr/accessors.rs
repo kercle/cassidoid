@@ -1,7 +1,9 @@
 use numbers::Number;
 
 use crate::{
-    atom::Atom, builtin::CANNONICAL_SYM_INDETERMINATE, expr::{Expr, ExprKind}
+    atom::Atom,
+    builtin::CANNONICAL_SYM_INDETERMINATE,
+    expr::{Expr, ExprKind},
 };
 
 impl<S> Expr<S> {
