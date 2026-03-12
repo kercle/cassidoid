@@ -6,7 +6,7 @@ This project emerged from my PDE solver where I experimented with WebGL and WebA
 
 ## Demo
 
-The project comes with a library that provides WASM bindings, which allows one to embed the CAS in a website. To try it out, visit [the demo website](https://kercle.github.io/toy-cas/).
+The project comes with a library that provides WASM bindings, which allows one to embed the CAS in a website. To try it out, visit [the demo website](https://kercle.github.io/cassidinae/).
 
 Example screenshot of the web app demonstrating plotting and differentiation:
 ![Demo Screenshot](assets/screenshot.png)
