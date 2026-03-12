@@ -1,8 +1,7 @@
 use numbers::Number;
 
 use crate::{
-    atom::Atom,
-    expr::{Expr, ExprKind},
+    atom::Atom, builtin::CANNONICAL_SYM_INDETERMINATE, expr::{Expr, ExprKind}
 };
 
 impl<S> Expr<S> {
@@ -106,6 +105,10 @@ impl<S> Expr<S> {
             } => Some(n),
             _ => None,
         }
+    }
+
+    pub fn is_indeterminate(&self) -> bool {
+        self.matches_symbol(CANNONICAL_SYM_INDETERMINATE)
     }
 
     pub fn is_application_of<T: AsRef<str>>(&self, head_sym: T, arity: usize) -> bool {

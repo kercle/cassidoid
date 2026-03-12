@@ -124,8 +124,8 @@ fn test_mixed_7() {
 
 #[test]
 fn test_mixed_8() {
-    let pattern = norm_expr! { Add[Mul[_, _], _] };
-    let subject = norm_expr! { Add[Mul[a, b], c] };
+    let pattern = norm_expr! { Hold[Add[Mul[_, _], _]] };
+    let subject = norm_expr! { Hold[Add[Mul[a, b], c]] };
 
     assert_eq!(
         count_matches(&pattern, &subject),
@@ -169,8 +169,8 @@ fn test_mixed_11() {
 
 #[test]
 fn test_mixed_12() {
-    let pattern = norm_expr! { Add[f[x_], f[x_]] };
-    let subject = norm_expr! { Add[f[3], f[3]] };
+    let pattern = norm_expr! { Hold[Add[f[x_], f[x_]]] };
+    let subject = norm_expr! { Hold[Add[f[3], f[3]]] };
     assert_eq!(
         count_matches(&pattern, &subject),
         2,

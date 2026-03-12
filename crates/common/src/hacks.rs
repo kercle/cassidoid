@@ -41,7 +41,7 @@ pub fn process_message(inbound_msg: String) -> Result<KernelMessage, KernelMessa
             data,
         })
     } else {
-        let expr = expr.resugar().canonicalize();
+        let expr = expr.resugar();
 
         Ok(KernelMessage::EvalResult {
             input: input_expr_forms,

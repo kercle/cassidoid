@@ -230,8 +230,8 @@ fn test_multiset_blank_3() {
 
 #[test]
 fn test_multiset_blank_4() {
-    let pattern = norm_expr! { Add[_, _] };
-    let subject = norm_expr! { Add[x, y] };
+    let pattern = norm_expr! { CommutativeOp[_, _] };
+    let subject = norm_expr! { CommutativeOp[x, y] };
     assert_eq!(
         count_matches(&pattern, &subject),
         2,
@@ -241,8 +241,8 @@ fn test_multiset_blank_4() {
 
 #[test]
 fn test_multiset_blank_5() {
-    let pattern = norm_expr! { Add[_, _] };
-    let subject = norm_expr! { Add[u, v] };
+    let pattern = norm_expr! { CommutativeOp[_, _] };
+    let subject = norm_expr! { CommutativeOp[u, v] };
     assert_eq!(
         count_matches(&pattern, &subject),
         2,
@@ -252,8 +252,12 @@ fn test_multiset_blank_5() {
 
 #[test]
 fn test_multiset_blank_6() {
-    let pattern = norm_expr! { Add[_, _, _] };
-    let subject = norm_expr! { Add[x, y, z] };
+    // Tested with Mathematica:
+    // FullForm[Plus[_, _, _]] = Times[3, Blank[]]
+    // Thus we need to add hold.
+    let pattern = norm_expr! { Hold[Add[_, _, _]] };
+    let subject = norm_expr! { Hold[Add[x, y, z]] };
+    dbg!(&pattern);
     assert_eq!(
         count_matches(&pattern, &subject),
         6,
@@ -285,8 +289,8 @@ fn test_multiset_blank_8() {
 
 #[test]
 fn test_multiset_blank_9() {
-    let pattern = norm_expr! { Add[x_, x_] };
-    let subject = norm_expr! { Add[a, a] };
+    let pattern = norm_expr! { Hold[Add[x_, x_]] };
+    let subject = norm_expr! { Hold[Add[a, a]] };
     assert_eq!(
         count_matches(&pattern, &subject),
         2,

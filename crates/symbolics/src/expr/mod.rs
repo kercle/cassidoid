@@ -3,7 +3,7 @@ pub mod constructors;
 pub mod convert;
 pub mod fmt;
 pub mod hash;
-pub mod norm;
+pub mod normalize;
 pub mod ops;
 pub mod resugar;
 pub mod transform;

@@ -35,6 +35,10 @@ impl RawExpr {
         Self::new_atom(Atom::Number(value.into()))
     }
 
+    pub fn new_number_integer(value: i64) -> Self {
+        Self::new_number(Number::from_i64(value))
+    }
+
     pub fn new_number_rational(numerator: i64, denominator: u64) -> Result<Self, String> {
         Ok(Self::new_number(Number::new_rational_from_i64(
             numerator,

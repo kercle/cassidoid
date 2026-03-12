@@ -26,7 +26,7 @@ pub struct Simplifier {
 impl Simplifier {
     pub fn new(expr: NormExpr) -> Simplifier {
         Simplifier {
-            expr: expr.collect_like_terms(),
+            expr,
             limit_guard: 100,
         }
     }
@@ -86,7 +86,7 @@ impl Simplifier {
     }
 
     pub fn finish(self) -> NormExpr {
-        self.expr.release_all_holds().collect_like_terms()
+        self.expr.release_all_holds()
     }
 
     fn simplify_with_rules_until_stable(self, rules: Vec<(NormExpr, NormExpr)>) -> NormExpr {

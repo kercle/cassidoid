@@ -49,7 +49,7 @@ fn test_full_processing_chain() {
         ("D[Sin[x^2], x]", "2 * x * Cos[x^2]"),
         ("D[Log[Sin[x]], x]", "Cos[x]/Sin[x]"),
         ("D[x*Sin[x], x]", "x * Cos[x] + Sin[x]"),
-        ("D[Sin[x]/x, x]", "(Cos[x] - Sin[x]/x)/x"),
+        ("D[Sin[x]/x, x]", "Cos[x]/x - Sin[x]/x^2"),
         ("D[5, x]", "0"),
         ("D[f, x]", "0"),
     ];
@@ -58,8 +58,8 @@ fn test_full_processing_chain() {
         let ast = parse(input).expect(&format!("Parsing of `{input}` failed"));
 
         let expr = RawExpr::from(ast).normalize();
-        let result = Simplifier::new(expr).simple().resugar().canonicalize();
+        let result = Simplifier::new(expr).simple();
 
-        assert_eq!(output, result.to_input_form(), "For expression `{input}`:")
+        assert_eq!(output, result.resugar().to_input_form(), "For expression `{input}`:")
     }
 }

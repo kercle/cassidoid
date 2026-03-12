@@ -1,13 +1,13 @@
 use crate::{
     atom::Atom,
     builtin::*,
-    expr::{Expr, ExprKind, NormExpr, RawExpr},
+    expr::{Expr, ExprKind, NormExpr, RawExpr, normalize::split_coefficient},
 };
 use numbers::Number;
 
 impl NormExpr {
     pub fn resugar(self) -> RawExpr {
-        Self::resugar_inner(self.into_raw())
+        Self::resugar_inner(self)
     }
 
     fn resugar_number(num: Number) -> RawExpr {
@@ -30,7 +30,7 @@ impl NormExpr {
         }
     }
 
-    fn resugar_inner(expr: RawExpr) -> RawExpr {
+    fn resugar_inner(expr: NormExpr) -> RawExpr {
         match expr.kind {
             ExprKind::Atom {
                 entry: Atom::Number(num),
@@ -42,43 +42,44 @@ impl NormExpr {
                 Self::resugar_mul(args)
             }
             ExprKind::Node { head, args } if head.matches_symbol(POW_HEAD) && args.len() == 2 => {
-                let [lhs, rhs]: [RawExpr; 2] = args.try_into().unwrap();
+                let [lhs, rhs]: [NormExpr; 2] = args.try_into().unwrap();
                 Self::resugar_pow(lhs, rhs)
             }
             ExprKind::Node { head, args } => {
                 let args: Vec<super::Expr<super::Raw>> =
                     args.into_iter().map(Self::resugar_inner).collect();
-                RawExpr::new_node(*head, args)
+                RawExpr::new_node((*head).into_raw(), args)
             }
-            _ => expr,
+            _ => expr.into_raw(),
         }
     }
 
-    fn resugar_add(args: Vec<RawExpr>) -> RawExpr {
+    fn resugar_add(args: Vec<Self>) -> RawExpr {
         assert!(!args.is_empty());
 
         let mut positives = Vec::new();
         let mut negatives = Vec::new();
 
         for arg in args {
-            let (coeff, term) = NormExpr::split_coefficient(arg);
-            let term = Self::resugar_inner(term);
+            let (coeff, term) = split_coefficient(arg);
+            let term = term.map(Self::resugar_inner);
 
-            if coeff.is_negative() {
-                let rhs = if coeff.is_minus_one() {
-                    term
+            if let Some(term) = term {
+                if coeff.is_one() {
+                    positives.push(term);
+                } else if coeff.is_minus_one() {
+                    negatives.push(term);
+                } else if coeff.is_positive() {
+                    positives.push(RawExpr::new_binary_node(MUL_HEAD, coeff.into(), term));
                 } else {
-                    RawExpr::new_binary_node(MUL_HEAD, coeff.abs().into(), term)
-                };
-                negatives.push(rhs);
-            } else if coeff.is_one() {
-                positives.push(term);
+                    negatives.push(RawExpr::new_binary_node(MUL_HEAD, coeff.abs().into(), term));
+                }
             } else {
-                positives.push(RawExpr::new_binary_node(
-                    MUL_HEAD,
-                    Self::resugar_number(coeff),
-                    term,
-                ));
+                if coeff.is_positive() {
+                    positives.push(coeff.into());
+                } else {
+                    negatives.push(coeff.abs().into());
+                }
             }
         }
 
@@ -94,7 +95,7 @@ impl NormExpr {
             )
         }
     }
-    fn resugar_mul(args: Vec<RawExpr>) -> RawExpr {
+    fn resugar_mul(args: Vec<Self>) -> RawExpr {
         let mut has_sign = false;
         let mut numerator = Vec::with_capacity(args.len());
         let mut denominator = Vec::with_capacity(args.len());
@@ -105,7 +106,11 @@ impl NormExpr {
                 has_sign = !has_sign;
 
                 match num.abs() {
-                    num @ Number::Integer(_) => numerator.push(Expr::new_number(num)),
+                    num @ Number::Integer(_) => {
+                        if !num.is_one() && !num.is_minus_one() {
+                            numerator.push(Expr::new_number(num))
+                        }
+                    }
                     Number::Rational(r) => {
                         let num_n = Number::Integer(r.numerator().clone());
                         let num_d = Number::Integer(r.denominator().clone());
@@ -118,32 +123,52 @@ impl NormExpr {
                 continue;
             }
 
-            if !arg.matches_head(POW_HEAD) || arg.args_len() != 2 {
+            let [base, exp]: [NormExpr; 2] = if arg.is_application_of(POW_HEAD, 2) {
+                // If it's a power, we take a closer look at arguments.
+
+                let ExprKind::Node { args, .. } = arg.kind else {
+                    // if its a power, it's a node.
+                    unreachable!()
+                };
+                args.try_into().unwrap()
+            } else {
+                // otherwise, just add to numerator.
                 numerator.push(Self::resugar_inner(arg));
                 continue;
-            }
-
-            let base = arg.get_arg(0).unwrap().clone();
-            let exp = arg.get_arg(1).unwrap().clone();
-
-            let (coeff, exp_rest) = NormExpr::split_coefficient(exp);
-
-            let is_in_denominator = coeff.is_negative();
-            let coeff = coeff.abs();
-
-            let new_pow_expr = if exp_rest.is_number_one() {
-                RawExpr::new_binary_node(POW_HEAD, base, Self::resugar_number(coeff))
-            } else if coeff.is_one() {
-                RawExpr::new_binary_node(POW_HEAD, base, exp_rest)
-            } else {
-                let exp = RawExpr::collapse_mul(vec![Self::resugar_number(coeff.abs()), exp_rest]);
-                RawExpr::new_binary_node(POW_HEAD, base, exp)
             };
 
-            if is_in_denominator {
-                denominator.push(Self::resugar_inner(new_pow_expr));
+            let (coeff, exp_rest) = split_coefficient(exp);
+            let coeff_abs = coeff.abs();
+
+            let new_pow_expr = if let Some(exp_rest) = exp_rest
+                && coeff_abs.is_one()
+            {
+                // Since we are working with a normalized node, we don't have
+                // to worry about all the edge cased here (e.g. coeff cannot
+                // be 0, etc.)
+
+                let rhs = if coeff_abs.is_one() {
+                    Self::resugar_inner(exp_rest)
+                } else {
+                    RawExpr::new_node(
+                        MUL_HEAD,
+                        vec![
+                            Self::resugar_number(coeff_abs),
+                            Self::resugar_inner(exp_rest),
+                        ],
+                    )
+                };
+                RawExpr::new_binary_node(POW_HEAD, Self::resugar_inner(base), rhs)
+            } else if coeff_abs.is_one() {
+                base.into_raw()
             } else {
-                numerator.push(Self::resugar_inner(new_pow_expr));
+                RawExpr::new_binary_node(POW_HEAD, base.into_raw(), Self::resugar_number(coeff_abs))
+            };
+
+            if coeff.is_negative() {
+                denominator.push(new_pow_expr);
+            } else {
+                numerator.push(new_pow_expr);
             }
         }
 
@@ -168,7 +193,7 @@ impl NormExpr {
         }
     }
 
-    fn resugar_pow(lhs: RawExpr, rhs: RawExpr) -> RawExpr {
+    fn resugar_pow(lhs: NormExpr, rhs: NormExpr) -> RawExpr {
         let Some(rhs_num) = rhs.get_number() else {
             return RawExpr::new_binary_node(
                 POW_HEAD,
@@ -181,7 +206,9 @@ impl NormExpr {
         let rhs_num = rhs_num.abs();
 
         let one_half = Number::new_rational_from_i64(1, 2).unwrap();
-        let res = if rhs_num == one_half {
+        let res = if rhs_num.is_one() {
+            Self::resugar_inner(lhs)
+        } else if rhs_num == one_half {
             RawExpr::new_unary_node(CANNONICAL_HEAD_SQRT, Self::resugar_inner(lhs))
         } else {
             RawExpr::new_binary_node(
