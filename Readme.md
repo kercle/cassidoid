@@ -17,9 +17,10 @@ Since this is just a toy project of mine, I want to keep the core modules indepe
 
 ## Syntax
 
-The syntax of the expressions is Mathematica inspired:
+The syntax of the expressions is Mathematica inspired.
 
-```enbf
+```
+<cmp> ::= <sum> { ("<"|"<="|"=="|">="|">") <sum> }*
 <sum> ::= <product> { ("+"|"-") <product> }*
 <product> ::= <signed_power> { ("*"|"/") <signed_power> }*
 <signed_power> ::= { "+" | "-" }* <power>
@@ -27,15 +28,21 @@ The syntax of the expressions is Mathematica inspired:
 <atom> ::= <number> 
    | <symbol_or_function_call>
    | <string_literal> | "(" <sum> ")"
-<symbol_or_function_call> ::= <identifier>
-   | <identifier> "[" "]"
-   | <identifier> "[" <expression> { "," <expression> }* "]"
+<symbol_or_function_call> ::= <identifier_or_pattern>
+   | <identifier_or_pattern> "[" "]"
+   | <identifier_or_pattern> "[" <expression> { "," <expression> }* "]"
 ```
 
 ## Builtin functionality
 
 - `D[f, x]` gives the derivative of `f` wrt. `x` where `x` needs to by a symbol.
-- `Integrate[f, x]` gives the anto-derivative of `f` wrt. `x` where `x` needs to by a symbol.
+- `Integrate[f, x]` gives the anto-derivative of `f` wrt. `x` where `x` needs to by a symbol. For now I just built the framework for integrating RUBI ones the pattern matching engine is mature enough. I will look into the Risch algorithm later.
+- `Blank[]` and `Blank[HeadConstraint]` for matching expressions.
+- `BlankSeq[]` for matching sequences of expressions (at least one element).
+- `BlankNullSeq[]` analogous to `BlankSeq` but may also match no elements.
+- `Pattern[x, p]` binds the pattern `p` to `x`.
+- `PatternTest[p, pred]` Evaluates the predicate `pred` on the pattern `p`. Currently supports: `IsSymbol`, `IsNumber`, `IsInteger`, `IsRational`, `IsPositive`, `IsNegative`
+- `Plot[f[x], x, x0, x1]` for plotting `f[x]`. It is still a very early-prototype implementation and the signature of the plot pattern will align more with the Mathematica syntax.
 
 ## Goals
 
@@ -60,3 +67,11 @@ The syntax of the expressions is Mathematica inspired:
 - [ ] UI maybe with Tauri
 - [x] Web frontend built with Svelte
 - [ ] Compile to Web-Assembly and bundle with frontend
+
+## Logo
+
+The logo features a tortoise beetle. Initially my inspiration is comming from [SerenityOS](https://serenityos.org) with its ladybug logo. I looks for beetles featuring pretty patterns and then tortoise beetles shows up. Coincidentally, the subfamily is also called *Cassidinae*, which - starting with CAS - was the perfect match. 🙂
+
+## Disclaimer on use of AI
+
+A lot of the test cases where generated using Claude.
