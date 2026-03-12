@@ -70,7 +70,7 @@ The syntax of the expressions is Mathematica inspired.
 
 ## Logo
 
-The logo features a [tortoise beetle (cassidoid)](https://en.wikipedia.org/wiki/Cassidinae). Initially my inspiration is comming from [SerenityOS](https://serenityos.org) with its ladybug logo. I looks for beetles featuring pretty patterns and then tortoise beetles shows up. Coincidentally, the subfamily is also called *Cassidinae*, which - starting with CAS - was the perfect match. 🙂
+The logo features a [tortoise beetle (cassidoid)](https://en.wikipedia.org/wiki/Cassidinae). Initially my inspiration is comming from [SerenityOS](https://serenityos.org) with its ladybug logo. I looked for beetles featuring pretty patterns and then tortoise beetles showed up. Coincidentally, the subfamily is also called *Cassidinae*, which - starting with CAS - was the perfect match. 🙂
 
 ## Disclaimer on use of AI
 
