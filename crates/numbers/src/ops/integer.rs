@@ -114,9 +114,25 @@ impl ops::Rem for BigInteger {
     }
 }
 
+impl ops::Shl<usize> for BigInteger {
+    type Output = Self;
+
+    fn shl(self, n: usize) -> BigInteger {
+        self.shift_left(n)
+    }
+}
+
 impl ops::ShlAssign<usize> for BigInteger {
     fn shl_assign(&mut self, n: usize) {
         *self = self.shift_left(n)
+    }
+}
+
+impl ops::Shr<usize> for BigInteger {
+    type Output = Self;
+
+    fn shr(self, n: usize) -> BigInteger {
+        self.shift_right(n)
     }
 }
 
