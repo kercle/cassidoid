@@ -41,17 +41,23 @@ impl Default for Kernel {
 
 impl Kernel {
     fn register_initial_builtins(&mut self) {
+        self.register_builtin_default::<builtins::elementary::arithmetic::Add>(false);
+        self.register_builtin_default::<builtins::elementary::arithmetic::Sub>(false);
+        self.register_builtin_default::<builtins::elementary::arithmetic::Mul>(false);
+        self.register_builtin_default::<builtins::elementary::arithmetic::Div>(false);
+
         self.register_builtin_default::<builtins::calculus::Integrate>(true);
         self.register_builtin_default::<builtins::calculus::Derivative>(true);
-        self.register_builtin_default::<builtins::simplification::Simplify>(true);
-        self.register_builtin_default::<builtins::system::Help>(false);
 
+        self.register_builtin_default::<builtins::simplification::Simplify>(true);
         self.register_builtin(
             Box::new(builtins::simplification::Expand::new(
                 self.binomial_generator.clone(),
             )),
             true,
         );
+
+        self.register_builtin_default::<builtins::system::Help>(false);
     }
 
     pub fn register_builtin_default<B: BuiltIn + Default + 'static>(&mut self, auto_apply: bool) {

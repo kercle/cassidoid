@@ -1,2 +1,2 @@
-pub mod gcd;
 pub mod binomial;
+pub mod gcd;
