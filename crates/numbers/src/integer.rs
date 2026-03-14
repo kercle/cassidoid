@@ -700,6 +700,8 @@ impl BigInteger {
     /// # Examples
     /// 
     /// ```
+    /// use numbers::integer::BigInteger;
+    /// 
     /// let n = BigInteger::from_u64(12); // 12 = 3 × 2²
     /// assert_eq!(n.trailing_zeros(), 2);
     /// ```
