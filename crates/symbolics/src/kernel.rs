@@ -43,11 +43,11 @@ impl Kernel {
     fn register_initial_builtins(&mut self) {
         self.register_builtin_default::<builtins::calculus::Integrate>(true);
         self.register_builtin_default::<builtins::calculus::Derivative>(true);
-        self.register_builtin_default::<builtins::simplify::Simplify>(true);
+        self.register_builtin_default::<builtins::simplification::Simplify>(true);
         self.register_builtin_default::<builtins::system::Help>(false);
 
         self.register_builtin(
-            Box::new(builtins::simplify::Expand::new(
+            Box::new(builtins::simplification::Expand::new(
                 self.binomial_generator.clone(),
             )),
             true,

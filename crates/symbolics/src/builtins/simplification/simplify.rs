@@ -1,12 +1,8 @@
-pub mod expand;
-pub mod factor;
-pub mod known_values;
-pub mod trigonometric;
-
-pub use expand::Expand;
-
 use crate::{
-    builtins::traits::{BuiltIn, PatternDoc},
+    builtins::{
+        simplification::{factor, known_values, trigonometric},
+        traits::{BuiltIn, PatternDoc},
+    },
     expr::NormExpr,
     rewrite::Rewriter,
 };
