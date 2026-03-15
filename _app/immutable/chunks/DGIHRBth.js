@@ -41,7 +41,7 @@ let __tla = (async () => {
     }
     return n;
   }
-  const B = "" + new URL("../assets/kernel_bg.D4s4LvFp.wasm", import.meta.url).href, C = async (e = {}, t) => {
+  const B = "" + new URL("../assets/kernel_bg.BsE9enp4.wasm", import.meta.url).href, C = async (e = {}, t) => {
     let n;
     if (t.startsWith("data:")) {
       const o = t.replace(/^data:.*?base64,/, "");
@@ -66,8 +66,8 @@ let __tla = (async () => {
   function R(e) {
     let t, n;
     try {
-      const o = j(e, _.__wbindgen_malloc, _.__wbindgen_realloc), s = w, a = _.eval_input(o, s);
-      return t = a[0], n = a[1], F(a[0], a[1]);
+      const o = F(e, _.__wbindgen_malloc, _.__wbindgen_realloc), s = w, a = _.eval_input(o, s);
+      return t = a[0], n = a[1], j(a[0], a[1]);
     } finally {
       _.__wbindgen_free(t, n, 1);
     }
@@ -76,14 +76,14 @@ let __tla = (async () => {
     const e = _.__wbindgen_externrefs, t = e.grow(4);
     e.set(0, void 0), e.set(t + 0, void 0), e.set(t + 1, null), e.set(t + 2, true), e.set(t + 3, false);
   }
-  function F(e, t) {
+  function j(e, t) {
     return e = e >>> 0, H(e, t);
   }
   let l = null;
   function u() {
     return (l === null || l.byteLength === 0) && (l = new Uint8Array(_.memory.buffer)), l;
   }
-  function j(e, t, n) {
+  function F(e, t, n) {
     if (n === void 0) {
       const i = d.encode(e), c = t(i.length, 1) >>> 0;
       return u().subarray(c, c + i.length).set(i), w = i.length, c;
