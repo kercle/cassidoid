@@ -125,14 +125,25 @@ impl Kernel {
         // TODO: release all holds here is just a workaround until rules are
         // properly integrate into the core of the expression rewriting.
         Ok(self
-            .apply_auto_builtins(RawExpr::from(ast_in).normalize())
+            .apply_auto_builtins_until_stable(RawExpr::from(ast_in).normalize(), 100)
             .release_all_holds())
     }
 
-    fn apply_auto_builtins(&self, mut expr: NormExpr) -> NormExpr {
-        for index in self.auto_apply.iter() {
-            let builtin = self.builtins.get(*index).expect("Builtin not registered");
-            expr = builtin.apply_all(expr);
+    fn apply_auto_builtins_until_stable(&self, mut expr: NormExpr, limit: usize) -> NormExpr {
+        // For now we just rely on the fingerprint for stabelization.
+        let mut current_fingerprint = expr.fingerprint();
+
+        for _ in 0..limit {
+            for index in self.auto_apply.iter() {
+                let builtin = self.builtins.get(*index).expect("Builtin not registered");
+                expr = builtin.apply_all(expr);
+            }
+
+            if expr.fingerprint() == current_fingerprint {
+                break;
+            } else {
+                current_fingerprint = expr.fingerprint();
+            }
         }
 
         expr
