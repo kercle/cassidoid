@@ -8,7 +8,10 @@ use crate::{
         ADD_HEAD, CANNONICAL_HEAD_HOLD, CANNONICAL_HEAD_SQRT, CANNONICAL_SYM_INDETERMINATE,
         DIV_HEAD, MUL_HEAD, NEG_HEAD, POW_HEAD, SUB_HEAD,
     },
-    expr::{ExprKind, NormExpr, RawExpr},
+    expr::{
+        ArgsId, ExprId, ExprKind, ExprPool, ExprView, NormExpr, NormExprHandle, RawExpr,
+        RawExprHandle,
+    },
 };
 
 impl RawExpr {
@@ -21,6 +24,19 @@ impl RawExpr {
 
     fn into_normexpr_unsafe(self) -> NormExpr {
         unsafe { std::mem::transmute(self) }
+    }
+}
+
+impl RawExprHandle {
+    pub fn normalize(self, pool: &mut ExprPool) -> NormExprHandle {
+        match self.view(pool) {
+            ExprView::Atom(_) => todo!(),
+            ExprView::Node { head, args } => todo!(),
+        }
+    }
+
+    fn into_normexpr_unchecked(self) -> NormExprHandle {
+        NormExprHandle::new(self.id())
     }
 }
 
@@ -40,6 +56,12 @@ impl NormExpr {
             head: Box::new(head),
             args,
         })
+    }
+}
+
+impl NormExprHandle {
+    pub fn normalize(self) -> NormExprHandle {
+        self
     }
 }
 
@@ -92,6 +114,10 @@ fn normalize_raw_node(head_expr: RawExpr, args: Vec<RawExpr>) -> NormExpr {
             args: args.into_iter().map(|a| a.normalize()).collect(),
         }),
     }
+}
+
+fn normalize_raw_node_handle(head_expr_id: ExprId, args_id: ArgsId) -> NormExprHandle {
+    todo!()
 }
 
 fn flatten(head_symbol: &str, args: Vec<RawExpr>) -> Vec<NormExpr> {

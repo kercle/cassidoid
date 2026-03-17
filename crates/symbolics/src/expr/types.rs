@@ -5,10 +5,10 @@ use std::{
 
 use crate::atom::Atom;
 
-#[derive(Clone)]
+#[derive(Clone, Copy)]
 pub struct Raw;
 
-#[derive(Clone)]
+#[derive(Clone, Copy)]
 pub struct Normalized;
 
 #[derive(Clone, PartialEq)]
@@ -52,8 +52,8 @@ impl<S> Expr<S> {
 
 // -------- ExprPool brainstorming -------------
 
-type ExprId = u32;
-type ArgsId = u32;
+pub(crate) type ExprId = u32;
+pub(crate) type ArgsId = u32;
 
 #[derive(Clone, PartialEq, Eq, Hash)]
 enum ExprCell {
@@ -61,7 +61,7 @@ enum ExprCell {
     Node { head_id: ExprId, args_id: ArgsId },
 }
 
-struct ExprPool {
+pub struct ExprPool {
     objs: Vec<ExprCell>,
     args: Vec<Vec<ExprId>>,
 
@@ -142,7 +142,7 @@ impl ExprPool {
 }
 
 #[derive(Copy, Clone)]
-struct ExprHandle<S> {
+pub struct ExprHandle<S> {
     id: ExprId,
     _state: PhantomData<S>,
 }
@@ -151,14 +151,14 @@ pub type RawExprHandle = ExprHandle<Raw>;
 pub type NormExprHandle = ExprHandle<Normalized>;
 
 impl<S> ExprHandle<S> {
-    fn new(id: ExprId) -> Self {
+    pub(super) fn new(id: ExprId) -> Self {
         ExprHandle {
             id,
             _state: PhantomData,
         }
     }
 
-    fn id(&self) -> ExprId {
+    pub fn id(&self) -> ExprId {
         self.id
     }
 
@@ -179,7 +179,7 @@ impl<S> ExprHandle<S> {
     }
 }
 
-enum ExprView<'a, S> {
+pub enum ExprView<'a, S> {
     Atom(&'a Atom),
     Node {
         head: ExprHandle<S>,
@@ -188,7 +188,7 @@ enum ExprView<'a, S> {
 }
 
 impl<S: Copy> ExprHandle<S> {
-    fn view(self, pool: &ExprPool) -> ExprView<S> {
+    pub(crate) fn view(self, pool: &ExprPool) -> ExprView<S> {
         match &pool.objs[self.id as usize] {
             ExprCell::Atom(a) => ExprView::Atom(a),
             ExprCell::Node {
