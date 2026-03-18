@@ -26,16 +26,16 @@ enum ReducibleHead {
 }
 
 impl ReducibleHead {
-    fn from_node(pool: &ExprPool, expr_id: ExprId, arity: usize) -> Option<Self> {
+    fn from_node(pool: &ExprPool, expr_id: ExprId, arity: Option<usize>) -> Option<Self> {
         match RawExprHandle::new(expr_id).view(pool).get_symbol() {
             Some(ADD_HEAD) => Some(ReducibleHead::Add),
-            Some(SUB_HEAD) if arity == 2 => Some(ReducibleHead::Sub),
+            Some(SUB_HEAD) if arity == Some(2) => Some(ReducibleHead::Sub),
             Some(MUL_HEAD) => Some(ReducibleHead::Mul),
-            Some(DIV_HEAD) if arity == 2 => Some(ReducibleHead::Div),
-            Some(NEG_HEAD) if arity == 1 => Some(ReducibleHead::Neg),
-            Some(POW_HEAD) if arity == 2 => Some(ReducibleHead::Pow),
-            Some(CANNONICAL_HEAD_SQRT) if arity == 1 => Some(ReducibleHead::Sqrt),
-            Some(CANNONICAL_HEAD_HOLD) if arity == 1 => Some(ReducibleHead::Hold),
+            Some(DIV_HEAD) if arity == Some(2) => Some(ReducibleHead::Div),
+            Some(NEG_HEAD) if arity == Some(1) => Some(ReducibleHead::Neg),
+            Some(POW_HEAD) if arity == Some(2) => Some(ReducibleHead::Pow),
+            Some(CANNONICAL_HEAD_SQRT) if arity == Some(1) => Some(ReducibleHead::Sqrt),
+            Some(CANNONICAL_HEAD_HOLD) if arity == Some(1) => Some(ReducibleHead::Hold),
             _ => None,
         }
     }
@@ -145,7 +145,7 @@ fn normalize_raw_node_handle(pool: &mut ExprPool, expr: RawExprHandle) -> NormEx
         ExprCell::Atom(_) => unreachable!(),
     };
 
-    let redu_head = ReducibleHead::from_node(pool, head_id, pool.get_args(args_id).len());
+    let redu_head = ReducibleHead::from_node(pool, head_id, Some(pool.get_args(args_id).len()));
     match redu_head {
         Some(ReducibleHead::Add) => todo!(),
         Some(ReducibleHead::Sub) => {
@@ -239,6 +239,48 @@ fn flatten(head_symbol: &str, args: Vec<RawExpr>) -> Vec<NormExpr> {
     }
 
     flattened_args
+}
+
+fn flatten_node_handle(
+    pool: &mut ExprPool,
+    head_symbol: &str,
+    args_id: ArgsId,
+) -> Vec<NormExprHandle> {
+    let arg_expr_ids = pool.get_args(args_id).to_vec();
+    let mut flattened = Vec::with_capacity(arg_expr_ids.len());
+
+    for arg_expr_id in arg_expr_ids {
+        let norm = normalize_raw_node_handle(pool, RawExprHandle::new(arg_expr_id));
+
+        let (norm_head_id, norm_args_id) = match pool.get_obj(norm.id()) {
+            ExprCell::Node { head_id, args_id } => (*head_id, *args_id),
+            ExprCell::Atom(_) => {
+                flattened.push(norm);
+                continue;
+            }
+        };
+
+        let Some(matches_head) = RawExprHandle::new(norm_head_id)
+            .view(pool)
+            .get_symbol()
+            .map(|s| s == head_symbol)
+        else {
+            flattened.push(norm);
+            continue;
+        };
+
+        if matches_head {
+            flattened.extend(
+                pool.get_args(norm_args_id)
+                    .iter()
+                    .map(|&id| NormExprHandle::new_unchecked(id)),
+            );
+        } else {
+            flattened.push(norm);
+        }
+    }
+
+    flattened
 }
 
 fn normalize_raw_add(args: Vec<RawExpr>) -> NormExpr {
