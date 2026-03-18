@@ -1,7 +1,4 @@
-use std::{
-    collections::{HashMap, HashSet},
-    marker::PhantomData,
-};
+use std::{collections::HashMap, marker::PhantomData, rc::Rc};
 
 use numbers::Number;
 
@@ -65,10 +62,10 @@ pub(super) enum ExprCell {
 
 pub struct ExprPool {
     objs: Vec<ExprCell>,
-    args: Vec<Vec<ExprId>>,
+    args: Vec<Rc<Vec<ExprId>>>,
 
     obj_map: HashMap<ExprCell, ExprId>,
-    args_map: HashMap<Vec<ExprId>, ArgsId>,
+    args_map: HashMap<Rc<Vec<ExprId>>, ArgsId>,
 }
 
 impl ExprPool {
@@ -94,8 +91,10 @@ impl ExprPool {
             return id;
         }
         let id = self.args.len() as ArgsId;
-        self.args_map.insert(args.clone(), id);
-        self.args.push(args);
+
+        let rc = Rc::new(args);
+        self.args_map.insert(rc.clone(), id);
+        self.args.push(rc);
         id
     }
 
