@@ -51,8 +51,8 @@ impl<S> Expr<S> {
 
 // -------- ExprPool brainstorming -------------
 
-pub(crate) type ExprId = u32;
-pub(crate) type ArgsId = u32;
+type ExprId = u32;
+type ArgsId = u32;
 
 #[derive(Clone, PartialEq, Eq, Hash)]
 pub(super) enum ExprCell {
@@ -69,7 +69,7 @@ pub struct ExprPool {
 }
 
 impl ExprPool {
-    fn new() -> Self {
+    pub(crate) fn new() -> Self {
         ExprPool {
             objs: Vec::new(),
             args: Vec::new(),
@@ -78,11 +78,11 @@ impl ExprPool {
         }
     }
 
-    pub(super) fn get_obj(&self, id: ExprId) -> &ExprCell {
+    fn get_obj(&self, id: ExprId) -> &ExprCell {
         &self.objs[id as usize]
     }
 
-    pub(super) fn get_args(&self, id: ArgsId) -> &[ExprId] {
+    fn get_args(&self, id: ArgsId) -> &[ExprId] {
         &self.args[id as usize]
     }
 
@@ -98,7 +98,7 @@ impl ExprPool {
         id
     }
 
-    pub(super) fn insert(&mut self, obj: ExprCell) -> ExprId {
+    fn insert(&mut self, obj: ExprCell) -> ExprId {
         if let Some(&id) = self.obj_map.get(&obj) {
             return id;
         }
@@ -108,85 +108,115 @@ impl ExprPool {
         id
     }
 
-    pub(crate) fn atom(&mut self, a: Atom) -> ExprId {
-        self.insert(ExprCell::Atom(a))
+    pub(crate) fn atom(&mut self, a: Atom) -> RawExprHandle {
+        RawExprHandle::new(self.insert(ExprCell::Atom(a)))
     }
 
-    pub(crate) fn number(&mut self, n: Number) -> ExprId {
-        self.insert(ExprCell::Atom(Atom::number(n)))
+    pub(crate) fn number(&mut self, n: Number) -> RawExprHandle {
+        RawExprHandle::new(self.insert(ExprCell::Atom(Atom::number(n))))
     }
 
-    pub(crate) fn number_from_i64(&mut self, n: i64) -> ExprId {
-        self.insert(ExprCell::Atom(Atom::number(Number::from_i64(n))))
+    pub(crate) fn number_from_i64(&mut self, n: i64) -> RawExprHandle {
+        RawExprHandle::new(self.insert(ExprCell::Atom(Atom::number(Number::from_i64(n)))))
     }
 
     pub(crate) fn rational_from_i64(
         &mut self,
         numerator: i64,
         denominator: u64,
-    ) -> Result<ExprId, String> {
+    ) -> Result<RawExprHandle, String> {
         let num = Number::new_rational_from_i64(numerator, denominator)?;
-        Ok(self.insert(ExprCell::Atom(Atom::number(num))))
+        Ok(RawExprHandle::new(
+            self.insert(ExprCell::Atom(Atom::number(num))),
+        ))
     }
 
-    pub(crate) fn symbol<T: AsRef<str>>(&mut self, s: T) -> ExprId {
-        self.insert(ExprCell::Atom(Atom::symbol(s)))
+    pub(crate) fn symbol<T: AsRef<str>>(&mut self, s: T) -> RawExprHandle {
+        RawExprHandle::new(self.insert(ExprCell::Atom(Atom::symbol(s))))
     }
 
-    pub(crate) fn node(&mut self, head: ExprId, args: Vec<ExprId>) -> ExprId {
-        let args_id = self.insert_args(args);
-        self.insert(ExprCell::Node {
-            head_id: head,
-            args_id,
-        })
+    pub(crate) fn node(&mut self, head: RawExprHandle, args: RawArgsHandle) -> RawExprHandle {
+        RawExprHandle::new(self.insert(ExprCell::Node {
+            head_id: head.id(),
+            args_id: args.id(),
+        }))
     }
 
-    pub(crate) fn binary_node(&mut self, head: ExprId, lhs: ExprId, rhs: ExprId) -> ExprId {
-        self.node(head, vec![lhs, rhs])
+    pub(crate) fn binary_node(
+        &mut self,
+        head: RawExprHandle,
+        lhs: RawExprHandle,
+        rhs: RawExprHandle,
+    ) -> RawExprHandle {
+        self.variadic_node(head, vec![lhs, rhs])
     }
 
     pub(crate) fn binary_node_with_head_symbol<T: AsRef<str>>(
         &mut self,
         head: T,
-        lhs: ExprId,
-        rhs: ExprId,
-    ) -> ExprId {
+        lhs: RawExprHandle,
+        rhs: RawExprHandle,
+    ) -> RawExprHandle {
         let head_id = self.symbol(head);
-        self.node(head_id, vec![lhs, rhs])
+        self.variadic_node(head_id, vec![lhs, rhs])
     }
 
-    pub(crate) fn unary_node(&mut self, head: ExprId, child: ExprId) -> ExprId {
-        self.node(head, vec![child])
+    pub(crate) fn unary_node(
+        &mut self,
+        head: RawExprHandle,
+        child: RawExprHandle,
+    ) -> RawExprHandle {
+        self.variadic_node(head, vec![child])
     }
 
     pub(crate) fn unary_node_with_head_symbol<T: AsRef<str>>(
         &mut self,
         head: T,
-        child: ExprId,
-    ) -> ExprId {
+        child: RawExprHandle,
+    ) -> RawExprHandle {
         let head_id = self.symbol(head);
-        self.node(head_id, vec![child])
+        self.variadic_node(head_id, vec![child])
     }
 
-    pub fn insert_expr<S>(&mut self, expr: &Expr<S>) -> ExprId {
+    pub(crate) fn variadic_node(
+        &mut self,
+        head: RawExprHandle,
+        args: Vec<RawExprHandle>,
+    ) -> RawExprHandle {
+        let args_id = self.insert_args(args.into_iter().map(|a| a.id()).collect());
+        self.node(head, ArgsHandle::new(args_id))
+    }
+
+    pub(crate) fn variadic_node_with_head_symbol<T: AsRef<str>>(
+        &mut self,
+        head: T,
+        args: Vec<RawExprHandle>,
+    ) -> RawExprHandle {
+        let head_id = self.symbol(head);
+        self.variadic_node(head_id, args)
+    }
+
+    pub fn insert_expr<S>(&mut self, expr: &Expr<S>) -> RawExprHandle {
         match expr.kind() {
             ExprKind::Atom { entry } => self.atom(entry.clone()),
             ExprKind::Node { head, args } => {
-                let head_id = self.insert_expr(head);
-                let arg_ids: Vec<ExprId> = args.iter().map(|arg| self.insert_expr(arg)).collect();
-                self.node(head_id, arg_ids)
+                let head = self.insert_expr(head);
+                let arg_ids: Vec<ExprId> =
+                    args.iter().map(|arg| self.insert_expr(arg).id()).collect();
+
+                let args = self.insert_args(arg_ids);
+                self.node(head, RawArgsHandle::new(args))
             }
         }
     }
 
     pub fn insert_raw(&mut self, expr: &RawExpr) -> RawExprHandle {
-        let id = self.insert_expr(expr);
-        ExprHandle::new(id)
+        self.insert_expr(expr)
     }
 
     pub fn insert_norm(&mut self, expr: &NormExpr) -> NormExprHandle {
-        let id = self.insert_expr(expr);
-        ExprHandle::new_unchecked(id)
+        let handle = self.insert_expr(expr);
+        ExprHandle::new_unchecked(handle.id())
     }
 }
 
@@ -213,7 +243,11 @@ impl<S> ExprHandle<S> {
         }
     }
 
-    pub fn id(&self) -> ExprId {
+    pub(crate) fn as_raw(&self) -> RawExprHandle {
+        RawExprHandle::new(self.id())
+    }
+
+    pub(super) fn id(&self) -> ExprId {
         self.id
     }
 
@@ -243,17 +277,9 @@ impl<S: Copy> ExprHandle<S> {
                 args_id: args,
             } => ExprView::Node {
                 head: ExprHandle::new_unchecked(*head),
-                args: &pool.args[*args as usize],
+                args: ArgsHandle::new_unchecked(*args),
             },
         }
-    }
-
-    fn children(self, pool: &ExprPool) -> impl Iterator<Item = ExprHandle<S>> {
-        let args = match &pool.objs[self.id as usize] {
-            ExprCell::Node { args_id: args, .. } => &pool.args[*args as usize],
-            ExprCell::Atom(_) => &[] as &[ExprId],
-        };
-        args.iter().map(move |&id| ExprHandle::new_unchecked(id))
     }
 
     fn eq(self, other: ExprHandle<S>) -> bool {
@@ -261,19 +287,89 @@ impl<S: Copy> ExprHandle<S> {
     }
 }
 
+#[derive(Copy, Clone)]
+pub struct ArgsHandle<S> {
+    id: ArgsId,
+    _state: PhantomData<S>,
+}
+
+pub type RawArgsHandle = ArgsHandle<Raw>;
+pub type NormArgsHandle = ArgsHandle<Normalized>;
+
+impl RawArgsHandle {
+    pub(crate) fn new(id: ExprId) -> Self {
+        Self::new_unchecked(id)
+    }
+}
+
+impl<S> ArgsHandle<S> {
+    fn new_unchecked(id: ArgsId) -> ArgsHandle<S> {
+        ArgsHandle {
+            id,
+            _state: PhantomData,
+        }
+    }
+
+    pub(crate) fn as_raw(&self) -> RawArgsHandle {
+        RawArgsHandle::new(self.id())
+    }
+
+    pub(super) fn id(&self) -> ArgsId {
+        self.id
+    }
+
+    pub fn get(&self, pool: &ExprPool, index: usize) -> Option<ExprHandle<S>> {
+        pool.get_args(self.id)
+            .get(index)
+            .copied()
+            .map(ExprHandle::new_unchecked)
+    }
+
+    pub fn len(&self, pool: &ExprPool) -> usize {
+        pool.get_args(self.id).len()
+    }
+}
+
+impl<S: Copy + 'static> ArgsHandle<S> {
+    pub(crate) fn iter(self, pool: &ExprPool) -> impl ExactSizeIterator<Item = ExprHandle<S>> + '_ {
+        pool.get_args(self.id)
+            .iter()
+            .copied()
+            .map(ExprHandle::<S>::new_unchecked)
+    }
+
+    pub(crate) fn to_vec(self, pool: &ExprPool) -> Vec<ExprHandle<S>> {
+        self.iter(pool).collect()
+    }
+}
+
 pub enum ExprView<'a, S> {
     Atom(&'a Atom),
     Node {
         head: ExprHandle<S>,
-        args: &'a [ExprId],
+        args: ArgsHandle<S>,
     },
 }
 
-impl<'a, S> ExprView<'a, S> {
+impl<'a, S> ExprView<'a, S>
+where
+    S: Copy + 'static,
+{
     pub fn get_symbol(&self) -> Option<&str> {
         match self {
             Self::Atom(Atom::Symbol(sym)) => Some(sym),
             _ => None,
         }
+    }
+
+    pub fn get_number(&self) -> Option<&Number> {
+        match self {
+            Self::Atom(Atom::Number(num)) => Some(num),
+            _ => None,
+        }
+    }
+
+    pub fn is_symbol(&self, sym: &str) -> bool {
+        self.get_symbol().map(|s| s == sym).unwrap_or(false)
     }
 }

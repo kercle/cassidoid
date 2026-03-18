@@ -9,7 +9,7 @@ use crate::{
         DIV_HEAD, MUL_HEAD, NEG_HEAD, POW_HEAD, SUB_HEAD,
     },
     expr::{
-        ArgsId, ExprCell, ExprId, ExprKind, ExprPool, ExprView, NormExpr, NormExprHandle, RawExpr,
+        ExprCell, ExprKind, ExprPool, ExprView, NormExpr, NormExprHandle, RawArgsHandle, RawExpr,
         RawExprHandle,
     },
 };
@@ -26,8 +26,8 @@ enum ReducibleHead {
 }
 
 impl ReducibleHead {
-    fn from_node(pool: &ExprPool, expr_id: ExprId, arity: Option<usize>) -> Option<Self> {
-        match RawExprHandle::new(expr_id).view(pool).get_symbol() {
+    fn from_node(pool: &ExprPool, expr: RawExprHandle, arity: Option<usize>) -> Option<Self> {
+        match expr.view(pool).get_symbol() {
             Some(ADD_HEAD) => Some(ReducibleHead::Add),
             Some(SUB_HEAD) if arity == Some(2) => Some(ReducibleHead::Sub),
             Some(MUL_HEAD) => Some(ReducibleHead::Mul),
@@ -58,8 +58,12 @@ impl RawExprHandle {
     pub fn normalize(self, pool: &mut ExprPool) -> NormExprHandle {
         match self.view(pool) {
             ExprView::Atom(_) => todo!(),
-            ExprView::Node { .. } => normalize_raw_node_handle(pool, self),
+            ExprView::Node { head, args } => normalize_raw_node_handle(pool, head, args),
         }
+    }
+
+    fn into_normexpr_unchecked(self) -> NormExprHandle {
+        NormExprHandle::new_unchecked(self.id())
     }
 }
 
@@ -139,85 +143,81 @@ fn normalize_raw_node(head_expr: RawExpr, args: Vec<RawExpr>) -> NormExpr {
     }
 }
 
-fn normalize_raw_node_handle(pool: &mut ExprPool, expr: RawExprHandle) -> NormExprHandle {
-    let (head_id, args_id) = match pool.get_obj(expr.id()) {
-        ExprCell::Node { head_id, args_id } => (*head_id, *args_id),
-        ExprCell::Atom(_) => unreachable!(),
-    };
-
-    let redu_head = ReducibleHead::from_node(pool, head_id, Some(pool.get_args(args_id).len()));
-    match redu_head {
-        Some(ReducibleHead::Add) => todo!(),
-        Some(ReducibleHead::Sub) => {
+fn normalize_raw_node_handle(
+    pool: &mut ExprPool,
+    head: RawExprHandle,
+    args: RawArgsHandle,
+) -> NormExprHandle {
+    match head.view(pool).get_symbol() {
+        Some(ADD_HEAD) => todo!(),
+        Some(SUB_HEAD) if args.len(pool) == 2 => {
             // Takes Sub[a, b] and produces Add[a, Mul[-1, b]]
 
-            let [lhs, rhs]: [ArgsId; 2] = pool.get_args(args_id).try_into().unwrap();
+            let lhs = args.get(pool, 0).unwrap();
+            let rhs = args.get(pool, 1).unwrap();
 
-            let minus_one = pool.number_from_i64(-1);
-            let neg_rhs = pool.binary_node_with_head_symbol(MUL_HEAD, minus_one, rhs);
-            let new_expr =
-                RawExprHandle::new(pool.binary_node_with_head_symbol(ADD_HEAD, lhs, neg_rhs));
-
-            new_expr.normalize(pool)
+            let coeff = pool.number_from_i64(-1);
+            let mul_node = pool.binary_node_with_head_symbol(MUL_HEAD, coeff, rhs);
+            pool.binary_node_with_head_symbol(ADD_HEAD, lhs, mul_node)
+                .normalize(pool)
         }
-        Some(ReducibleHead::Mul) => todo!(),
-        Some(ReducibleHead::Div) => {
+        Some(MUL_HEAD) => todo!(),
+        Some(DIV_HEAD) if args.len(pool) == 2 => {
             // Takes Div[a, b] and produces Mul[a, Pow[b, -1]] if
             // b != 0, otherwise Indeterminate
 
-            let [lhs, rhs]: [ArgsId; 2] = pool.get_args(args_id).try_into().unwrap();
+            let lhs = args.get(pool, 0).unwrap();
+            let rhs = args.get(pool, 1).unwrap();
 
-            if let ExprView::Atom(Atom::Number(n)) = RawExprHandle::new(rhs).view(pool)
-                && n.is_zero()
+            if let Some(num) = rhs.view(pool).get_number()
+                && num.is_zero()
             {
-                NormExprHandle::new_unchecked(pool.symbol(CANNONICAL_SYM_INDETERMINATE))
+                pool.symbol(CANNONICAL_SYM_INDETERMINATE)
+                    .into_normexpr_unchecked()
             } else {
-                let minus_one = pool.number_from_i64(-1);
-                let rec_rhs = pool.binary_node_with_head_symbol(POW_HEAD, rhs, minus_one);
-                let new_expr =
-                    RawExprHandle::new(pool.binary_node_with_head_symbol(MUL_HEAD, lhs, rec_rhs));
-
-                new_expr.normalize(pool)
+                let coeff = pool.number_from_i64(-1);
+                let pow_node = pool.binary_node_with_head_symbol(POW_HEAD, rhs, coeff);
+                pool.binary_node_with_head_symbol(MUL_HEAD, lhs, pow_node)
+                    .normalize(pool)
             }
         }
-        Some(ReducibleHead::Neg) => {
+        Some(NEG_HEAD) if args.len(pool) == 1 => {
             // Takes Neg[a] and produces Mul[-1, a]
 
-            let [child]: [ArgsId; 1] = pool.get_args(args_id).try_into().unwrap();
+            let child = args.get(pool, 0).unwrap();
 
-            let minus_one = pool.number_from_i64(-1);
-            let new_expr =
-                RawExprHandle::new(pool.binary_node_with_head_symbol(MUL_HEAD, minus_one, child));
-
-            new_expr.normalize(pool)
+            let coeff = pool.number_from_i64(-1);
+            pool.binary_node_with_head_symbol(MUL_HEAD, coeff, child)
+                .normalize(pool)
         }
-        Some(ReducibleHead::Pow) => todo!(),
-        Some(ReducibleHead::Sqrt) => {
+        Some(POW_HEAD) => todo!(),
+        Some(CANNONICAL_HEAD_SQRT) if args.len(pool) == 1 => {
             // Takes Sqrt[a] and produces Pow[a, 1/2]
 
-            let [child]: [ArgsId; 1] = pool.get_args(args_id).try_into().unwrap();
+            let child = args.get(pool, 0).unwrap();
 
-            let one_half = pool.rational_from_i64(1, 2).unwrap();
-            let new_expr =
-                RawExprHandle::new(pool.binary_node_with_head_symbol(POW_HEAD, child, one_half));
-
-            new_expr.normalize(pool)
+            let exponent = pool.rational_from_i64(1, 2).unwrap();
+            pool.binary_node_with_head_symbol(POW_HEAD, child, exponent)
+                .normalize(pool)
         }
-        Some(ReducibleHead::Hold) => {
+        Some(CANNONICAL_HEAD_HOLD) if args.len(pool) == 1 => {
             // Takes Hold[a] and produces Hold[a] without
             // normalize further.
 
-            NormExprHandle::new_unchecked(expr.id())
+            let child = args.get(pool, 0).unwrap();
+
+            pool.unary_node(head, child).into_normexpr_unchecked()
         }
-        None => {
-            let head = RawExprHandle::new(head_id).normalize(pool);
-            let mut args = pool.get_args(args_id).to_vec();
+        _ => {
+            let head = head.normalize(pool).as_raw();
+            let mut args: Vec<RawExprHandle> = args.iter(pool).collect();
 
             for a in args.iter_mut() {
-                *a = RawExprHandle::new(*a).normalize(pool).id();
+                *a = a.normalize(pool).as_raw()
             }
 
-            NormExprHandle::new_unchecked(pool.node(head.id(), args))
+            // NormExprHandle::new_unchecked(pool.node(head.id(), args))
+            pool.variadic_node(head, args).into_normexpr_unchecked()
         }
     }
 }
@@ -241,38 +241,49 @@ fn flatten(head_symbol: &str, args: Vec<RawExpr>) -> Vec<NormExpr> {
     flattened_args
 }
 
-fn flatten_node_handle(pool: &mut ExprPool, head_symbol: &str, args_id: ArgsId) -> ArgsId {
-    let arg_expr_ids = pool.get_args(args_id).to_vec();
-    let mut flattened = Vec::with_capacity(arg_expr_ids.len());
+fn flatten_node_handle(
+    pool: &mut ExprPool,
+    head_symbol: &str,
+    args: RawArgsHandle,
+    flattened: &mut Vec<NormExprHandle>,
+) {
+    // TODO: can we get rid of this clone?
+    let args = args.to_vec(pool);
 
-    for arg_expr_id in arg_expr_ids {
-        let norm = normalize_raw_node_handle(pool, RawExprHandle::new(arg_expr_id));
+    for arg in args {
+        let norm_arg = arg.normalize(pool);
 
-        let (norm_head_id, norm_args_id) = match pool.get_obj(norm.id()) {
-            ExprCell::Node { head_id, args_id } => (*head_id, *args_id),
-            ExprCell::Atom(_) => {
-                flattened.push(norm.id());
-                continue;
-            }
-        };
+        if norm_arg.view(pool).is_symbol(head_symbol) {
+            let ExprView::Node { args, .. } = norm_arg.view(pool) else {
+                unreachable!("We know at this point Expr has head symbol");
+            };
 
-        let Some(matches_head) = RawExprHandle::new(norm_head_id)
-            .view(pool)
-            .get_symbol()
-            .map(|s| s == head_symbol)
-        else {
-            flattened.push(norm.id());
-            continue;
-        };
-
-        if matches_head {
-            flattened.extend(pool.get_args(norm_args_id).iter());
+            flattened.extend(args.iter(pool));
         } else {
-            flattened.push(norm.id());
+            flattened.push(norm_arg);
         }
     }
+}
 
-    pool.insert_args(flattened)
+fn normalize_raw_add_handle(pool: &mut ExprPool, args_id: RawArgsHandle) -> NormExprHandle {
+    // We first flatten the node:
+    // Add[...,Add[a,...,z],...] -> Add[...,a,...,z,...]
+
+    // let mut flattened = Vec::with_capacity(pool.get_args(args_id).len());
+    // flatten_node_handle(pool, ADD_HEAD, args_id, &mut flattened);
+
+    // let mut constant_term = Number::zero();
+    // let mut terms = BTreeMap::new();
+
+    // for arg_id in flattened.iter().map(|&a| RawExprHandle::new(a)) {
+    //     if arg_id.view(pool).is_symbol(CANNONICAL_SYM_INDETERMINATE) {
+    //         return NormExprHandle::new_unchecked(arg_id.id());
+    //     }
+
+    //     let
+    // }
+
+    todo!()
 }
 
 fn normalize_raw_add(args: Vec<RawExpr>) -> NormExpr {
@@ -345,6 +356,36 @@ fn normalize_raw_add(args: Vec<RawExpr>) -> NormExpr {
         new_args.pop().unwrap()
     } else {
         NormExpr::new_simple_node_unchecked(ADD_HEAD, new_args)
+    }
+}
+
+pub(super) fn split_coefficient_handle(
+    pool: &mut ExprPool,
+    expr: NormExprHandle,
+) -> (Number, Option<NormExprHandle>) {
+    match expr.view(pool) {
+        ExprView::Atom(Atom::Number(val)) => (val.clone(), None),
+        ExprView::Node { head, args } if head.view(pool).is_symbol(MUL_HEAD) => {
+            let Some(first) = args.get(pool, 0) else {
+                let node = pool.node(head.as_raw(), args.as_raw());
+                return (Number::one(), Some(node.into_normexpr_unchecked()));
+            };
+
+            if let Some(coeff) = first.view(pool).get_number().cloned() {
+                if args.len(pool) == 1 {
+                    (coeff, None)
+                } else if args.len(pool) == 2 {
+                    (coeff, args.get(pool, 1))
+                } else {
+                    let rest = args.iter(pool).skip(1).map(|e| e.as_raw()).collect();
+                    let node = pool.variadic_node_with_head_symbol(MUL_HEAD, rest);
+                    (coeff, Some(node.into_normexpr_unchecked()))
+                }
+            } else {
+                (Number::one(), Some(expr))
+            }
+        }
+        _ => (Number::one(), Some(expr)),
     }
 }
 
