@@ -27,10 +27,10 @@ pub(super) enum ExprCell {
 pub struct ExprPool {
     pool_id: u64,
 
-    objs: Vec<ExprCell>,
+    objs: Vec<Rc<ExprCell>>,
     args: Vec<Rc<Vec<ExprId>>>,
 
-    obj_map: HashMap<ExprCell, ExprId>,
+    obj_map: HashMap<Rc<ExprCell>, ExprId>,
     args_map: HashMap<Rc<Vec<ExprId>>, ArgsId>,
 }
 
@@ -70,6 +70,8 @@ impl ExprPool {
             return id;
         }
         let id = self.objs.len() as ExprId;
+
+        let obj = Rc::new(obj);
         self.obj_map.insert(obj.clone(), id);
         self.objs.push(obj);
         id
@@ -260,7 +262,7 @@ impl<S: Copy> ExprHandle<S> {
     pub(crate) fn view(self, pool: &ExprPool) -> ExprView<'_, S> {
         debug_assert!(pool.pool_id == self.pool_id);
 
-        match &pool.objs[self.id as usize] {
+        match &pool.objs[self.id as usize].as_ref() {
             ExprCell::Atom(a) => ExprView::Atom(a),
             ExprCell::Node {
                 head_id: head,
