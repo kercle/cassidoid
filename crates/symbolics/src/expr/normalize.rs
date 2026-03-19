@@ -1,4 +1,4 @@
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashMap};
 
 use numbers::Number;
 
@@ -10,7 +10,7 @@ use crate::{
     },
     expr::{
         ExprKind, ExprPool, ExprView, NormExpr, NormExprHandle, RawArgsHandle, RawExpr,
-        RawExprHandle,
+        RawExprHandle, ops::cmp_expr_handle,
     },
 };
 
@@ -122,7 +122,7 @@ fn normalize_raw_node_handle(
     args: RawArgsHandle,
 ) -> NormExprHandle {
     match head.view(pool).get_symbol() {
-        Some(ADD_HEAD) => todo!(),
+        Some(ADD_HEAD) => normalize_raw_add_handle(pool, args),
         Some(SUB_HEAD) if args.len(pool) == 2 => {
             // Takes Sub[a, b] and produces Add[a, Mul[-1, b]]
 
@@ -238,25 +238,93 @@ fn flatten_node_handle(
     }
 }
 
-fn normalize_raw_add_handle(pool: &mut ExprPool, args_id: RawArgsHandle) -> NormExprHandle {
+fn normalize_raw_add_handle(pool: &mut ExprPool, args: RawArgsHandle) -> NormExprHandle {
     // We first flatten the node:
     // Add[...,Add[a,...,z],...] -> Add[...,a,...,z,...]
 
-    // let mut flattened = Vec::with_capacity(pool.get_args(args_id).len());
-    // flatten_node_handle(pool, ADD_HEAD, args_id, &mut flattened);
+    let mut constant_term = Number::zero();
+    let mut terms = HashMap::new();
 
-    // let mut constant_term = Number::zero();
-    // let mut terms = BTreeMap::new();
+    let mut flattened_args = Vec::with_capacity(args.len(pool));
+    flatten_node_handle(pool, ADD_HEAD, args, &mut flattened_args);
 
-    // for arg_id in flattened.iter().map(|&a| RawExprHandle::new(a)) {
-    //     if arg_id.view(pool).is_symbol(CANNONICAL_SYM_INDETERMINATE) {
-    //         return NormExprHandle::new_unchecked(arg_id.id());
-    //     }
+    for arg in flattened_args {
+        if arg.view(pool).is_symbol(CANNONICAL_SYM_INDETERMINATE) {
+            // Early exit when we encounter indeterminate
+            return arg;
+        }
 
-    //     let
-    // }
+        let (coeff, term) = split_coefficient_handle(pool, arg);
 
-    todo!()
+        let Some(term) = term else {
+            // argument is just a numeric constant
+            constant_term += coeff;
+            continue;
+        };
+
+        if let Some(cummulated_coeff) = terms.get_mut(&term) {
+            *cummulated_coeff = &*cummulated_coeff + coeff;
+        } else {
+            terms.insert(term, coeff);
+        }
+    }
+
+    let mut new_args = vec![];
+
+    if !constant_term.is_zero() {
+        new_args.push(pool.number(constant_term));
+    }
+
+    for (term, coeff) in terms.into_iter() {
+        if coeff.is_zero() {
+            continue;
+        }
+
+        let coeff = pool.number(coeff);
+        let node = if term.view(pool).is_symbol(MUL_HEAD) {
+            let ExprView::Node { head, args } = term.view(pool) else {
+                unreachable!("Coefficients should already by isolated");
+            };
+
+            // in sort order, numbers are guaranteed to come first
+            let mut new_args = vec![coeff];
+            new_args.extend(args.iter(pool).map(|a| a.as_raw()));
+
+            debug_assert!(
+                new_args
+                    .windows(2)
+                    .all(|w| cmp_expr_handle(pool, &w[0], &w[1]).is_le()),
+                "MUL args are not sorted after prepending coefficient"
+            );
+
+            pool.variadic_node(head.as_raw(), new_args)
+                .into_normexpr_unchecked()
+        } else if let Some(n) = coeff.view(pool).get_number()
+            && n.is_one()
+        {
+            term
+        } else {
+            // NormExpr::new_simple_node_unchecked(MUL_HEAD, vec![coeff, term])
+            pool.binary_node_with_head_symbol(MUL_HEAD, coeff, term.as_raw())
+                .into_normexpr_unchecked()
+        };
+
+        new_args.push(node.as_raw());
+    }
+
+    new_args.sort_by(|a, b| cmp_expr_handle(pool, a, b));
+
+    if new_args.is_empty() {
+        pool.number_from_i64(0).into_normexpr_unchecked()
+    } else if new_args.len() == 1 {
+        // Note that we already normalized new_args. We just store them
+        // as raw, because we can only assemble raw expressions through
+        // the pool object.
+        new_args.pop().unwrap().into_normexpr_unchecked()
+    } else {
+        pool.variadic_node_with_head_symbol(ADD_HEAD, new_args)
+            .into_normexpr_unchecked()
+    }
 }
 
 fn normalize_raw_add(args: Vec<RawExpr>) -> NormExpr {

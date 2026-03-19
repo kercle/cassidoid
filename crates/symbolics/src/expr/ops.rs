@@ -1,6 +1,6 @@
 use std::cmp::Ordering;
 
-use crate::expr::{Expr, ExprKind};
+use crate::expr::{Expr, ExprHandle, ExprKind, ExprPool, ExprView};
 
 fn cmp_expr<S>(lhs: &ExprKind<Expr<S>>, rhs: &ExprKind<Expr<S>>) -> Ordering {
     use ExprKind::*;
@@ -53,3 +53,42 @@ impl<S> Ord for Expr<S> {
 }
 
 impl<S> Eq for Expr<S> {}
+
+pub(crate) fn cmp_expr_handle<S: Copy>(pool: &ExprPool, lhs: &ExprHandle<S>, rhs: &ExprHandle<S>) -> Ordering {
+    use ExprView::*;
+
+    let lhs = lhs.view(pool);
+    let rhs = rhs.view(pool);
+
+    match (lhs, rhs) {
+        (Atom(ea), Atom(eb)) => ea.cmp(eb),
+        (Atom { .. }, Node { .. }) => Ordering::Less,
+        (Node { .. }, Atom { .. }) => Ordering::Greater,
+        (
+            Node {
+                head: ha, args: aa, ..
+            },
+            Node {
+                head: hb, args: ab, ..
+            },
+        ) => {
+            let ord = cmp_expr_handle(pool, &ha, &hb);
+            if ord != Ordering::Equal {
+                return ord;
+            }
+
+            let n = aa.len(pool).min(ab.len(pool));
+            for i in 0..n {
+                let aa_i = aa.get(pool, i).unwrap();
+                let ab_i = ab.get(pool, i).unwrap();
+
+                let ord = cmp_expr_handle(pool, &aa_i, &ab_i);
+                if ord != Ordering::Equal {
+                    return ord;
+                }
+            }
+
+            aa.len(pool).cmp(&ab.len(pool))
+        }
+    }
+}

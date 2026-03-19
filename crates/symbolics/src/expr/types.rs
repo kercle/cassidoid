@@ -4,10 +4,10 @@ use numbers::Number;
 
 use crate::atom::Atom;
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash)]
 pub struct Raw;
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash)]
 pub struct Normalized;
 
 #[derive(Clone, PartialEq)]
@@ -222,7 +222,7 @@ impl ExprPool {
     }
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, PartialEq, Eq, Hash)]
 pub struct ExprHandle<S> {
     id: ExprId,
     _state: PhantomData<S>,
@@ -289,7 +289,7 @@ impl<S: Copy> ExprHandle<S> {
     }
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, PartialEq, Eq, Hash)]
 pub struct ArgsHandle<S> {
     id: ArgsId,
     _state: PhantomData<S>,
