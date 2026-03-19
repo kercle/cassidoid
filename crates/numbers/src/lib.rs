@@ -140,6 +140,20 @@ impl Number {
             Ok(Number::Rational(res))
         }
     }
+
+    pub fn try_to_i64(&self) -> Option<i64> {
+        use Number::*;
+        match self {
+            Integer(v) => v.to_i64(),
+            Rational(v) => {
+                if v.denominator().is_one() {
+                    v.numerator().to_i64()
+                } else {
+                    None
+                }
+            }
+        }
+    }
 }
 
 impl FromStr for Number {

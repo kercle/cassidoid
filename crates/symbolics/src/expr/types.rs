@@ -116,7 +116,7 @@ impl ExprPool {
         RawExprHandle::new(self.insert(ExprCell::Atom(Atom::number(n))))
     }
 
-    pub(crate) fn number_from_i64(&mut self, n: i64) -> RawExprHandle {
+    pub(crate) fn integer_from_i64(&mut self, n: i64) -> RawExprHandle {
         RawExprHandle::new(self.insert(ExprCell::Atom(Atom::number(Number::from_i64(n)))))
     }
 
@@ -263,7 +263,7 @@ impl<S> ExprHandle<S> {
                 args: pool
                     .get_args(*args_id)
                     .iter()
-                    .map(|a| Self::new_unchecked(*a).materialize(&pool))
+                    .map(|a| Self::new_unchecked(*a).materialize(pool))
                     .collect(),
             }),
         }
@@ -271,7 +271,7 @@ impl<S> ExprHandle<S> {
 }
 
 impl<S: Copy> ExprHandle<S> {
-    pub(crate) fn view(self, pool: &ExprPool) -> ExprView<S> {
+    pub(crate) fn view(self, pool: &ExprPool) -> ExprView<'_, S> {
         match &pool.objs[self.id as usize] {
             ExprCell::Atom(a) => ExprView::Atom(a),
             ExprCell::Node {
@@ -282,10 +282,6 @@ impl<S: Copy> ExprHandle<S> {
                 args: ArgsHandle::new_unchecked(*args),
             },
         }
-    }
-
-    fn eq(self, other: ExprHandle<S>) -> bool {
-        self.id == other.id
     }
 }
 
@@ -357,6 +353,20 @@ impl<'a, S> ExprView<'a, S>
 where
     S: Copy + 'static,
 {
+    pub fn get_head(&self) -> Option<ExprHandle<S>> {
+        match self {
+            ExprView::Atom(_) => None,
+            ExprView::Node { head, .. } => Some(*head),
+        }
+    }
+
+    pub fn get_args(&self) -> Option<ArgsHandle<S>> {
+        match self {
+            ExprView::Atom(_) => None,
+            ExprView::Node { args, .. } => Some(*args),
+        }
+    }
+
     pub fn get_symbol(&self) -> Option<&str> {
         match self {
             Self::Atom(Atom::Symbol(sym)) => Some(sym),
@@ -371,7 +381,26 @@ where
         }
     }
 
-    pub fn is_symbol(&self, sym: &str) -> bool {
-        self.get_symbol().map(|s| s == sym).unwrap_or(false)
+    pub fn is_symbol<T: AsRef<str>>(&self, sym: T) -> bool {
+        self.get_symbol()
+            .map(|s| s == sym.as_ref())
+            .unwrap_or(false)
+    }
+
+    pub fn is_node<T: AsRef<str>>(&self, pool: &ExprPool, head_sym: T, arity: usize) -> bool {
+        match self {
+            Self::Node { head, args } => {
+                head.view(pool).is_symbol(head_sym) && args.len(pool) == arity
+            }
+            _ => false,
+        }
+    }
+
+    pub fn is_number(&self, n: i64) -> bool {
+        let ExprView::Atom(Atom::Number(num)) = self else {
+            return false;
+        };
+
+        num.try_to_i64().map(|num| num == n).unwrap_or(false)
     }
 }

@@ -154,6 +154,14 @@ impl cmp::PartialEq for BigInteger {
     }
 }
 
+impl cmp::PartialEq<i64> for &BigInteger {
+    fn eq(&self, other: &i64) -> bool {
+        self.to_i64()
+            .map(|self_num| self_num == *other)
+            .unwrap_or(false)
+    }
+}
+
 impl cmp::PartialOrd for BigInteger {
     fn partial_cmp(&self, other: &Self) -> Option<cmp::Ordering> {
         Some(self.cmp(other))

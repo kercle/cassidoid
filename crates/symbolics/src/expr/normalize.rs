@@ -129,12 +129,12 @@ fn normalize_raw_node_handle(
             let lhs = args.get(pool, 0).unwrap();
             let rhs = args.get(pool, 1).unwrap();
 
-            let coeff = pool.number_from_i64(-1);
+            let coeff = pool.integer_from_i64(-1);
             let mul_node = pool.binary_node_with_head_symbol(MUL_HEAD, coeff, rhs);
             pool.binary_node_with_head_symbol(ADD_HEAD, lhs, mul_node)
                 .normalize(pool)
         }
-        Some(MUL_HEAD) => todo!(),
+        Some(MUL_HEAD) => normalize_raw_mul_handle(pool, args),
         Some(DIV_HEAD) if args.len(pool) == 2 => {
             // Takes Div[a, b] and produces Mul[a, Pow[b, -1]] if
             // b != 0, otherwise Indeterminate
@@ -148,7 +148,7 @@ fn normalize_raw_node_handle(
                 pool.symbol(CANNONICAL_SYM_INDETERMINATE)
                     .into_normexpr_unchecked()
             } else {
-                let coeff = pool.number_from_i64(-1);
+                let coeff = pool.integer_from_i64(-1);
                 let pow_node = pool.binary_node_with_head_symbol(POW_HEAD, rhs, coeff);
                 pool.binary_node_with_head_symbol(MUL_HEAD, lhs, pow_node)
                     .normalize(pool)
@@ -159,11 +159,16 @@ fn normalize_raw_node_handle(
 
             let child = args.get(pool, 0).unwrap();
 
-            let coeff = pool.number_from_i64(-1);
+            let coeff = pool.integer_from_i64(-1);
             pool.binary_node_with_head_symbol(MUL_HEAD, coeff, child)
                 .normalize(pool)
         }
-        Some(POW_HEAD) => todo!(),
+        Some(POW_HEAD) if args.len(pool) == 2 => {
+            let base = args.get(pool, 0).unwrap();
+            let exponent = args.get(pool, 1).unwrap();
+
+            normalize_raw_pow_handle(pool, base, exponent)
+        }
         Some(CANNONICAL_HEAD_SQRT) if args.len(pool) == 1 => {
             // Takes Sqrt[a] and produces Pow[a, 1/2]
 
@@ -315,7 +320,7 @@ fn normalize_raw_add_handle(pool: &mut ExprPool, args: RawArgsHandle) -> NormExp
     new_args.sort_by(|a, b| cmp_expr_handle(pool, a, b));
 
     if new_args.is_empty() {
-        pool.number_from_i64(0).into_normexpr_unchecked()
+        pool.integer_from_i64(0).into_normexpr_unchecked()
     } else if new_args.len() == 1 {
         // Note that we already normalized new_args. We just store them
         // as raw, because we can only assemble raw expressions through
@@ -546,6 +551,104 @@ fn normalize_raw_mul(args: Vec<RawExpr>) -> NormExpr {
     }
 }
 
+fn normalize_raw_mul_handle(pool: &mut ExprPool, args: RawArgsHandle) -> NormExprHandle {
+    let mut constant_term = Number::one();
+    let mut terms: HashMap<NormExprHandle, Vec<RawExprHandle>> = HashMap::new();
+
+    let mut flattened_args = Vec::with_capacity(args.len(pool));
+    flatten_node_handle(pool, MUL_HEAD, args, &mut flattened_args);
+
+    for arg in flattened_args {
+        let arg_view = arg.view(pool);
+        let arg_num = arg_view.get_number();
+
+        if arg_view.is_symbol(CANNONICAL_SYM_INDETERMINATE) {
+            // In these cases we can exit early.
+            return arg;
+        }
+
+        if let Some(num) = arg_num {
+            // Collect numeric factors.
+
+            if num.is_zero() {
+                return arg;
+            } else if !num.is_one() {
+                constant_term = constant_term * num;
+            }
+
+            continue;
+        }
+
+        let (base, exponent) = if arg_view.is_node(pool, POW_HEAD, 2) {
+            let a = arg_view.get_args().unwrap();
+            (a.get(pool, 0).unwrap(), a.get(pool, 1).unwrap().as_raw())
+        } else {
+            (arg, pool.integer_from_i64(1))
+        };
+
+        if base.view(pool).is_number(0) {
+            let ExprView::Atom(Atom::Number(exp_num)) = exponent.view(pool) else {
+                return base;
+            };
+
+            if exp_num.is_zero() || exp_num.is_negative() {
+                return pool
+                    .symbol(CANNONICAL_SYM_INDETERMINATE)
+                    .into_normexpr_unchecked();
+            }
+        } else if base.view(pool).is_number(1) {
+            continue;
+        }
+
+        if let Some(exponents) = terms.get_mut(&base) {
+            exponents.push(exponent);
+        } else {
+            terms.insert(base, vec![exponent]);
+        }
+    }
+
+    let mut new_args = Vec::new();
+
+    if !constant_term.is_one() {
+        new_args.push(pool.number(constant_term));
+    }
+
+    for (base, exponents) in terms.into_iter() {
+        let assembled_exp = pool.variadic_node_with_head_symbol(ADD_HEAD, exponents);
+
+        if assembled_exp
+            .view(pool)
+            .is_symbol(CANNONICAL_SYM_INDETERMINATE)
+        {
+            return assembled_exp.into_normexpr_unchecked();
+        }
+
+        // Note: base cannot be zero as we filter this case
+        // before adding expressions to the hashmap.
+
+        if assembled_exp.view(pool).is_number(1) {
+            new_args.push(base.as_raw());
+        } else if !assembled_exp.view(pool).is_number(0) {
+            new_args.push(pool.binary_node_with_head_symbol(
+                POW_HEAD,
+                base.as_raw(),
+                assembled_exp,
+            ));
+        }
+    }
+
+    new_args.sort_by(|a, b| cmp_expr_handle(pool, a, b));
+
+    if new_args.is_empty() {
+        pool.integer_from_i64(1).into_normexpr_unchecked()
+    } else if new_args.len() == 1 {
+        new_args.pop().unwrap().into_normexpr_unchecked()
+    } else {
+        pool.variadic_node_with_head_symbol(MUL_HEAD, new_args)
+            .into_normexpr_unchecked()
+    }
+}
+
 fn normalize_raw_pow(base: RawExpr, exponent: RawExpr) -> NormExpr {
     let norm_base = base.normalize();
     let norm_exponent = exponent.normalize();
@@ -599,6 +702,62 @@ fn normalize_raw_pow(base: RawExpr, exponent: RawExpr) -> NormExpr {
         }
     } else {
         NormExpr::new_simple_node_unchecked(POW_HEAD, vec![norm_base, norm_exponent])
+    }
+}
+
+fn normalize_raw_pow_handle(
+    pool: &mut ExprPool,
+    base: RawExprHandle,
+    exponent: RawExprHandle,
+) -> NormExprHandle {
+    let norm_base = base.normalize(pool);
+    let norm_exponent = exponent.normalize(pool);
+
+    if norm_base.view(pool).is_number(0) {
+        let norm_exp_view = norm_exponent.view(pool);
+        let Some(exponent_num) = norm_exp_view.get_number() else {
+            // return zero
+            return norm_base;
+        };
+
+        if exponent_num.is_zero() || exponent_num.is_negative() {
+            return pool
+                .symbol(CANNONICAL_SYM_INDETERMINATE)
+                .into_normexpr_unchecked();
+        } else {
+            // return zero
+            return norm_base;
+        }
+    } else if norm_base.view(pool).is_number(1) {
+        return norm_base;
+    }
+
+    if norm_exponent.view(pool).is_number(1) {
+        norm_base
+    } else if norm_exponent.view(pool).is_number(0) {
+        // we've taken care of the base=0 case already
+        pool.integer_from_i64(1).into_normexpr_unchecked()
+    } else if let Some(exp_num) = norm_exponent.view(pool).get_number()
+        && exp_num.is_integer()
+    {
+        if let Some(base_num) = norm_base.view(pool).get_number() {
+            if let Ok(pow_result) = base_num.pow(exp_num) {
+                pool.number(pow_result).into_normexpr_unchecked()
+            } else {
+                pool.binary_node_with_head_symbol(
+                    POW_HEAD,
+                    norm_base.as_raw(),
+                    norm_exponent.as_raw(),
+                )
+                .into_normexpr_unchecked()
+            }
+        } else {
+            pool.binary_node_with_head_symbol(POW_HEAD, norm_base.as_raw(), norm_exponent.as_raw())
+                .into_normexpr_unchecked()
+        }
+    } else {
+        pool.binary_node_with_head_symbol(POW_HEAD, norm_base.as_raw(), norm_exponent.as_raw())
+            .into_normexpr_unchecked()
     }
 }
 

@@ -115,7 +115,7 @@ impl BigInteger {
             return None;
         }
 
-        u64::try_from(self.digit(0)).ok()
+        Some(self.digit(0))
     }
 
     pub fn zero() -> Self {
