@@ -13,7 +13,11 @@ mod tests;
 
 use std::{fmt::Debug, str::FromStr};
 
-use crate::expr::{ExprKind, NormExpr, walk::ExprTopDownWalker};
+use crate::expr::{
+    ExprKind, NormExpr,
+    pool::{ExprPool, NormExprHandle},
+    walk::ExprTopDownWalker,
+};
 
 pub const PATTERN_HEAD: &str = "Pattern";
 pub const PATTERN_TEST_HEAD: &str = "PatternTest";
@@ -34,17 +38,21 @@ pub enum PatternPredicate {
 }
 
 impl PatternPredicate {
-    pub fn check(&self, expr: &NormExpr) -> bool {
+    pub fn check(&self, pool: &ExprPool, expr: NormExprHandle) -> bool {
         use PatternPredicate::*;
         match self {
-            IsSymbol => predicates::is_symbol(expr),
-            IsNumber => predicates::is_number(expr),
-            IsInteger => predicates::is_integer(expr),
-            IsPositiveInteger => predicates::is_integer(expr) && predicates::is_positive(expr),
-            IsNegativeInteger => predicates::is_integer(expr) && predicates::is_negative(expr),
-            IsRational => predicates::is_rational(expr),
-            IsPositive => predicates::is_positive(expr),
-            IsNegative => predicates::is_negative(expr),
+            IsSymbol => predicates::is_symbol(pool, expr),
+            IsNumber => predicates::is_number(pool, expr),
+            IsInteger => predicates::is_integer(pool, expr),
+            IsPositiveInteger => {
+                predicates::is_integer(pool, expr) && predicates::is_positive(pool, expr)
+            }
+            IsNegativeInteger => {
+                predicates::is_integer(pool, expr) && predicates::is_negative(pool, expr)
+            }
+            IsRational => predicates::is_rational(pool, expr),
+            IsPositive => predicates::is_positive(pool, expr),
+            IsNegative => predicates::is_negative(pool, expr),
         }
     }
 }
