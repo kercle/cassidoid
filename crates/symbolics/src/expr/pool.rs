@@ -1,6 +1,7 @@
 use std::{
     collections::HashMap,
     marker::PhantomData,
+    ops::{Bound, Index, Range, RangeBounds},
     rc::Rc,
     sync::atomic::{AtomicU64, Ordering},
 };
@@ -275,6 +276,81 @@ impl<S: Copy> ExprHandle<S> {
     }
 }
 
+#[derive(Copy, Clone, PartialEq, Eq)]
+pub struct ArgsHandleSlice<S> {
+    handle: ArgsHandle<S>,
+    start: usize,
+    length: usize,
+}
+
+pub type RawArgsHandleSlice = ArgsHandleSlice<Raw>;
+pub type NormArgsHandleSlice = ArgsHandleSlice<Normalized>;
+
+impl<S> ArgsHandleSlice<S> {
+    pub fn is_empty(&self) -> bool {
+        self.length == 0
+    }
+
+    pub fn len(&self) -> usize {
+        self.length
+    }
+}
+
+impl<S: Copy + 'static> ArgsHandleSlice<S> {
+    pub fn slice(&self, r: impl RangeBounds<usize>) -> ArgsHandleSlice<S> {
+        let start = match r.start_bound() {
+            Bound::Included(&s) => s,
+            Bound::Excluded(&s) => s + 1,
+            Bound::Unbounded => 0,
+        };
+
+        let end = match r.end_bound() {
+            Bound::Included(&e) => e + 1,
+            Bound::Excluded(&e) => e,
+            Bound::Unbounded => self.length,
+        };
+
+        assert!(start <= end, "slice start must be <= end");
+        assert!(end <= self.length, "slice end out of bounds");
+
+        ArgsHandleSlice {
+            handle: self.handle,
+            start: self.start + start,
+            length: end - start,
+        }
+    }
+
+    pub fn get(self, pool: &ExprPool, index: usize) -> ExprHandle<S> {
+        self.handle.get(pool, index).unwrap()
+    }
+
+    pub fn iter(
+        self,
+        pool: &ExprPool,
+    ) -> impl ExactSizeIterator<Item = ExprHandle<S>> + DoubleEndedIterator<Item = ExprHandle<S>> + '_
+    {
+        self.handle.iter(pool).skip(self.start).take(self.length)
+    }
+
+    pub fn split_at(&self, mid: usize) -> (ArgsHandleSlice<S>, ArgsHandleSlice<S>) {
+        assert!(mid <= self.length, "split_at index out of bounds");
+
+        let left = ArgsHandleSlice {
+            handle: self.handle,
+            start: self.start,
+            length: mid,
+        };
+
+        let right = ArgsHandleSlice {
+            handle: self.handle,
+            start: self.start + mid,
+            length: self.length - mid,
+        };
+
+        (left, right)
+    }
+}
+
 #[derive(Copy, Clone, PartialEq, Eq, Hash)]
 pub struct ArgsHandle<S> {
     id: ArgsId,
@@ -318,6 +394,10 @@ impl<S> ArgsHandle<S> {
     pub fn len(&self, pool: &ExprPool) -> usize {
         pool.get_args(self.id).len()
     }
+
+    pub fn is_empty(&self, pool: &ExprPool) -> bool {
+        pool.get_args(self.id).is_empty()
+    }
 }
 
 impl<S: Copy + 'static> ArgsHandle<S> {
@@ -340,6 +420,14 @@ impl<S: Copy + 'static> ArgsHandle<S> {
         debug_assert!(pool.pool_id == self.pool_id);
 
         self.iter(pool).collect()
+    }
+
+    pub fn as_slice(&self, pool: &ExprPool) -> ArgsHandleSlice<S> {
+        ArgsHandleSlice {
+            handle: *self,
+            start: 0,
+            length: self.len(pool),
+        }
     }
 }
 

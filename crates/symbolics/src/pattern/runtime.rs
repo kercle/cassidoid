@@ -1,7 +1,7 @@
-use std::{fmt::Debug, rc::Rc};
+use std::rc::Rc;
 
 use crate::{
-    expr::{ExprKind, NormExpr},
+    expr::pool::{ExprPool, ExprView, NormArgsHandleSlice, NormExprHandle},
     pattern::{
         PatternPredicate,
         environment::Environment,
@@ -10,75 +10,75 @@ use crate::{
     },
 };
 
-#[derive(Debug)]
-struct ChoicePoint<'p, 's> {
-    pub frame_stack: Rc<FrameStack<'p, 's>>,
+struct ChoicePoint<'p> {
+    pub frame_stack: Rc<FrameStack<'p>>,
     pub bind_stack_len: usize,
-    pub resume_frame: Frame<'p, 's>,
+    pub resume_frame: Frame<'p>,
 }
 
-#[derive(Debug)]
-enum FrameStack<'p, 's> {
+enum FrameStack<'p> {
     Empty,
     More {
-        frame: Frame<'p, 's>,
-        next: Rc<FrameStack<'p, 's>>,
+        frame: Frame<'p>,
+        next: Rc<FrameStack<'p>>,
     },
 }
 
-#[derive(Debug, Clone)]
-enum Frame<'p, 's> {
+#[derive(Clone)]
+enum Frame<'p> {
     Exec {
         instr: InstrId,
-        subject: &'s NormExpr,
+        subject: NormExprHandle,
     },
     MatchSequence {
         instrs: &'p [InstrId],
-        subjects: &'s [NormExpr],
+        subjects: NormArgsHandleSlice,
     },
     ResumeMatchSequence {
         instrs: &'p [InstrId],
-        subjects: &'s [NormExpr],
+        subjects: NormArgsHandleSlice,
         first_consume_count: usize,
         first_head_pattern: &'p Option<InstrId>,
         first_bind: &'p Option<VarId>,
     },
     MatchMultiset {
         instrs: &'p [InstrId],
-        subjects: &'s [NormExpr],
+        subjects: NormArgsHandleSlice,
         state: MultisetMatchState,
     },
     ResumeMatchMultiset {
         instrs: &'p [InstrId],
-        subjects: &'s [NormExpr],
+        subjects: NormArgsHandleSlice,
         state: MultisetMatchState,
         already_tried_count: usize,
     },
     BindOne {
         bind_var: VarId,
-        subject: &'s NormExpr,
+        subject: NormExprHandle,
     },
     BindSeq {
         bind_var: VarId,
-        subjects: Rc<Vec<&'s NormExpr>>,
+        subjects: Rc<Vec<NormExprHandle>>,
     },
     TestPredicate {
-        subject: &'s NormExpr,
+        subject: NormExprHandle,
         predicate: PatternPredicate,
     },
 }
 
 pub struct Runtime<'p, 's> {
+    pool: &'s ExprPool,
     program: &'p Program,
-    environment: Environment<'p, 's>,
-    frame_stack: Rc<FrameStack<'p, 's>>,
-    choice_points: Vec<ChoicePoint<'p, 's>>,
+    environment: Environment<'p>,
+    frame_stack: Rc<FrameStack<'p>>,
+    choice_points: Vec<ChoicePoint<'p>>,
     bind_stack: Vec<VarId>,
 }
 
 impl<'p, 's> Runtime<'p, 's> {
-    pub fn new(program: &'p Program, expr: &'s NormExpr) -> Self {
+    pub fn new(program: &'p Program, pool: &'s ExprPool, expr: NormExprHandle) -> Self {
         Runtime {
+            pool,
             program,
             environment: Environment::new(program),
             frame_stack: Rc::new(FrameStack::More {
@@ -93,11 +93,11 @@ impl<'p, 's> Runtime<'p, 's> {
         }
     }
 
-    pub fn first_match(&mut self) -> Option<&Environment<'p, 's>> {
+    pub fn first_match(&mut self) -> Option<&Environment<'p>> {
         self.next_match()
     }
 
-    pub fn next_match(&mut self) -> Option<&Environment<'p, 's>> {
+    pub fn next_match(&mut self) -> Option<&Environment<'p>> {
         if self.is_frame_stack_empty() && !self.backtrack() {
             return None;
         }
@@ -117,7 +117,7 @@ impl<'p, 's> Runtime<'p, 's> {
         }
     }
 
-    fn step(&mut self, frame: Frame<'p, 's>) -> bool {
+    fn step(&mut self, frame: Frame<'p>) -> bool {
         use Frame::*;
         match frame {
             Exec { instr, subject } => self.exec(instr, subject),
@@ -148,11 +148,11 @@ impl<'p, 's> Runtime<'p, 's> {
             } => self.match_multiset(instrs, subjects, state, already_tried_count),
             BindOne { bind_var, subject } => self.bind_one(bind_var, subject),
             BindSeq { bind_var, subjects } => self.bind_seq(bind_var, subjects),
-            TestPredicate { subject, predicate } => predicate.check(subject),
+            TestPredicate { subject, predicate } => predicate.check(self.pool, subject),
         }
     }
 
-    fn exec(&mut self, instr: InstrId, subject: &'s NormExpr) -> bool {
+    fn exec(&mut self, instr: InstrId, subject: NormExprHandle) -> bool {
         let instr = self
             .program
             .instructions
@@ -161,13 +161,13 @@ impl<'p, 's> Runtime<'p, 's> {
 
         use Instruction::*;
         match instr {
-            Literal { inner, bind } => self.match_literal(inner, subject, *bind),
+            Literal { inner, bind } => self.match_literal(*inner, subject, *bind),
             Node { head, plan, .. } => {
-                let ExprKind::Node {
+                let ExprView::Node {
                     head: subject_head,
                     args: subject_args,
                     ..
-                } = subject.kind()
+                } = subject.view(self.pool)
                 else {
                     // subject is an Atom -> no match
                     return false;
@@ -179,14 +179,17 @@ impl<'p, 's> Runtime<'p, 's> {
                     ArgPlan::Sequence(pattern_args) => {
                         self.push_frame(Frame::MatchSequence {
                             instrs: pattern_args.as_slice(),
-                            subjects: subject_args,
+                            subjects: subject_args.as_slice(self.pool),
                         });
                     }
                     ArgPlan::Multiset(pattern_args) => {
                         self.push_frame(Frame::MatchMultiset {
                             instrs: pattern_args.as_slice(),
-                            subjects: subject_args,
-                            state: MultisetMatchState::new(pattern_args.len(), subject_args.len()),
+                            subjects: subject_args.as_slice(self.pool),
+                            state: MultisetMatchState::new(
+                                pattern_args.len(),
+                                subject_args.len(self.pool),
+                            ),
                         });
                     }
                 }
@@ -228,8 +231,8 @@ impl<'p, 's> Runtime<'p, 's> {
         }
     }
 
-    fn stage_match_head_pattern(&mut self, instr: InstrId, subject: &'s NormExpr) -> bool {
-        let Some(head) = subject.head() else {
+    fn stage_match_head_pattern(&mut self, instr: InstrId, subject: NormExprHandle) -> bool {
+        let Some(head) = subject.view(self.pool).get_head() else {
             // Subject is Atom
             return false;
         };
@@ -242,7 +245,7 @@ impl<'p, 's> Runtime<'p, 's> {
         true
     }
 
-    fn schedule_bind_one_if_present(&mut self, instr: &Instruction, subject: &'s NormExpr) {
+    fn schedule_bind_one_if_present(&mut self, instr: &Instruction, subject: NormExprHandle) {
         if let Some(bind_var) = instr.bind() {
             self.push_frame(Frame::BindOne { bind_var, subject });
         }
@@ -252,11 +255,11 @@ impl<'p, 's> Runtime<'p, 's> {
 
     fn match_literal(
         &mut self,
-        inner: &NormExpr,
-        subject: &'s NormExpr,
+        inner: NormExprHandle,
+        subject: NormExprHandle,
         bind: Option<VarId>,
     ) -> bool {
-        if !Self::expressions_equal(inner, subject) {
+        if inner != subject {
             return false;
         }
 
@@ -267,21 +270,16 @@ impl<'p, 's> Runtime<'p, 's> {
         }
     }
 
-    fn expressions_equal(inner: &NormExpr, subject: &'s NormExpr) -> bool {
-        // fingerprint checking is implemented in PartialEq for NormExpr
-        subject == inner
-    }
-
-    fn literal_instr_matches_expr(&self, instr: InstrId, subject: &'s NormExpr) -> bool {
+    fn literal_instr_matches_expr(&self, instr: InstrId, subject: NormExprHandle) -> bool {
         match self.program.instructions.get(instr) {
-            Some(Instruction::Literal { inner, .. }) => Self::expressions_equal(inner, subject),
+            Some(Instruction::Literal { inner, .. }) => *inner == subject,
             _ => false,
         }
     }
 
     // ---- Sequence Matching ----
 
-    fn match_sequence(&mut self, instrs: &'p [InstrId], subjects: &'s [NormExpr]) -> bool {
+    fn match_sequence(&mut self, instrs: &'p [InstrId], subjects: NormArgsHandleSlice) -> bool {
         if instrs.is_empty() {
             return subjects.is_empty();
         }
@@ -312,7 +310,7 @@ impl<'p, 's> Runtime<'p, 's> {
 
             self.match_subsequence_with_variadic_start_and_end(
                 &instrs[first_variadic_pos..=last_variadic_pos],
-                &subjects[first_variadic_pos..subjects.len() - back_exact_len],
+                subjects.slice(first_variadic_pos..subjects.len() - back_exact_len),
             )
         } else {
             // Defer matching variadics in sequence to after we matched all
@@ -321,18 +319,18 @@ impl<'p, 's> Runtime<'p, 's> {
             // queue matching of subsequence starting and ending in variadic.
             self.push_frame(Frame::MatchSequence {
                 instrs: &instrs[first_variadic_pos..=last_variadic_pos],
-                subjects: &subjects[first_variadic_pos..subjects.len() - back_exact_len],
+                subjects: subjects.slice(first_variadic_pos..subjects.len() - back_exact_len),
             });
 
             // the rest is completely deterministically matchable.
             let front_match_result = self.match_subsequence_only_literals_and_wildcards(
                 &instrs[..front_exact_len],
-                &subjects[..front_exact_len],
+                subjects.slice(..front_exact_len),
             );
 
             let back_match_result = self.match_subsequence_only_literals_and_wildcards(
                 &instrs[last_variadic_pos + 1..],
-                &subjects[subjects.len() - back_exact_len..],
+                subjects.slice(subjects.len() - back_exact_len..),
             );
 
             front_match_result && back_match_result
@@ -342,13 +340,13 @@ impl<'p, 's> Runtime<'p, 's> {
     fn match_subsequence_only_literals_and_wildcards(
         &mut self,
         instrs: &'p [InstrId],
-        subjects: &'s [NormExpr],
+        subjects: NormArgsHandleSlice,
     ) -> bool {
         if instrs.len() != subjects.len() {
             return false;
         }
 
-        for (&instr, subject) in instrs.iter().zip(subjects).rev() {
+        for (&instr, subject) in instrs.iter().zip(subjects.iter(self.pool)).rev() {
             self.push_frame(Frame::Exec { instr, subject });
         }
 
@@ -358,7 +356,7 @@ impl<'p, 's> Runtime<'p, 's> {
     fn match_subsequence_with_variadic_start_and_end(
         &mut self,
         instrs: &'p [InstrId],
-        subjects: &'s [NormExpr],
+        subjects: NormArgsHandleSlice,
     ) -> bool {
         let Some(&instr) = instrs.first() else {
             // no instructions left. pattern matches only if also
@@ -391,7 +389,7 @@ impl<'p, 's> Runtime<'p, 's> {
 
     fn match_single_variadic(
         &mut self,
-        subjects: &'s [NormExpr],
+        subjects: NormArgsHandleSlice,
         head_pattern: &Option<InstrId>,
         bind: &Option<VarId>,
     ) -> bool {
@@ -400,13 +398,13 @@ impl<'p, 's> Runtime<'p, 's> {
         if let Some(&bind_var) = bind.as_ref() {
             self.push_frame(Frame::BindSeq {
                 bind_var,
-                subjects: Rc::new(subjects.iter().collect()),
+                subjects: Rc::new(subjects.iter(self.pool).collect()),
             });
         }
 
         // Push head pattern stack to top of frame stack.
         if let Some(head_pattern_instr) = head_pattern {
-            for subject in subjects {
+            for subject in subjects.iter(self.pool) {
                 if !self.stage_match_head_pattern(*head_pattern_instr, subject) {
                     return false;
                 }
@@ -419,7 +417,7 @@ impl<'p, 's> Runtime<'p, 's> {
     fn try_split_variadic_subsequence(
         &mut self,
         instrs: &'p [InstrId],
-        subjects: &'s [NormExpr],
+        subjects: NormArgsHandleSlice,
         first_variadic_len: usize,
         first_head_pattern: &'p Option<InstrId>,
         first_bind: &'p Option<VarId>,
@@ -459,7 +457,7 @@ impl<'p, 's> Runtime<'p, 's> {
     fn match_multiset(
         &mut self,
         instrs: &'p [InstrId],
-        subjects: &'s [NormExpr],
+        subjects: NormArgsHandleSlice,
         mut state: MultisetMatchState,
         already_tried_count: usize,
     ) -> bool {
@@ -472,7 +470,7 @@ impl<'p, 's> Runtime<'p, 's> {
             }
 
             let Some(subject_pos) = ('find_subject: {
-                for (subject_pos, subject) in subjects.iter().enumerate() {
+                for (subject_pos, subject) in subjects.iter(self.pool).enumerate() {
                     if state.is_subject_set(subject_pos) {
                         continue;
                     }
@@ -491,7 +489,7 @@ impl<'p, 's> Runtime<'p, 's> {
 
             self.schedule_bind_one_if_present(
                 self.program.instructions.get(instr).unwrap(),
-                &subjects[subject_pos],
+                subjects.get(self.pool, subject_pos),
             );
         }
 
@@ -537,7 +535,7 @@ impl<'p, 's> Runtime<'p, 's> {
 
         self.push_frame(Frame::Exec {
             instr: instrs[next_instr_pos],
-            subject: &subjects[next_subject_pos],
+            subject: subjects.get(self.pool, next_subject_pos),
         });
 
         true
@@ -546,7 +544,7 @@ impl<'p, 's> Runtime<'p, 's> {
     fn match_multiset_variadics(
         &mut self,
         instrs: &'p [InstrId],
-        subjects: &'s [NormExpr],
+        subjects: NormArgsHandleSlice,
         state: MultisetMatchState,
         _already_tried_count: usize, // for later use when implementing multiple variadics
     ) -> bool {
@@ -583,7 +581,7 @@ impl<'p, 's> Runtime<'p, 's> {
 
         if let Some(bind_var) = bind {
             let rest = subjects
-                .iter()
+                .iter(self.pool)
                 .enumerate()
                 .filter_map(|(p, e)| {
                     if !state.is_subject_set(p) {
@@ -650,7 +648,7 @@ impl<'p, 's> Runtime<'p, 's> {
 
     // ---- Execution State ----
 
-    fn bind_one(&mut self, bind_var: VarId, subject: &'s NormExpr) -> bool {
+    fn bind_one(&mut self, bind_var: VarId, subject: NormExprHandle) -> bool {
         match self.environment.bind_one(bind_var, subject) {
             Ok(true) => {
                 self.bind_stack.push(bind_var);
@@ -661,7 +659,7 @@ impl<'p, 's> Runtime<'p, 's> {
         }
     }
 
-    fn bind_seq(&mut self, bind_var: VarId, subjects: Rc<Vec<&'s NormExpr>>) -> bool {
+    fn bind_seq(&mut self, bind_var: VarId, subjects: Rc<Vec<NormExprHandle>>) -> bool {
         match self.environment.bind_seq(bind_var, subjects) {
             Ok(true) => {
                 self.bind_stack.push(bind_var);
@@ -672,14 +670,14 @@ impl<'p, 's> Runtime<'p, 's> {
         }
     }
 
-    fn push_frame(&mut self, frame: Frame<'p, 's>) {
+    fn push_frame(&mut self, frame: Frame<'p>) {
         self.frame_stack = Rc::new(FrameStack::More {
             frame,
             next: self.frame_stack.clone(),
         })
     }
 
-    fn pop_frame(&mut self) -> Option<Frame<'p, 's>> {
+    fn pop_frame(&mut self) -> Option<Frame<'p>> {
         use FrameStack::*;
         match self.frame_stack.as_ref() {
             Empty => None,
@@ -695,7 +693,7 @@ impl<'p, 's> Runtime<'p, 's> {
         matches!(*self.frame_stack, FrameStack::Empty)
     }
 
-    fn push_choice_point(&mut self, resume_frame: Frame<'p, 's>) {
+    fn push_choice_point(&mut self, resume_frame: Frame<'p>) {
         let choice_point = ChoicePoint {
             frame_stack: self.frame_stack.clone(),
             bind_stack_len: self.bind_stack.len(),
@@ -723,7 +721,7 @@ impl<'p, 's> Runtime<'p, 's> {
 }
 
 impl<'p, 's> Iterator for Runtime<'p, 's> {
-    type Item = Environment<'p, 's>;
+    type Item = Environment<'p>;
 
     fn next(&mut self) -> Option<<Self as Iterator>::Item> {
         self.next_match().cloned()
