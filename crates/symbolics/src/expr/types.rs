@@ -157,8 +157,8 @@ impl ExprPool {
         lhs: RawExprHandle,
         rhs: RawExprHandle,
     ) -> RawExprHandle {
-        let head_id = self.symbol(head);
-        self.variadic_node(head_id, vec![lhs, rhs])
+        let head = self.symbol(head);
+        self.binary_node(head, lhs, rhs)
     }
 
     pub(crate) fn unary_node(
@@ -169,13 +169,13 @@ impl ExprPool {
         self.variadic_node(head, vec![child])
     }
 
-    pub(crate) fn unary_node_with_head_symbol<T: AsRef<str>>(
+    pub(crate) fn _unary_node_with_head_symbol<T: AsRef<str>>(
         &mut self,
         head: T,
         child: RawExprHandle,
     ) -> RawExprHandle {
-        let head_id = self.symbol(head);
-        self.variadic_node(head_id, vec![child])
+        let head = self.symbol(head);
+        self.unary_node(head, child)
     }
 
     pub(crate) fn variadic_node(

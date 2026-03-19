@@ -1,4 +1,4 @@
-use std::collections::{BTreeMap, HashMap};
+use std::collections::HashMap;
 
 use numbers::Number;
 
@@ -19,10 +19,6 @@ impl RawExpr {
         let mut pool = ExprPool::new();
         let handle = pool.insert_expr(self);
         handle.normalize(&mut pool).materialize(&pool)
-    }
-
-    fn into_normexpr_unsafe(self) -> NormExpr {
-        unsafe { std::mem::transmute(self) }
     }
 }
 
@@ -61,57 +57,6 @@ impl NormExpr {
 impl NormExprHandle {
     pub fn normalize(self) -> NormExprHandle {
         self
-    }
-}
-
-fn normalize_raw_node(head_expr: RawExpr, args: Vec<RawExpr>) -> NormExpr {
-    match head_expr.get_symbol() {
-        Some(ADD_HEAD) => normalize_raw_add(args),
-        Some(SUB_HEAD) if args.len() == 2 => {
-            let [lhs, rhs]: [RawExpr; 2] = args.try_into().unwrap();
-            RawExpr::new_binary_node(
-                ADD_HEAD,
-                lhs,
-                RawExpr::new_binary_node(MUL_HEAD, Number::minus_one().into(), rhs),
-            )
-            .normalize()
-        }
-        Some(NEG_HEAD) if args.len() == 1 => {
-            let [arg]: [RawExpr; 1] = args.try_into().unwrap();
-            RawExpr::new_binary_node(MUL_HEAD, Number::minus_one().into(), arg).normalize()
-        }
-        Some(MUL_HEAD) => normalize_raw_mul(args),
-        Some(DIV_HEAD) if args.len() == 2 => {
-            let [lhs, rhs]: [RawExpr; 2] = args.try_into().unwrap();
-
-            if rhs.is_number_zero() {
-                return RawExpr::new_symbol(CANNONICAL_SYM_INDETERMINATE).normalize();
-            }
-
-            RawExpr::new_binary_node(
-                MUL_HEAD,
-                lhs,
-                RawExpr::new_binary_node(POW_HEAD, rhs, Number::minus_one().into()),
-            )
-            .normalize()
-        }
-        Some(POW_HEAD) if args.len() == 2 => {
-            let [base, exponent]: [RawExpr; 2] = args.try_into().unwrap();
-            normalize_raw_pow(base, exponent)
-        }
-        Some(CANNONICAL_HEAD_SQRT) if args.len() == 1 => {
-            let [arg]: [RawExpr; 1] = args.try_into().unwrap();
-            let one_half = Number::new_rational_from_i64(1, 2).unwrap();
-            RawExpr::new_binary_node(POW_HEAD, arg, one_half.into()).normalize()
-        }
-        Some(CANNONICAL_HEAD_HOLD) if args.len() == 1 => NormExpr::new_unchecked(ExprKind::Node {
-            head: Box::new(head_expr.into_normexpr_unsafe()),
-            args: args.into_iter().map(|a| a.into_normexpr_unsafe()).collect(),
-        }),
-        _ => NormExpr::new_unchecked(ExprKind::Node {
-            head: Box::new(head_expr.normalize()),
-            args: args.into_iter().map(|a| a.normalize()).collect(),
-        }),
     }
 }
 
@@ -197,25 +142,6 @@ fn normalize_raw_node_handle(
             pool.variadic_node(head, args).into_normexpr_unchecked()
         }
     }
-}
-
-fn flatten(head_symbol: &str, args: Vec<RawExpr>) -> Vec<NormExpr> {
-    let mut flattened_args = Vec::new();
-    for arg in args {
-        let norm_arg = arg.normalize();
-
-        if norm_arg.has_head_symbol(head_symbol) {
-            let ExprKind::Node { args, .. } = norm_arg.into_kind() else {
-                unreachable!("We know at this point Expr has head symbol");
-            };
-
-            flattened_args.extend(args.into_iter());
-        } else {
-            flattened_args.push(norm_arg);
-        }
-    }
-
-    flattened_args
 }
 
 fn flatten_node_handle(
@@ -331,109 +257,7 @@ fn normalize_raw_add_handle(pool: &mut ExprPool, args: RawArgsHandle) -> NormExp
     }
 }
 
-fn normalize_raw_add(args: Vec<RawExpr>) -> NormExpr {
-    let mut constant_term = Number::zero();
-    let mut terms = BTreeMap::new();
-
-    for arg in flatten(ADD_HEAD, args) {
-        if arg.is_indeterminate() {
-            // Early exit when we encounter indeterminate
-            return arg;
-        }
-
-        let (coeff, term) = split_coefficient(arg);
-
-        let Some(term) = term else {
-            // argument is just a numeric constant
-            constant_term += coeff;
-            continue;
-        };
-
-        if let Some(cummulated_coeff) = terms.get_mut(&term) {
-            *cummulated_coeff = &*cummulated_coeff + coeff;
-        } else {
-            terms.insert(term, coeff);
-        }
-    }
-
-    let mut new_args = vec![];
-
-    if !constant_term.is_zero() {
-        new_args.push(RawExpr::from(constant_term).into_normexpr_unsafe());
-    }
-
-    for (term, coeff) in terms.into_iter() {
-        if coeff.is_zero() {
-            continue;
-        }
-
-        let coeff = RawExpr::new_number(coeff).normalize();
-        let node = if term.has_head_symbol(MUL_HEAD) {
-            let ExprKind::Node { head, args } = term.into_kind() else {
-                unreachable!("Coefficients should already by isolated");
-            };
-
-            // in sort order, numbers are guaranteed to come first
-            let mut new_args = vec![coeff];
-            new_args.extend(args.into_iter());
-
-            debug_assert!(
-                new_args.windows(2).all(|w| w[0] <= w[1]),
-                "MUL args are not sorted after prepending coefficient"
-            );
-
-            NormExpr::new_unchecked(ExprKind::Node {
-                head,
-                args: new_args,
-            })
-        } else if coeff.is_number_one() {
-            term
-        } else {
-            NormExpr::new_simple_node_unchecked(MUL_HEAD, vec![coeff, term])
-        };
-
-        new_args.push(node);
-    }
-
-    if new_args.is_empty() {
-        RawExpr::new_number_integer(0).into_normexpr_unsafe()
-    } else if new_args.len() == 1 {
-        new_args.pop().unwrap()
-    } else {
-        NormExpr::new_simple_node_unchecked(ADD_HEAD, new_args)
-    }
-}
-
-pub(super) fn split_coefficient_handle(
-    pool: &mut ExprPool,
-    expr: NormExprHandle,
-) -> (Number, Option<NormExprHandle>) {
-    match expr.view(pool) {
-        ExprView::Atom(Atom::Number(val)) => (val.clone(), None),
-        ExprView::Node { head, args } if head.view(pool).is_symbol(MUL_HEAD) => {
-            let Some(first) = args.get(pool, 0) else {
-                let node = pool.node(head.as_raw(), args.as_raw());
-                return (Number::one(), Some(node.into_normexpr_unchecked()));
-            };
-
-            if let Some(coeff) = first.view(pool).get_number().cloned() {
-                if args.len(pool) == 1 {
-                    (coeff, None)
-                } else if args.len(pool) == 2 {
-                    (coeff, args.get(pool, 1))
-                } else {
-                    let rest = args.iter(pool).skip(1).map(|e| e.as_raw()).collect();
-                    let node = pool.variadic_node_with_head_symbol(MUL_HEAD, rest);
-                    (coeff, Some(node.into_normexpr_unchecked()))
-                }
-            } else {
-                (Number::one(), Some(expr))
-            }
-        }
-        _ => (Number::one(), Some(expr)),
-    }
-}
-
+// TODO: deprecate this function
 pub(super) fn split_coefficient(expr: NormExpr) -> (Number, Option<NormExpr>) {
     match expr.kind {
         ExprKind::Atom {
@@ -466,87 +290,33 @@ pub(super) fn split_coefficient(expr: NormExpr) -> (Number, Option<NormExpr>) {
     }
 }
 
-fn normalize_raw_mul(args: Vec<RawExpr>) -> NormExpr {
-    let mut constant_term = Number::one();
-    let mut terms: BTreeMap<NormExpr, Vec<RawExpr>> = BTreeMap::new();
-
-    for arg in flatten(MUL_HEAD, args) {
-        if arg.is_number_zero() || arg.is_indeterminate() {
-            // In these cases we can exit early.
-            return arg;
-        }
-
-        if arg.is_number_one() {
-            continue;
-        }
-
-        if let Some(num) = arg.get_number() {
-            constant_term = constant_term * num;
-            continue;
-        }
-
-        let [base, exponent]: [NormExpr; 2] = if arg.is_application_of(POW_HEAD, 2) {
-            let ExprKind::Node { args, .. } = arg.kind else {
-                // we've already made sure that we have a pow node.
-                unreachable!()
+pub(super) fn split_coefficient_handle(
+    pool: &mut ExprPool,
+    expr: NormExprHandle,
+) -> (Number, Option<NormExprHandle>) {
+    match expr.view(pool) {
+        ExprView::Atom(Atom::Number(val)) => (val.clone(), None),
+        ExprView::Node { head, args } if head.view(pool).is_symbol(MUL_HEAD) => {
+            let Some(first) = args.get(pool, 0) else {
+                let node = pool.node(head.as_raw(), args.as_raw());
+                return (Number::one(), Some(node.into_normexpr_unchecked()));
             };
-            args.try_into().unwrap()
-        } else {
-            [arg, RawExpr::new_number_integer(1).normalize()]
-        };
 
-        if base.is_number_zero() {
-            if exponent.is_number_negative() || exponent.is_number_zero() {
-                return RawExpr::new_symbol(CANNONICAL_SYM_INDETERMINATE).normalize();
+            if let Some(coeff) = first.view(pool).get_number().cloned() {
+                if args.len(pool) == 1 {
+                    (coeff, None)
+                } else if args.len(pool) == 2 {
+                    (coeff, args.get(pool, 1))
+                } else {
+                    let rest = args.iter(pool).skip(1).map(|e| e.as_raw()).collect();
+                    let node = pool.variadic_node_with_head_symbol(MUL_HEAD, rest);
+                    (coeff, Some(node.into_normexpr_unchecked()))
+                }
             } else {
-                // return zero
-                return base;
+                (Number::one(), Some(expr))
             }
-        } else if base.is_number_one() {
-            continue;
         }
-
-        if let Some(exponents) = terms.get_mut(&base) {
-            exponents.push(exponent.into_raw());
-        } else {
-            terms.insert(base, vec![exponent.into_raw()]);
-        }
-    }
-
-    let mut new_args = Vec::new();
-
-    if !constant_term.is_one() {
-        new_args.push(RawExpr::from(constant_term).into_normexpr_unsafe());
-    }
-
-    for (base, exponents) in terms.into_iter() {
-        let assembled_exp = RawExpr::new_node(ADD_HEAD, exponents).normalize();
-
-        if assembled_exp.is_indeterminate() {
-            return assembled_exp;
-        }
-
-        // Note: base cannot be zero as we filter this case
-        // before adding expressions to the hashmap.
-
-        if assembled_exp.is_number_one() {
-            new_args.push(base);
-        } else if !assembled_exp.is_number_zero() {
-            new_args.push(NormExpr::new_simple_node_unchecked(
-                POW_HEAD,
-                vec![base, assembled_exp],
-            ));
-        }
-    }
-
-    new_args.sort();
-
-    if new_args.is_empty() {
-        RawExpr::new_number_integer(1).into_normexpr_unsafe()
-    } else if new_args.len() == 1 {
-        new_args.pop().unwrap()
-    } else {
-        NormExpr::new_simple_node_unchecked(MUL_HEAD, new_args)
+        _ => (Number::one(), Some(expr)),
     }
 }
 
@@ -647,62 +417,6 @@ fn normalize_raw_mul_handle(pool: &mut ExprPool, args: RawArgsHandle) -> NormExp
     } else {
         pool.variadic_node_with_head_symbol(MUL_HEAD, new_args)
             .into_normexpr_unchecked()
-    }
-}
-
-fn normalize_raw_pow(base: RawExpr, exponent: RawExpr) -> NormExpr {
-    let norm_base = base.normalize();
-    let norm_exponent = exponent.normalize();
-
-    if norm_base.is_number_zero() {
-        if norm_exponent.is_number_zero() || norm_exponent.is_number_negative() {
-            return RawExpr::new_symbol(CANNONICAL_SYM_INDETERMINATE).normalize();
-        } else {
-            // return zero
-            return norm_base;
-        }
-    } else if norm_base.is_number_one() {
-        return norm_base;
-    }
-
-    if norm_exponent.is_number_one() {
-        norm_base
-    } else if norm_exponent.is_number_zero() {
-        RawExpr::new_number(1).normalize()
-    } else if let Some(exp_num) = norm_exponent.get_number()
-        && exp_num.is_integer()
-    {
-        if let Some(base_num) = norm_base.get_number() {
-            if let Ok(num) = base_num.pow(exp_num) {
-                RawExpr::new_number(num).normalize()
-            } else {
-                NormExpr::new_simple_node_unchecked(POW_HEAD, vec![norm_base, norm_exponent])
-            }
-        } else if norm_base.is_application_of(POW_HEAD, 2) {
-            let ExprKind::Node { args, .. } = norm_base.kind else {
-                // we've already made sure that we have a pow node.
-                unreachable!()
-            };
-
-            let [lhs, rhs]: [NormExpr; 2] = args.try_into().unwrap();
-
-            NormExpr::new_simple_node_unchecked(
-                POW_HEAD,
-                vec![
-                    lhs,
-                    RawExpr::new_binary_node(
-                        MUL_HEAD,
-                        rhs.into_raw(),
-                        RawExpr::new_number(exp_num.clone()),
-                    )
-                    .normalize(),
-                ],
-            )
-        } else {
-            NormExpr::new_simple_node_unchecked(POW_HEAD, vec![norm_base, norm_exponent])
-        }
-    } else {
-        NormExpr::new_simple_node_unchecked(POW_HEAD, vec![norm_base, norm_exponent])
     }
 }
 
