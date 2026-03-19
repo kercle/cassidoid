@@ -23,19 +23,6 @@ impl RawExpr {
     }
 }
 
-impl RawExprHandle {
-    pub fn normalize(self, pool: &mut ExprPool) -> NormExprHandle {
-        match self.view(pool) {
-            ExprView::Atom(_) => self.into_normexpr_unchecked(),
-            ExprView::Node { head, args } => normalize_raw_node_handle(pool, head, args),
-        }
-    }
-
-    fn into_normexpr_unchecked(self) -> NormExprHandle {
-        NormExprHandle::new_unchecked(self.id())
-    }
-}
-
 impl NormExpr {
     pub fn normalize(self) -> NormExpr {
         self
@@ -52,6 +39,15 @@ impl NormExpr {
             head: Box::new(head),
             args,
         })
+    }
+}
+
+impl RawExprHandle {
+    pub fn normalize(self, pool: &mut ExprPool) -> NormExprHandle {
+        match self.view(pool) {
+            ExprView::Atom(_) => self.into_normexpr_unchecked(),
+            ExprView::Node { head, args } => normalize_raw_node_handle(pool, head, args),
+        }
     }
 }
 

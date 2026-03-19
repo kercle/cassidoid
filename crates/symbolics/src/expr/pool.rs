@@ -1,4 +1,9 @@
-use std::{collections::HashMap, marker::PhantomData, rc::Rc};
+use std::{
+    collections::HashMap,
+    marker::PhantomData,
+    rc::Rc,
+    sync::atomic::{AtomicU64, Ordering},
+};
 
 use numbers::Number;
 
@@ -7,6 +12,9 @@ use crate::{
     expr::{Expr, ExprKind, NormExpr, Normalized, Raw, RawExpr},
 };
 
+static POOL_ID_COUNTER: AtomicU64 = AtomicU64::new(0);
+
+type PoolId = u64;
 type ExprId = u32;
 type ArgsId = u32;
 
@@ -17,6 +25,8 @@ pub(super) enum ExprCell {
 }
 
 pub struct ExprPool {
+    pool_id: u64,
+
     objs: Vec<ExprCell>,
     args: Vec<Rc<Vec<ExprId>>>,
 
@@ -27,6 +37,7 @@ pub struct ExprPool {
 impl ExprPool {
     pub(crate) fn new() -> Self {
         ExprPool {
+            pool_id: POOL_ID_COUNTER.fetch_add(1, Ordering::AcqRel),
             objs: Vec::new(),
             args: Vec::new(),
             obj_map: HashMap::new(),
@@ -65,15 +76,18 @@ impl ExprPool {
     }
 
     pub(crate) fn atom(&mut self, a: Atom) -> RawExprHandle {
-        RawExprHandle::new(self.insert(ExprCell::Atom(a)))
+        RawExprHandle::new(self.pool_id, self.insert(ExprCell::Atom(a)))
     }
 
     pub(crate) fn number(&mut self, n: Number) -> RawExprHandle {
-        RawExprHandle::new(self.insert(ExprCell::Atom(Atom::number(n))))
+        RawExprHandle::new(self.pool_id, self.insert(ExprCell::Atom(Atom::number(n))))
     }
 
     pub(crate) fn integer_from_i64(&mut self, n: i64) -> RawExprHandle {
-        RawExprHandle::new(self.insert(ExprCell::Atom(Atom::number(Number::from_i64(n)))))
+        RawExprHandle::new(
+            self.pool_id,
+            self.insert(ExprCell::Atom(Atom::number(Number::from_i64(n)))),
+        )
     }
 
     pub(crate) fn rational_from_i64(
@@ -83,19 +97,26 @@ impl ExprPool {
     ) -> Result<RawExprHandle, String> {
         let num = Number::new_rational_from_i64(numerator, denominator)?;
         Ok(RawExprHandle::new(
+            self.pool_id,
             self.insert(ExprCell::Atom(Atom::number(num))),
         ))
     }
 
     pub(crate) fn symbol<T: AsRef<str>>(&mut self, s: T) -> RawExprHandle {
-        RawExprHandle::new(self.insert(ExprCell::Atom(Atom::symbol(s))))
+        RawExprHandle::new(self.pool_id, self.insert(ExprCell::Atom(Atom::symbol(s))))
     }
 
     pub(crate) fn node(&mut self, head: RawExprHandle, args: RawArgsHandle) -> RawExprHandle {
-        RawExprHandle::new(self.insert(ExprCell::Node {
-            head_id: head.id(),
-            args_id: args.id(),
-        }))
+        debug_assert!(head.pool_id == self.pool_id);
+        debug_assert!(args.pool_id == self.pool_id);
+
+        RawExprHandle::new(
+            self.pool_id,
+            self.insert(ExprCell::Node {
+                head_id: head.id,
+                args_id: args.id,
+            }),
+        )
     }
 
     pub(crate) fn binary_node(
@@ -139,8 +160,13 @@ impl ExprPool {
         head: RawExprHandle,
         args: Vec<RawExprHandle>,
     ) -> RawExprHandle {
-        let args_id = self.insert_args(args.into_iter().map(|a| a.id()).collect());
-        self.node(head, ArgsHandle::new(args_id))
+        debug_assert!(head.pool_id == self.pool_id);
+        for a in args.iter() {
+            debug_assert!(a.pool_id == self.pool_id);
+        }
+
+        let args_id = self.insert_args(args.into_iter().map(|a| a.id).collect());
+        self.node(head, ArgsHandle::new(self.pool_id, args_id))
     }
 
     pub(crate) fn variadic_node_with_head_symbol<T: AsRef<str>>(
@@ -159,11 +185,11 @@ impl ExprPool {
                 let head = self.insert_expr(*head);
                 let arg_ids: Vec<ExprId> = args
                     .into_iter()
-                    .map(|arg| self.insert_expr(arg).id())
+                    .map(|arg| self.insert_expr(arg).id)
                     .collect();
 
                 let args = self.insert_args(arg_ids);
-                self.node(head, RawArgsHandle::new(args))
+                self.node(head, RawArgsHandle::new(self.pool_id, args))
             }
         }
     }
@@ -174,13 +200,14 @@ impl ExprPool {
 
     pub fn insert_norm(&mut self, expr: NormExpr) -> NormExprHandle {
         let handle = self.insert_expr(expr);
-        ExprHandle::new_unchecked(handle.id())
+        ExprHandle::new_unchecked(self.pool_id, handle.id)
     }
 }
 
 #[derive(Copy, Clone, PartialEq, Eq, Hash)]
 pub struct ExprHandle<S> {
     id: ExprId,
+    pool_id: PoolId,
     _state: PhantomData<S>,
 }
 
@@ -188,38 +215,41 @@ pub type RawExprHandle = ExprHandle<Raw>;
 pub type NormExprHandle = ExprHandle<Normalized>;
 
 impl RawExprHandle {
-    pub(crate) fn new(id: ExprId) -> Self {
-        Self::new_unchecked(id)
+    fn new(pool_id: PoolId, id: ExprId) -> Self {
+        Self::new_unchecked(pool_id, id)
+    }
+
+    pub(super) fn into_normexpr_unchecked(self) -> NormExprHandle {
+        NormExprHandle::new_unchecked(self.pool_id, self.id)
     }
 }
 
 impl<S> ExprHandle<S> {
-    pub(super) fn new_unchecked(id: ExprId) -> Self {
+    fn new_unchecked(pool_id: PoolId, id: ExprId) -> Self {
         ExprHandle {
             id,
+            pool_id,
             _state: PhantomData,
         }
     }
 
     pub(crate) fn as_raw(&self) -> RawExprHandle {
-        RawExprHandle::new(self.id())
-    }
-
-    pub(super) fn id(&self) -> ExprId {
-        self.id
+        RawExprHandle::new(self.pool_id, self.id)
     }
 
     pub fn materialize(&self, pool: &ExprPool) -> Expr<S> {
-        match pool.get_obj(self.id()) {
+        debug_assert!(pool.pool_id == self.pool_id);
+
+        match pool.get_obj(self.id) {
             ExprCell::Atom(atom) => Expr::new_unchecked(ExprKind::Atom {
                 entry: atom.clone(),
             }),
             ExprCell::Node { head_id, args_id } => Expr::new_unchecked(ExprKind::Node {
-                head: Box::new(Self::new_unchecked(*head_id).materialize(pool)),
+                head: Box::new(Self::new_unchecked(self.pool_id, *head_id).materialize(pool)),
                 args: pool
                     .get_args(*args_id)
                     .iter()
-                    .map(|a| Self::new_unchecked(*a).materialize(pool))
+                    .map(|a| Self::new_unchecked(self.pool_id, *a).materialize(pool))
                     .collect(),
             }),
         }
@@ -228,14 +258,16 @@ impl<S> ExprHandle<S> {
 
 impl<S: Copy> ExprHandle<S> {
     pub(crate) fn view(self, pool: &ExprPool) -> ExprView<'_, S> {
+        debug_assert!(pool.pool_id == self.pool_id);
+
         match &pool.objs[self.id as usize] {
             ExprCell::Atom(a) => ExprView::Atom(a),
             ExprCell::Node {
                 head_id: head,
                 args_id: args,
             } => ExprView::Node {
-                head: ExprHandle::new_unchecked(*head),
-                args: ArgsHandle::new_unchecked(*args),
+                head: ExprHandle::new_unchecked(self.pool_id, *head),
+                args: ArgsHandle::new_unchecked(self.pool_id, *args),
             },
         }
     }
@@ -244,6 +276,7 @@ impl<S: Copy> ExprHandle<S> {
 #[derive(Copy, Clone, PartialEq, Eq, Hash)]
 pub struct ArgsHandle<S> {
     id: ArgsId,
+    pool_id: PoolId,
     _state: PhantomData<S>,
 }
 
@@ -251,32 +284,33 @@ pub type RawArgsHandle = ArgsHandle<Raw>;
 pub type NormArgsHandle = ArgsHandle<Normalized>;
 
 impl RawArgsHandle {
-    pub(crate) fn new(id: ExprId) -> Self {
-        Self::new_unchecked(id)
+    fn new(pool_id: PoolId, id: ExprId) -> Self {
+        Self::new_unchecked(pool_id, id)
     }
 }
 
 impl<S> ArgsHandle<S> {
-    fn new_unchecked(id: ArgsId) -> ArgsHandle<S> {
+    fn new_unchecked(pool_id: PoolId, id: ArgsId) -> ArgsHandle<S> {
         ArgsHandle {
             id,
+            pool_id,
             _state: PhantomData,
         }
     }
 
     pub(crate) fn as_raw(&self) -> RawArgsHandle {
-        RawArgsHandle::new(self.id())
-    }
-
-    pub(super) fn id(&self) -> ArgsId {
-        self.id
+        RawArgsHandle::new(self.pool_id, self.id)
     }
 
     pub fn get(&self, pool: &ExprPool, index: usize) -> Option<ExprHandle<S>> {
+        debug_assert!(pool.pool_id == self.pool_id);
+
+        let pool_id = self.pool_id;
+
         pool.get_args(self.id)
             .get(index)
             .copied()
-            .map(ExprHandle::new_unchecked)
+            .map(move |s| ExprHandle::<S>::new_unchecked(pool_id, s))
     }
 
     pub fn len(&self, pool: &ExprPool) -> usize {
@@ -286,13 +320,19 @@ impl<S> ArgsHandle<S> {
 
 impl<S: Copy + 'static> ArgsHandle<S> {
     pub(crate) fn iter(self, pool: &ExprPool) -> impl ExactSizeIterator<Item = ExprHandle<S>> + '_ {
+        debug_assert!(pool.pool_id == self.pool_id);
+
+        let pool_id = self.pool_id;
+
         pool.get_args(self.id)
             .iter()
             .copied()
-            .map(ExprHandle::<S>::new_unchecked)
+            .map(move |s| ExprHandle::<S>::new_unchecked(pool_id, s))
     }
 
     pub(crate) fn to_vec(self, pool: &ExprPool) -> Vec<ExprHandle<S>> {
+        debug_assert!(pool.pool_id == self.pool_id);
+
         self.iter(pool).collect()
     }
 }

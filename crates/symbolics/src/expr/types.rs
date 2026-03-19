@@ -1,6 +1,4 @@
-use std::{collections::HashMap, marker::PhantomData, rc::Rc};
-
-use numbers::Number;
+use std::marker::PhantomData;
 
 use crate::atom::Atom;
 
