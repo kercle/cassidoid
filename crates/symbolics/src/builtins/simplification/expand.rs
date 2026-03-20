@@ -38,7 +38,7 @@ impl BuiltIn for Expand {
             title: "Term expansion",
             summary: "Expand factors.",
             pattern_doc: self.pattern_doc.clone(),
-            examples: vec![("x*(4 + x*(5 - x))", "4*x + 5*x^2 - x^3")],
+            examples: vec![("Expand[x*(4 + x*(5 - x))]", "4*x + 5*x^2 - x^3")],
             related: vec!["Simplify"],
         }
     }
