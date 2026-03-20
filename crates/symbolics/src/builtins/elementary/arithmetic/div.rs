@@ -1,4 +1,7 @@
-use crate::builtins::traits::{BuiltIn, BuiltInDoc, PatternDoc};
+use crate::builtins::{
+    BuiltInCategory,
+    traits::{BuiltIn, BuiltInDoc, PatternDoc},
+};
 
 #[derive(Default)]
 pub struct Div;
@@ -6,7 +9,7 @@ pub struct Div;
 impl BuiltIn for Div {
     fn doc(&self) -> BuiltInDoc {
         BuiltInDoc {
-            category: "Elementary arithmetic",
+            category: BuiltInCategory::ElementaryArithmetic,
             title: "Div",
             summary: "Internal representation of the quotient of two terms.",
             pattern_doc: vec![PatternDoc::new(

@@ -1,5 +1,8 @@
 use crate::{
-    builtins::traits::{BuiltIn, BuiltInDoc, PatternDoc},
+    builtins::{
+        BuiltInCategory,
+        traits::{BuiltIn, BuiltInDoc, PatternDoc},
+    },
     expr::NormExpr,
     norm_expr,
     pattern::environment::Environment,
@@ -33,7 +36,7 @@ impl Default for Integrate {
 impl BuiltIn for Integrate {
     fn doc(&self) -> BuiltInDoc {
         BuiltInDoc {
-            category: "Calculus",
+            category: BuiltInCategory::Calculus,
             title: "Integration",
             summary: "Symbolically determine integrals of expressions.",
             pattern_doc: self.pattern_doc.clone(),

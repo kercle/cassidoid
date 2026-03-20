@@ -1,4 +1,7 @@
-use crate::builtins::traits::{BuiltIn, BuiltInDoc, PatternDoc};
+use crate::builtins::{
+    BuiltInCategory,
+    traits::{BuiltIn, BuiltInDoc, PatternDoc},
+};
 
 #[derive(Default)]
 pub struct Help;
@@ -6,7 +9,7 @@ pub struct Help;
 impl BuiltIn for Help {
     fn doc(&self) -> BuiltInDoc {
         BuiltInDoc {
-            category: "System",
+            category: BuiltInCategory::System,
             title: "Help",
             summary: "Documentation for builtin functionality.",
             pattern_doc: vec![

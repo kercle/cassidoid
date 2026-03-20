@@ -1,8 +1,8 @@
-use crate::expr::NormExpr;
+use crate::{builtins::BuiltInCategory, expr::NormExpr};
 
 #[derive(Clone, Debug)]
 pub struct BuiltInDoc {
-    pub category: &'static str,
+    pub category: BuiltInCategory,
     pub title: &'static str,
     pub summary: &'static str,
     pub pattern_doc: Vec<PatternDoc>,

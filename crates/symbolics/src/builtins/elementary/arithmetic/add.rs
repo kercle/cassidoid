@@ -1,4 +1,7 @@
-use crate::builtins::traits::{BuiltIn, BuiltInDoc, PatternDoc};
+use crate::builtins::{
+    BuiltInCategory,
+    traits::{BuiltIn, BuiltInDoc, PatternDoc},
+};
 
 #[derive(Default)]
 pub struct Add;
@@ -6,7 +9,7 @@ pub struct Add;
 impl BuiltIn for Add {
     fn doc(&self) -> BuiltInDoc {
         BuiltInDoc {
-            category: "Elementary arithmetic",
+            category: BuiltInCategory::ElementaryArithmetic,
             title: "Add",
             summary: "Internal representation of the sum of terms.",
             pattern_doc: vec![

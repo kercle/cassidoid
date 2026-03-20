@@ -3,7 +3,10 @@ use numbers::{Number, alg::binomial::BinomialGenerator, integer::BigInteger};
 use crate::{
     atom::Atom,
     builtin::{ADD_HEAD, MUL_HEAD, POW_HEAD},
-    builtins::traits::{BuiltIn, BuiltInDoc, PatternDoc},
+    builtins::{
+        BuiltInCategory,
+        traits::{BuiltIn, BuiltInDoc, PatternDoc},
+    },
     expr::{ExprKind, NormExpr, RawExpr, constructors::EXPR_PLACEHOLDER},
     kernel::Shared,
     norm_expr,
@@ -31,7 +34,7 @@ impl Expand {
 impl BuiltIn for Expand {
     fn doc(&self) -> BuiltInDoc {
         BuiltInDoc {
-            category: "Simplification",
+            category: BuiltInCategory::Simplification,
             title: "Term expansion",
             summary: "Expand factors.",
             pattern_doc: self.pattern_doc.clone(),

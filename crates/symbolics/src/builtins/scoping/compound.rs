@@ -1,4 +1,7 @@
-use crate::builtins::traits::{BuiltIn, BuiltInDoc, PatternDoc};
+use crate::builtins::{
+    BuiltInCategory,
+    traits::{BuiltIn, BuiltInDoc, PatternDoc},
+};
 
 #[derive(Default)]
 pub struct Compound;
@@ -8,7 +11,7 @@ pub const COMPOUND_HEAD: &str = "Compound";
 impl BuiltIn for Compound {
     fn doc(&self) -> BuiltInDoc {
         BuiltInDoc {
-            category: "Scoping",
+            category: BuiltInCategory::Scoping,
             title: "Compound",
             summary: "Groups multiple expressions and evaluates to the last expression in the compound.",
             pattern_doc: vec![PatternDoc::new(

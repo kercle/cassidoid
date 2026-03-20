@@ -1,5 +1,6 @@
 use crate::{
     builtins::{
+        BuiltInCategory,
         simplification::{factor, known_values, trigonometric},
         traits::{BuiltIn, BuiltInDoc, PatternDoc},
     },
@@ -40,7 +41,7 @@ impl Default for Simplify {
 impl BuiltIn for Simplify {
     fn doc(&self) -> BuiltInDoc {
         BuiltInDoc {
-            category: "Simplification",
+            category: BuiltInCategory::Simplification,
             title: "Basic simplification",
             summary: "Simplify a given expression.",
             pattern_doc: self.pattern_doc.clone(),
