@@ -42,6 +42,7 @@ macro_rules! rules {
     }};
 }
 
+#[macro_export]
 macro_rules! timed_eprintln {
     ($($arg:tt)*) => {{
         use std::sync::OnceLock;
