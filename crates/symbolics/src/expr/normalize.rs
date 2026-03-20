@@ -18,7 +18,7 @@ use crate::{
 impl RawExpr {
     pub fn normalize(self) -> NormExpr {
         let mut pool = ExprPool::new();
-        let handle = pool.insert_expr(self);
+        let handle = pool.insert_expr(&self);
         handle.normalize(&mut pool).materialize(&pool)
     }
 }

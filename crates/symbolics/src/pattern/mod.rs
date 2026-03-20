@@ -1,6 +1,5 @@
 mod bit_mask;
 mod builtin;
-mod fmt;
 mod utils;
 
 pub mod environment;

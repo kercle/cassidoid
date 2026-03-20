@@ -181,14 +181,14 @@ impl ExprPool {
         self.variadic_node(head_id, args)
     }
 
-    pub fn insert_expr<S>(&mut self, expr: Expr<S>) -> RawExprHandle {
-        match expr.into_kind() {
-            ExprKind::Atom { entry } => self.atom(entry),
+    pub fn insert_expr<S>(&mut self, expr: &Expr<S>) -> RawExprHandle {
+        match expr.kind() {
+            ExprKind::Atom { entry } => self.atom(entry.clone()),
             ExprKind::Node { head, args } => {
-                let head = self.insert_expr(*head);
+                let head = self.insert_expr(&head);
                 let arg_ids: Vec<ExprId> = args
                     .into_iter()
-                    .map(|arg| self.insert_expr(arg).id)
+                    .map(|arg| self.insert_expr(&arg).id)
                     .collect();
 
                 let args = self.insert_args(arg_ids);
@@ -197,11 +197,11 @@ impl ExprPool {
         }
     }
 
-    pub fn insert_raw(&mut self, expr: RawExpr) -> RawExprHandle {
+    pub fn insert_raw(&mut self, expr: &RawExpr) -> RawExprHandle {
         self.insert_expr(expr)
     }
 
-    pub fn insert_norm(&mut self, expr: NormExpr) -> NormExprHandle {
+    pub fn insert_norm(&mut self, expr: &NormExpr) -> NormExprHandle {
         let handle = self.insert_expr(expr);
         ExprHandle::new_unchecked(self.pool_id, handle.id)
     }

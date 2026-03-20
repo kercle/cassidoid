@@ -1,6 +1,9 @@
 use crate::{
     builtin::CANNONICAL_HEAD_HOLD,
-    expr::{ExprKind, NormExpr},
+    expr::{
+        ExprKind, NormExpr,
+        pool::{ExprPool, NormExprHandle},
+    },
     pattern::{
         environment::Environment,
         program::{Compiler, Program},
@@ -8,33 +11,36 @@ use crate::{
     },
 };
 
-pub type RuleTransformer = Box<dyn Fn(&Environment<'_, '_>) -> NormExpr + Send + Sync>;
+pub type RuleTransformer = Box<dyn Fn(&Environment<'_>) -> NormExprHandle + Send + Sync>;
 
 pub struct Rule {
     pub program: Program,
     pub transform: RuleTransformer,
 }
 
-#[derive(Default)]
-pub struct Rewriter {
+pub struct Rewriter<'s> {
     rules: Vec<Rule>,
+    pool: &'s ExprPool,
 }
 
-impl Rewriter {
-    pub fn new() -> Self {
-        Self::default()
+impl<'s> Rewriter<'s> {
+    pub fn new(pool: &'s ExprPool) -> Self {
+        Self {
+            rules: Vec::new(),
+            pool,
+        }
     }
 
-    pub fn with_rule<F>(mut self, pattern: NormExpr, transform: F) -> Self
+    pub fn with_rule<F>(mut self, pattern: NormExprHandle, transform: F) -> Self
     where
-        F: Fn(&Environment<'_, '_>) -> NormExpr + Send + Sync + 'static,
+        F: Fn(&Environment<'_>) -> NormExprHandle + Send + Sync + 'static,
     {
         // let matcher = Matcher::new(pattern.take_expr())
         //     .with_commutative_predicate(self.is_commutative.clone());
         // let program = Compiler::default().compile(&pattern.take_expr());
 
         self.rules.push(Rule {
-            program: Compiler::default().compile(&pattern),
+            program: Compiler::new(self.pool).compile(pattern),
             transform: Box::new(transform),
         });
         self
@@ -42,8 +48,8 @@ impl Rewriter {
 
     pub fn with_rules<I, F>(mut self, rules: I) -> Self
     where
-        I: IntoIterator<Item = (NormExpr, F)>,
-        F: Fn(&Environment<'_, '_>) -> NormExpr + Send + Sync + 'static,
+        I: IntoIterator<Item = (NormExprHandle, F)>,
+        F: Fn(&Environment<'_>) -> NormExprHandle + Send + Sync + 'static,
     {
         for (p, t) in rules {
             self = self.with_rule(p, t);
@@ -51,37 +57,41 @@ impl Rewriter {
         self
     }
 
-    pub fn apply_first_match(&self, expr: NormExpr) -> NormExpr {
-        expr.into_raw()
-            .map_bottom_up(&|expr| {
-                let mut norm_expr = expr.normalize();
+    pub fn apply_first_match(&self, expr: NormExprHandle) -> NormExprHandle {
+        expr.map_bottom_up(&|expr| {
+            let mut norm_expr = expr.normalize();
 
-                for rule in &self.rules {
-                    let mut runtime = Runtime::new(&rule.program, &norm_expr);
-                    if let Some(env) = runtime.first_match() {
-                        let f = &rule.transform;
-                        norm_expr = f(env);
-                        break;
-                    }
+            for rule in &self.rules {
+                let mut runtime = Runtime::new(&rule.program, self.pool, norm_expr);
+                if let Some(env) = runtime.first_match() {
+                    let f = &rule.transform;
+                    norm_expr = f(env);
+                    break;
                 }
+            }
 
-                norm_expr.into_raw()
-            })
-            .normalize()
+            norm_expr.into_raw()
+        })
+        .normalize()
     }
 }
 
-impl NormExpr {
-    pub fn apply_rules_until_fixed_point<F, I>(self, rules: I, limit_guard: u32) -> NormExpr
+impl NormExprHandle {
+    pub fn apply_rules_until_fixed_point<F, I>(
+        self,
+        pool: &ExprPool,
+        rules: I,
+        limit_guard: u32,
+    ) -> NormExprHandle
     where
-        I: IntoIterator<Item = (NormExpr, F)>,
-        F: Fn(&Environment<'_, '_>) -> NormExpr + Send + Sync + 'static,
+        I: IntoIterator<Item = (NormExprHandle, F)>,
+        F: Fn(&Environment<'_>) -> NormExprHandle + Send + Sync + 'static,
     {
-        let rw: Rewriter = Rewriter::new().with_rules(rules);
+        let rw: Rewriter = Rewriter::new(pool).with_rules(rules);
         self.rewrite_all(&rw, limit_guard)
     }
 
-    pub fn rewrite_all(self, rw: &Rewriter, limit_guard: u32) -> NormExpr {
+    pub fn rewrite_all(self, rw: &Rewriter, limit_guard: u32) -> NormExprHandle {
         let mut expr = self;
 
         for _ in 0..limit_guard {
@@ -98,7 +108,7 @@ impl NormExpr {
     }
 
     pub fn release_all_holds(self) -> Self {
-        self.into_raw()
+        self.as_raw()
             .map_bottom_up(&|expr| {
                 if expr.is_application_of(CANNONICAL_HEAD_HOLD, 1) {
                     let ExprKind::Node { mut args, .. } = expr.into_kind() else {
