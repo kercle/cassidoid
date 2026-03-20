@@ -40,7 +40,7 @@ impl BitMaskArena {
         let start = self.chunks.len();
         let n = chunk_count(capacity);
 
-        self.chunks.extend(std::iter::repeat(0).take(n));
+        self.chunks.extend(std::iter::repeat_n(0, n));
         BitMaskRef { start, capacity }
     }
 

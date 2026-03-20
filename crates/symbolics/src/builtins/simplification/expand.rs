@@ -12,7 +12,7 @@ use crate::{
     rewrite::Rewriter,
 };
 
-pub const EXPAND_HEAD: &'static str = "Expand";
+pub const EXPAND_HEAD: &str = "Expand";
 
 pub struct Expand {
     pattern_doc: Vec<PatternDoc>,
@@ -144,13 +144,11 @@ pub(super) fn build_rewriter(_binomial_gen: Shared<BinomialGenerator>) -> Rewrit
         (norm_expr!(Expand[a_]), raw_expr!(a)),
     ];
 
-    let rw = rw.with_rules(rules.into_iter().map(|(pat, repl)| {
+    rw.with_rules(rules.into_iter().map(|(pat, repl)| {
         (pat, move |ctx: &Environment<'_, '_>| {
             ctx.fill(repl.clone()).normalize()
         })
-    }));
-
-    rw
+    }))
 }
 
 struct CombinationGenerator {
@@ -211,7 +209,7 @@ fn expand_multinomial(sum: &NormExpr, overall_factors: Option<&[&NormExpr]>, n: 
     let mut bin_gen = BinomialGenerator::default();
     let mut new_args = Vec::with_capacity(
         bin_gen
-            .get((n + k - 1) as u64, n)
+            .get(n + k - 1, n)
             .to_u64()
             .expect("Number of terms exceeds capabilities.") as usize,
     );
@@ -222,7 +220,7 @@ fn expand_multinomial(sum: &NormExpr, overall_factors: Option<&[&NormExpr]>, n: 
 
         let mut n = n;
         for ki in comb {
-            coeff *= bin_gen.get(n, *ki as u64);
+            coeff *= bin_gen.get(n, *ki);
             n -= *ki;
         }
 

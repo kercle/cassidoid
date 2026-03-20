@@ -7,7 +7,8 @@ use crate::{
     pattern::BLANK_ONE_HEAD,
 };
 
-pub static EXPR_PLACEHOLDER: std::sync::LazyLock<RawExpr> = std::sync::LazyLock::new(RawExpr::new_placeholder);
+pub static EXPR_PLACEHOLDER: std::sync::LazyLock<RawExpr> =
+    std::sync::LazyLock::new(RawExpr::new_placeholder);
 
 impl RawExpr {
     pub fn new(kind: ExprKind<RawExpr>) -> Self {
