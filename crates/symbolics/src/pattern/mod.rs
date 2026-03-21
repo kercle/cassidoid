@@ -21,7 +21,7 @@ pub const BLANK_ONE_HEAD: &str = "Blank";
 pub const BLANK_SEQ_HEAD: &str = "BlankSeq";
 pub const BLANK_NULL_SEQ_HEAD: &str = "BlankNullSeq";
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum PatternPredicate {
     IsSymbol,
     IsNumber,

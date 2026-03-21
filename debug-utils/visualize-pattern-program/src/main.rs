@@ -81,7 +81,7 @@ impl<'p> InstructionGraph<'p> {
             }
             Variadic {
                 min_len,
-                head_pattern: _,
+                head_pattern,
                 bind,
             } => {
                 let bind = self.bind_to(*bind);
@@ -89,9 +89,13 @@ impl<'p> InstructionGraph<'p> {
 
                 node_opts.insert("shape", "box".to_string());
                 node_opts.insert("label", label);
+
+                if let Some(pat) = head_pattern {
+                    self.walk_program(*pat, format!("i{cur_instr}:h"));
+                }
             }
             Wildcard {
-                head_pattern: _,
+                head_pattern,
                 bind,
             } => {
                 let bind = self.bind_to(*bind);
@@ -99,8 +103,20 @@ impl<'p> InstructionGraph<'p> {
 
                 node_opts.insert("shape", "box".to_string());
                 node_opts.insert("label", label);
+
+                if let Some(pat) = head_pattern {
+                    self.walk_program(*pat, format!("i{cur_instr}:h"));
+                }
             }
-            Predicate { .. } => todo!(),
+            Predicate { predicate, inner, bind } => {
+                let bind = self.bind_to(*bind);
+                let label = format!("{bind}Predicate {predicate:?}");
+
+                node_opts.insert("shape", "component".to_string());
+                node_opts.insert("label", label);
+
+                self.walk_program(*inner, format!("i{cur_instr}:h"));
+            }
             Node { head, plan, bind } => {
                 let bind = self.bind_to(*bind);
                 let mut label = format!("<n> {bind}Node ");

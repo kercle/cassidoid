@@ -483,10 +483,42 @@ impl Compiler {
                     _ => self.branch(program_a, instr_a, program_b, instr_b),
                 }
             }
-            (Predicate { .. }, Predicate { .. }) => todo!(),
+            (Predicate { .. }, Predicate { .. }) => self.merge_predicates(program_a, instr_a, program_b, instr_b),
             (Node { .. }, Node { .. }) => self.merge_nodes(program_a, instr_a, program_b, instr_b),
             (Alternatives { .. }, Alternatives { .. }) => todo!(),
             _ => self.branch(program_a, instr_a, program_b, instr_b),
+        }
+    }
+
+    fn merge_predicates(
+        &mut self,
+        program_a: &Program,
+        instr_a: InstrId,
+        program_b: &Program,
+        instr_b: InstrId,
+    ) -> InstrId {
+        let Some(Instruction::Predicate {
+            predicate: predicate_a,
+            inner: inner_a,
+            bind: bind_a,
+        }) = program_a.instructions.get(instr_a)
+        else {
+            unreachable!();
+        };
+
+        let Some(Instruction::Predicate {
+            predicate: predicate_b,
+            inner: inner_b,
+            bind: bind_b,
+        }) = program_b.instructions.get(instr_b)
+        else {
+            unreachable!();
+        };
+
+        if predicate_a != predicate_b || !Self::same_bind(program_a, *bind_a, program_b, *bind_b) {
+            self.branch(program_a, instr_a, program_b, instr_b)
+        } else {
+            self.merge_inner(program_a, *inner_a, program_b, *inner_b)
         }
     }
 
@@ -705,7 +737,20 @@ impl Compiler {
 
                 self.emit(Alternatives { branches })
             }
-            Predicate { .. } => todo!(),
+            Predicate {
+                predicate,
+                inner,
+                bind,
+            } => {
+                let bind = bind.map(|b| self.bind_name_id(program.var(b).unwrap()));
+                let inner = self.import_sub_program(program, *inner);
+
+                self.emit(Predicate {
+                    predicate: *predicate,
+                    inner,
+                    bind,
+                })
+            }
         }
     }
 }
