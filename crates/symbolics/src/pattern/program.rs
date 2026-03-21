@@ -679,7 +679,14 @@ impl Compiler {
                     bind,
                 })
             }
-            Alternatives { .. } => todo!(),
+            Alternatives { branches } => {
+                let branches = branches
+                    .iter()
+                    .map(|(pat_id, instr)| (*pat_id, self.import_sub_program(program, *instr)))
+                    .collect();
+
+                self.emit(Alternatives { branches })
+            },
             Predicate { .. } => todo!(),
         }
     }
