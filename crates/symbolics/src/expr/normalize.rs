@@ -8,7 +8,10 @@ use crate::{
         ADD_HEAD, CANNONICAL_HEAD_HOLD, CANNONICAL_HEAD_SQRT, CANNONICAL_SYM_INDETERMINATE,
         DIV_HEAD, MUL_HEAD, NEG_HEAD, POW_HEAD, SUB_HEAD,
     },
-    builtins::patterns::hold_pattern::HOLD_PATTERN_HEAD,
+    builtins::{
+        elementary::arithmetic::factorial::FACTORIAL_HEAD,
+        patterns::hold_pattern::HOLD_PATTERN_HEAD,
+    },
     expr::{ExprKind, NormExpr, RawExpr},
 };
 
@@ -78,6 +81,20 @@ fn normalize_raw_node(head_expr: RawExpr, args: Vec<RawExpr>) -> NormExpr {
         Some(POW_HEAD) if args.len() == 2 => {
             let [base, exponent]: [RawExpr; 2] = args.try_into().unwrap();
             normalize_raw_pow(base, exponent)
+        }
+        Some(FACTORIAL_HEAD) if args.len() == 1 => {
+            let [arg]: [RawExpr; 1] = args.try_into().unwrap();
+            let arg = arg.normalize();
+
+            if let Some(num) = arg.get_number() {
+                if let Ok(res) = num.factorial() {
+                    RawExpr::new_number(res).into_normexpr_unsafe()
+                } else {
+                    RawExpr::new_unary_node(FACTORIAL_HEAD, arg.into_raw()).into_normexpr_unsafe()
+                }
+            } else {
+                RawExpr::new_unary_node(FACTORIAL_HEAD, arg.into_raw()).into_normexpr_unsafe()
+            }
         }
         Some(CANNONICAL_HEAD_SQRT) if args.len() == 1 => {
             let [arg]: [RawExpr; 1] = args.try_into().unwrap();

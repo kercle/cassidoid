@@ -17,6 +17,13 @@ pub mod rational;
 pub static ZERO: std::sync::LazyLock<Number> = std::sync::LazyLock::new(Number::zero);
 pub static ONE: std::sync::LazyLock<Number> = std::sync::LazyLock::new(Number::one);
 
+#[derive(Clone, Copy, Debug)]
+pub enum NumberError {
+    FactorialOfNonPositiveInteger,
+    NumberNotInteger,
+    NumberLimitExceeded,
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub enum Number {
     Integer(integer::BigInteger),
@@ -105,6 +112,14 @@ impl Number {
         matches!(self, Number::Rational(_))
     }
 
+    pub fn to_integer(self) -> Result<BigInteger, NumberError> {
+        use Number::*;
+        match self {
+            Integer(v) => Ok(v),
+            Rational(_) => Err(NumberError::NumberNotInteger),
+        }
+    }
+
     pub fn to_rational(self) -> Result<BigRational, String> {
         use Number::*;
         match self {
@@ -139,6 +154,25 @@ impl Number {
         } else {
             Ok(Number::Rational(res))
         }
+    }
+
+    pub fn factorial(&self) -> Result<Self, NumberError> {
+        let Number::Integer(n) = self else {
+            return Err(NumberError::NumberNotInteger);
+        };
+
+        if n.is_negative() {
+            return Err(NumberError::FactorialOfNonPositiveInteger);
+        }
+
+        let mut res = BigInteger::one();
+        let mut n = n.clone();
+        while !n.is_zero() {
+            res = &res * &n;
+            n = n.decremented();
+        }
+
+        Ok(Number::Integer(res))
     }
 }
 
