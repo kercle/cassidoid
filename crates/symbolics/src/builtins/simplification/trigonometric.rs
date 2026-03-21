@@ -11,9 +11,9 @@ pub(super) fn build_rewriter() -> Rewriter {
         (norm_expr!(Sqrt[1 - Sin[x_] ^ 2]), raw_expr!(Cos[x])),
     ];
 
-    Rewriter::new().with_rules(rules.into_iter().map(|(pat, repl)| {
-        (pat, move |ctx: &Environment<'_, '_>| {
-            ctx.fill(repl.clone())
-        })
-    }))
+    Rewriter::new().with_rules(
+        rules
+            .into_iter()
+            .map(|(pat, repl)| (pat, move |ctx: &Environment<'_, '_>| ctx.fill(repl.clone()))),
+    )
 }
