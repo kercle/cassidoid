@@ -11,3 +11,6 @@ serve-dev: eval-server serve-frontend-dev
 
 profile-integration-tests:
     cargo flamegraph -p symbolics --profile profiling --unit-test -- tests::integration_tests::test_full_processing_chain
+
+visualize-pattern-program *args:
+    @cargo run -q --bin visualize-pattern-program -- {{args}}

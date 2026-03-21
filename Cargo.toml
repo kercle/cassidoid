@@ -9,6 +9,7 @@ members = [
     "crates/common",
     "crates/parser",
     "crates/parser-macros",
+    "debug-utils/visualize-pattern-program",
 ]
 
 [profile.profiling]

@@ -21,6 +21,24 @@ pub struct Program {
     pub(super) var_ids: HashMap<String, VarId>,
 }
 
+impl Program {
+    pub fn entry(&self) -> InstrId {
+        self.entry
+    }
+
+    pub fn pattern_id(&self) -> PatternId {
+        self.entry_pattern_id
+    }
+
+    pub fn instruction(&self, instr_id: InstrId) -> Option<&Instruction> {
+        self.instructions.get(instr_id)
+    }
+
+    pub fn var(&self, var_id: VarId) -> Option<&str> {
+        self.vars.get(var_id as usize).map(|x| x.as_str())
+    }
+}
+
 pub enum Quantity {
     One,
     Many { min: usize },
@@ -118,6 +136,11 @@ impl Compiler {
 
     pub fn with_multiset_predicate(mut self, f: fn(&NormExpr) -> bool) -> Self {
         self.is_multiset = f;
+        self
+    }
+
+    pub fn with_pattern_id(mut self, pattern_id: PatternId) -> Self {
+        self.pattern_id = pattern_id;
         self
     }
 
@@ -326,4 +349,10 @@ impl Compiler {
 
         true
     }
+
+    // pub fn merge(mut self, program_a: Program, program_b: Program) -> Program {
+    //     let
+    // }
+
+    // fn merge_
 }
