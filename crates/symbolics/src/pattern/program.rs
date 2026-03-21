@@ -50,7 +50,6 @@ pub enum Instruction {
     },
     Alternatives {
         branches: Vec<InstrId>,
-        bind: Option<VarId>,
     },
 }
 
@@ -63,7 +62,7 @@ impl Instruction {
             Wildcard { bind, .. } => *bind,
             Predicate { bind, .. } => *bind,
             Node { bind, .. } => *bind,
-            Alternatives { bind, .. } => *bind,
+            Alternatives { .. } => None,
         }
     }
 }

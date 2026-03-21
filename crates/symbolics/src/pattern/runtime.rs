@@ -33,12 +33,9 @@ enum Frame<'p, 's> {
         instr: InstrId,
         subject: &'s NormExpr,
     },
-    MatchBranches {
-        instr: InstrId,
-    },
-    ResumeNextBranch {
-        instr: InstrId,
-        next_branch: usize,
+    MatchBranch {
+        remaining_branches: &'p [InstrId],
+        subject: &'s NormExpr,
     },
     MatchSequence {
         instrs: &'p [InstrId],
@@ -83,10 +80,12 @@ impl<'p, 's> Frame<'p, 's> {
                 instr: *instr,
                 subject,
             },
-            Frame::MatchBranches { instr } => Frame::MatchBranches { instr: *instr },
-            Frame::ResumeNextBranch { instr, next_branch } => Frame::ResumeNextBranch {
-                instr: *instr,
-                next_branch: *next_branch,
+            Frame::MatchBranch {
+                remaining_branches,
+                subject,
+            } => Frame::MatchBranch {
+                remaining_branches: *remaining_branches,
+                subject,
             },
             Frame::MatchSequence { instrs, subjects } => Frame::MatchSequence { instrs, subjects },
             Frame::ResumeMatchSequence {
@@ -193,8 +192,10 @@ impl<'p, 's> Runtime<'p, 's> {
         use Frame::*;
         match frame {
             Exec { instr, subject } => self.exec(instr, subject),
-            MatchBranches { instr } => todo!(),
-            ResumeNextBranch { instr, next_branch } => todo!(),
+            MatchBranch {
+                remaining_branches,
+                subject,
+            } => self.match_branches(remaining_branches, subject),
             MatchSequence { instrs, subjects } => self.match_sequence(instrs, subjects),
             ResumeMatchSequence {
                 instrs,
@@ -226,18 +227,23 @@ impl<'p, 's> Runtime<'p, 's> {
         }
     }
 
-    fn exec(&mut self, instr: InstrId, subject: &'s NormExpr) -> bool {
+    fn exec(&mut self, instr_id: InstrId, subject: &'s NormExpr) -> bool {
         let instr = self
             .program
             .instructions
-            .get(instr)
+            .get(instr_id)
             .expect("Program is corrupted. Trying to execute non-existent instruction");
 
         use Instruction::*;
         match instr {
             Literal { inner, bind } => self.match_literal(inner, subject, *bind),
-            Alternatives { branches, bind } => {
-                todo!()
+            Alternatives { branches } => {
+                self.push_frame(Frame::MatchBranch {
+                    remaining_branches: branches,
+                    subject,
+                });
+
+                true
             }
             Node { head, plan, .. } => {
                 let ExprKind::Node {
@@ -332,6 +338,24 @@ impl<'p, 's> Runtime<'p, 's> {
     }
 
     // ---- Branching ----
+
+    fn match_branches(&mut self, remaining_branches: &'p [InstrId], subject: &'s NormExpr) -> bool {
+        if remaining_branches.is_empty() {
+            return true;
+        }
+
+        self.push_choice_point(Frame::MatchBranch {
+            remaining_branches: &remaining_branches[1..],
+            subject,
+        });
+
+        self.push_frame(Frame::Exec {
+            instr: *remaining_branches.first().unwrap(),
+            subject,
+        });
+
+        true
+    }
 
     // ---- Literal Matching ----
 
