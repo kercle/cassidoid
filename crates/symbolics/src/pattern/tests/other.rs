@@ -464,3 +464,18 @@ fn unordered_factorize_pattern_with_rest() {
     assert_eq!(ctx.get_one("z"), Some(&norm_expr!(Add[1, x])));
     assert_eq!(ctx.get_seq("r"), Some([].as_slice()));
 }
+
+#[test]
+fn hold_pattern() {
+    let program = Compiler::new().compile(&norm_expr! {
+        Pattern[a, HoldPattern[Add[b__]]]
+    });
+    let subject = norm_expr! { Add[a+b+c] };
+
+    let ctx = Runtime::new(&program, &subject).next().unwrap();
+    assert_eq!(ctx.get_one("a"), Some(&norm_expr!(Add[a,b,c])));
+    assert_eq!(
+        ctx.get_seq("b"),
+        Some([&norm_expr!(a), &norm_expr!(b), &norm_expr!(c)].as_slice())
+    );
+}

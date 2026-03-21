@@ -3,6 +3,7 @@ use std::fmt::Debug;
 use std::str::FromStr;
 
 use crate::builtin::*;
+use crate::builtins::patterns::hold_pattern::HOLD_PATTERN_HEAD;
 use crate::expr::walk::ExprTopDownWalker;
 use crate::expr::{ExprKind, NormExpr};
 use crate::pattern::{PatternPredicate, builtin::*};
@@ -223,7 +224,12 @@ impl Compiler {
         children: &[NormExpr],
         bind: Option<VarId>,
     ) -> InstrId {
-        let head = Self::compile_pattern(self, head, None);
+        if head.matches_symbol(HOLD_PATTERN_HEAD) && children.len() == 1 {
+            // HoldPattern is not compiled to an instruction.
+            return self.compile_pattern(children.first().unwrap(), bind);
+        }
+
+        let head = self.compile_pattern(head, None);
 
         let pats = children
             .iter()
