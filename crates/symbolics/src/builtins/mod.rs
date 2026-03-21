@@ -37,6 +37,6 @@ impl Display for BuiltInCategory {
 
 impl Debug for BuiltInCategory {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
-        write!(f, "{}", self.to_string())
+        write!(f, "{self}")
     }
 }

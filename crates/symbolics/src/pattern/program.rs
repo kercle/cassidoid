@@ -102,6 +102,13 @@ impl ArgPlan {
         }
     }
 
+    pub fn is_empty(&self) -> bool {
+        match self {
+            ArgPlan::Sequence(a) => a.is_empty(),
+            ArgPlan::Multiset(a) => a.is_empty(),
+        }
+    }
+
     pub fn iter(&self) -> core::slice::Iter<'_, InstrId> {
         match self {
             ArgPlan::Sequence(a) => a.iter(),
@@ -173,6 +180,8 @@ impl Compiler {
         self.pattern_id = pattern_id;
         self
     }
+
+    // --- Program compiling --------------------------------------------------
 
     pub fn compile(mut self, pattern: &NormExpr) -> Program {
         let entry = self.compile_pattern(pattern, None);
@@ -380,6 +389,8 @@ impl Compiler {
         true
     }
 
+    // --- Program merging ----------------------------------------------------
+
     pub fn merge(mut self, program_a: Program, program_b: Program) -> Program {
         let entry = self.merge_inner(&program_a, program_a.entry(), &program_b, program_b.entry());
 
@@ -408,85 +419,138 @@ impl Compiler {
             (Literal { .. }, Literal { .. }) => {
                 self.merge_literals(program_a, instr_a, program_b, instr_b)
             }
-            (
-                Variadic {
-                    min_len: min_len_a,
-                    head_pattern: head_pattern_a,
-                    bind: bind_a,
-                },
-                Variadic {
-                    min_len: min_len_b,
-                    head_pattern: head_pattern_b,
-                    bind: bind_b,
-                },
-            ) => {
-                if min_len_a != min_len_b
-                    || !Self::same_bind(program_a, *bind_a, program_b, *bind_b)
-                {
-                    self.branch(program_a, instr_a, program_b, instr_b)
-                } else {
-                    let bind = if let Some(bind_a) = bind_a {
-                        Some(self.bind_name_id(program_a.var(*bind_a).unwrap()))
-                    } else {
-                        None
-                    };
-
-                    let (Some(head_instr_a), Some(head_instr_b)) = (head_pattern_a, head_pattern_b)
-                    else {
-                        return self.branch(program_a, instr_a, program_b, instr_b);
-                    };
-
-                    let head_pattern =
-                        self.merge_inner(program_a, *head_instr_a, program_b, *head_instr_b);
-
-                    self.emit(Instruction::Variadic {
-                        min_len: *min_len_a,
-                        head_pattern: Some(head_pattern),
-                        bind,
-                    })
-                }
+            (Variadic { .. }, Variadic { .. }) => {
+                self.merge_variadic(program_a, instr_a, program_b, instr_b)
             }
-            (
-                Wildcard {
-                    head_pattern: head_pattern_a,
-                    bind: bind_a,
-                },
-                Wildcard {
-                    head_pattern: head_pattern_b,
-                    bind: bind_b,
-                },
-            ) => {
-                if !Self::same_bind(program_a, *bind_a, program_b, *bind_b) {
-                    return self.branch(program_a, instr_a, program_b, instr_b);
-                }
-
-                let bind = if let Some(bind_a) = bind_a {
-                    Some(self.bind_name_id(program_a.var(*bind_a).unwrap()))
-                } else {
-                    None
-                };
-
-                match (head_pattern_a, head_pattern_b) {
-                    (Some(head_instr_a), Some(head_instr_b)) => {
-                        let head_pattern =
-                            self.merge_inner(program_a, *head_instr_a, program_b, *head_instr_b);
-
-                        self.emit(Instruction::Wildcard {
-                            head_pattern: Some(head_pattern),
-                            bind,
-                        })
-                    }
-                    (None, None) => self.emit(Instruction::Wildcard {
-                        head_pattern: None,
-                        bind,
-                    }),
-                    _ => self.branch(program_a, instr_a, program_b, instr_b),
-                }
+            (Wildcard { .. }, Wildcard { .. }) => {
+                self.merge_wildcard(program_a, instr_a, program_b, instr_b)
             }
-            (Predicate { .. }, Predicate { .. }) => self.merge_predicates(program_a, instr_a, program_b, instr_b),
+            (Predicate { .. }, Predicate { .. }) => {
+                self.merge_predicates(program_a, instr_a, program_b, instr_b)
+            }
+            (Alternatives { .. }, Alternatives { .. }) => {
+                self.merge_alternatives(program_a, instr_a, program_b, instr_b)
+            }
             (Node { .. }, Node { .. }) => self.merge_nodes(program_a, instr_a, program_b, instr_b),
-            (Alternatives { .. }, Alternatives { .. }) => todo!(),
             _ => self.branch(program_a, instr_a, program_b, instr_b),
+        }
+    }
+
+    fn merge_alternatives(
+        &mut self,
+        program_a: &Program,
+        instr_a: InstrId,
+        program_b: &Program,
+        instr_b: InstrId,
+    ) -> InstrId {
+        let Some(Instruction::Alternatives {
+            branches: branches_a,
+        }) = program_a.instructions.get(instr_a)
+        else {
+            unreachable!();
+        };
+
+        let Some(Instruction::Alternatives {
+            branches: branches_b,
+        }) = program_b.instructions.get(instr_b)
+        else {
+            unreachable!();
+        };
+
+        let mut branches = branches_a.clone();
+        branches.extend(branches_b);
+
+        self.emit(Instruction::Alternatives { branches })
+    }
+
+    fn merge_wildcard(
+        &mut self,
+        program_a: &Program,
+        instr_a: InstrId,
+        program_b: &Program,
+        instr_b: InstrId,
+    ) -> InstrId {
+        let Some(Instruction::Wildcard {
+            head_pattern: head_pattern_a,
+            bind: bind_a,
+        }) = program_a.instructions.get(instr_a)
+        else {
+            unreachable!();
+        };
+
+        let Some(Instruction::Wildcard {
+            head_pattern: head_pattern_b,
+            bind: bind_b,
+        }) = program_b.instructions.get(instr_b)
+        else {
+            unreachable!();
+        };
+
+        if !Self::same_bind(program_a, *bind_a, program_b, *bind_b) {
+            return self.branch(program_a, instr_a, program_b, instr_b);
+        }
+
+        let bind = bind_a.map(|bind_a| self.bind_name_id(program_a.var(bind_a).unwrap()));
+
+        match (head_pattern_a, head_pattern_b) {
+            (Some(head_instr_a), Some(head_instr_b)) => {
+                let head_pattern =
+                    self.merge_inner(program_a, *head_instr_a, program_b, *head_instr_b);
+
+                self.emit(Instruction::Wildcard {
+                    head_pattern: Some(head_pattern),
+                    bind,
+                })
+            }
+            (None, None) => self.emit(Instruction::Wildcard {
+                head_pattern: None,
+                bind,
+            }),
+            _ => self.branch(program_a, instr_a, program_b, instr_b),
+        }
+    }
+
+    fn merge_variadic(
+        &mut self,
+        program_a: &Program,
+        instr_a: InstrId,
+        program_b: &Program,
+        instr_b: InstrId,
+    ) -> InstrId {
+        let Some(Instruction::Variadic {
+            min_len: min_len_a,
+            head_pattern: head_pattern_a,
+            bind: bind_a,
+        }) = program_a.instructions.get(instr_a)
+        else {
+            unreachable!();
+        };
+
+        let Some(Instruction::Variadic {
+            min_len: min_len_b,
+            head_pattern: head_pattern_b,
+            bind: bind_b,
+        }) = program_b.instructions.get(instr_b)
+        else {
+            unreachable!();
+        };
+
+        if min_len_a != min_len_b || !Self::same_bind(program_a, *bind_a, program_b, *bind_b) {
+            self.branch(program_a, instr_a, program_b, instr_b)
+        } else {
+            let bind = bind_a.map(|bind_a| self.bind_name_id(program_a.var(bind_a).unwrap()));
+
+            let (Some(head_instr_a), Some(head_instr_b)) = (head_pattern_a, head_pattern_b) else {
+                return self.branch(program_a, instr_a, program_b, instr_b);
+            };
+
+            let head_pattern = self.merge_inner(program_a, *head_instr_a, program_b, *head_instr_b);
+
+            self.emit(Instruction::Variadic {
+                min_len: *min_len_a,
+                head_pattern: Some(head_pattern),
+                bind,
+            })
         }
     }
 
@@ -652,6 +716,10 @@ impl Compiler {
         program_b: &Program,
         instr_b: InstrId,
     ) -> InstrId {
+        // This function creates a new alternative. If one of its
+        // branches is an alternative already, the branches are
+        // absorbed into the new instruction.
+
         let mut branches = Vec::new();
 
         self.collect_branches(&mut branches, program_a, instr_a);
@@ -666,6 +734,10 @@ impl Compiler {
         program: &Program,
         instr: InstrId,
     ) {
+        // Replays a program to create a new branch. If the
+        // `instr` points to an alternative instruction, the
+        // branches are absorbed in the new list.
+
         if let Instruction::Alternatives {
             branches: sub_branches,
         } = &program.instructions[instr]
@@ -682,6 +754,11 @@ impl Compiler {
     }
 
     fn import_sub_program(&mut self, program: &Program, instr_pos: InstrId) -> InstrId {
+        // This function imports the instructions from `program`
+        // into the program under construction. Note that the
+        // instruction ids are different in general, so the program
+        // has to be "replayed".
+
         use Instruction::*;
 
         match program.instruction(instr_pos).unwrap() {

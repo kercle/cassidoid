@@ -85,7 +85,7 @@ impl<'p, 's> Frame<'p, 's> {
                 remaining_branches,
                 subject,
             } => Frame::MatchBranch {
-                remaining_branches: *remaining_branches,
+                remaining_branches,
                 subject,
             },
             Frame::MatchSequence { instrs, subjects } => Frame::MatchSequence { instrs, subjects },

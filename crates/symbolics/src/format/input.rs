@@ -146,12 +146,12 @@ fn expr_to_latex_inner(expr: &RawExpr) -> String {
 
         ExprKind::Node { args, .. } if expr.has_head_symbol(ADD_HEAD) => {
             if args.is_empty() {
-                return format!("{ADD_HEAD}[]");
+                format!("{ADD_HEAD}[]")
             } else if args.len() == 1 {
-                return format!(
+                format!(
                     "{ADD_HEAD}[{}]",
                     expr_to_input_with_pos(args.first().unwrap(), Position::FnArg)
-                );
+                )
             } else {
                 args.iter()
                     .map(|arg| expr_to_input_with_pos(arg, Position::AddOperand))
@@ -168,12 +168,12 @@ fn expr_to_latex_inner(expr: &RawExpr) -> String {
 
         ExprKind::Node { args, .. } if expr.has_head_symbol(MUL_HEAD) => {
             if args.is_empty() {
-                return format!("{MUL_HEAD}[]");
+                format!("{MUL_HEAD}[]")
             } else if args.len() == 1 {
-                return format!(
+                format!(
                     "{MUL_HEAD}[{}]",
                     expr_to_input_with_pos(args.first().unwrap(), Position::FnArg)
-                );
+                )
             } else {
                 args.iter()
                     .map(|arg| expr_to_input_with_pos(arg, Position::MulOperand))
@@ -195,10 +195,7 @@ fn expr_to_latex_inner(expr: &RawExpr) -> String {
         }
 
         ExprKind::Node { args, .. } if expr.is_application_of(FACTORIAL_HEAD, 1) => {
-            format!(
-                "{}!",
-                expr_to_input_with_pos(&args[0], Position::FactArg)
-            )
+            format!("{}!", expr_to_input_with_pos(&args[0], Position::FactArg))
         }
 
         ExprKind::Node { head, args } => {

@@ -43,7 +43,7 @@ impl<'p> InstructionGraph<'p> {
             output.push_str(&format!("{a} -> {b};\n"));
         }
 
-        output.push_str("}");
+        output.push('}');
 
         output
     }
@@ -59,7 +59,7 @@ impl<'p> InstructionGraph<'p> {
 
     fn enter(&mut self) {
         let mut node_opts = HashMap::new();
-        let entry_node_id = format!("entry");
+        let entry_node_id = "entry".to_string();
 
         node_opts.insert("shape", "circle".to_string());
         node_opts.insert("label", "Start".to_string());
@@ -94,10 +94,7 @@ impl<'p> InstructionGraph<'p> {
                     self.walk_program(*pat, format!("i{cur_instr}:h"));
                 }
             }
-            Wildcard {
-                head_pattern,
-                bind,
-            } => {
+            Wildcard { head_pattern, bind } => {
                 let bind = self.bind_to(*bind);
                 let label = format!("{bind}Wildcard");
 
@@ -108,7 +105,11 @@ impl<'p> InstructionGraph<'p> {
                     self.walk_program(*pat, format!("i{cur_instr}:h"));
                 }
             }
-            Predicate { predicate, inner, bind } => {
+            Predicate {
+                predicate,
+                inner,
+                bind,
+            } => {
                 let bind = self.bind_to(*bind);
                 let label = format!("{bind}Predicate {predicate:?}");
 
@@ -124,16 +125,16 @@ impl<'p> InstructionGraph<'p> {
 
                 let args = match plan {
                     ArgPlan::Multiset(args) => {
-                        label.push_str(&format!("Multiset"));
+                        label.push_str("Multiset");
                         args
                     }
                     ArgPlan::Sequence(args) => {
-                        label.push_str(&format!("Sequence"));
+                        label.push_str("Sequence");
                         args
                     }
                 };
 
-                label.push_str(&format!(" | <h> Head"));
+                label.push_str(" | <h> Head");
 
                 for (slot_index, &next_instr) in args.iter().enumerate() {
                     self.walk_program(next_instr, format!("i{cur_instr}:a{slot_index}"));
@@ -145,7 +146,7 @@ impl<'p> InstructionGraph<'p> {
                 self.walk_program(*head, format!("i{cur_instr}:h"));
             }
             Alternatives { branches } => {
-                let mut label = format!("<n> Alternatives ");
+                let mut label = "<n> Alternatives ".to_string();
                 current_node_id.push_str(":n");
 
                 for (slot_index, (pattern_id, next_instr)) in branches.iter().enumerate() {
@@ -169,7 +170,7 @@ fn main() {
     let mut programs = Vec::new();
 
     for (pat_id, arg) in std::env::args().skip(1).enumerate() {
-        let ast = parse(&arg).expect(&format!("Cannot compile pattern `{arg}`"));
+        let ast = parse(&arg).unwrap_or_else(|_| panic!("Cannot compile pattern `{arg}`"));
 
         let expr: RawExpr = ast.into();
         let norm_expr = expr.normalize();
