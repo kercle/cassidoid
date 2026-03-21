@@ -11,8 +11,10 @@ use crate::pattern::{PatternPredicate, builtin::*};
 
 pub type InstrId = usize;
 pub type VarId = u32;
+pub type PatternId = u32;
 
 pub struct Program {
+    pub(super) entry_pattern_id: PatternId,
     pub(super) entry: InstrId,
     pub(super) instructions: Vec<Instruction>,
     pub(super) vars: Vec<String>,
@@ -49,7 +51,7 @@ pub enum Instruction {
         bind: Option<VarId>,
     },
     Alternatives {
-        branches: Vec<InstrId>,
+        branches: Vec<(PatternId, InstrId)>,
     },
 }
 
@@ -90,6 +92,7 @@ pub struct Compiler {
     var_ids: HashMap<String, VarId>,
     vars: Vec<String>,
     is_multiset: fn(&NormExpr) -> bool,
+    pattern_id: PatternId,
 }
 
 fn is_multiset_default(expr: &NormExpr) -> bool {
@@ -103,6 +106,7 @@ impl Default for Compiler {
             var_ids: HashMap::new(),
             vars: Vec::new(),
             is_multiset: is_multiset_default,
+            pattern_id: 0,
         }
     }
 }
@@ -121,6 +125,7 @@ impl Compiler {
         let entry = self.compile_pattern(pattern, None);
 
         Program {
+            entry_pattern_id: self.pattern_id,
             entry,
             instructions: self.instructions,
             vars: self.vars,

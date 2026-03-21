@@ -6,7 +6,7 @@ use crate::{
         PatternPredicate,
         bit_mask::BitMaskArena,
         environment::Environment,
-        program::{ArgPlan, InstrId, Instruction, Program, VarId},
+        program::{ArgPlan, InstrId, Instruction, PatternId, Program, VarId},
         utils::MultisetMatchState,
     },
 };
@@ -16,6 +16,7 @@ struct ChoicePoint<'p, 's> {
     pub frame_stack: Rc<FrameStack<'p, 's>>,
     pub bind_stack_len: usize,
     pub resume_frame: Frame<'p, 's>,
+    pub current_pattern_id: PatternId,
 }
 
 #[derive(Debug)]
@@ -34,7 +35,7 @@ enum Frame<'p, 's> {
         subject: &'s NormExpr,
     },
     MatchBranch {
-        remaining_branches: &'p [InstrId],
+        remaining_branches: &'p [(PatternId, InstrId)],
         subject: &'s NormExpr,
     },
     MatchSequence {
@@ -143,6 +144,7 @@ pub struct Runtime<'p, 's> {
     frame_stack: Rc<FrameStack<'p, 's>>,
     choice_points: Vec<ChoicePoint<'p, 's>>,
     bind_stack: Vec<VarId>,
+    current_patthern_id: PatternId,
     bitmask_arena: BitMaskArena,
 }
 
@@ -160,6 +162,7 @@ impl<'p, 's> Runtime<'p, 's> {
             }),
             choice_points: Vec::new(),
             bind_stack: Vec::new(),
+            current_patthern_id: program.entry_pattern_id,
             bitmask_arena: BitMaskArena::new(),
         }
     }
@@ -339,7 +342,11 @@ impl<'p, 's> Runtime<'p, 's> {
 
     // ---- Branching ----
 
-    fn match_branches(&mut self, remaining_branches: &'p [InstrId], subject: &'s NormExpr) -> bool {
+    fn match_branches(
+        &mut self,
+        remaining_branches: &'p [(PatternId, InstrId)],
+        subject: &'s NormExpr,
+    ) -> bool {
         if remaining_branches.is_empty() {
             return true;
         }
@@ -349,8 +356,11 @@ impl<'p, 's> Runtime<'p, 's> {
             subject,
         });
 
+        let (pat_id, instr_id) = *remaining_branches.first().unwrap();
+
+        self.current_patthern_id = pat_id;
         self.push_frame(Frame::Exec {
-            instr: *remaining_branches.first().unwrap(),
+            instr: instr_id,
             subject,
         });
 
@@ -817,6 +827,7 @@ impl<'p, 's> Runtime<'p, 's> {
             frame_stack: self.frame_stack.clone(),
             bind_stack_len: self.bind_stack.len(),
             resume_frame,
+            current_pattern_id: self.current_patthern_id,
         };
 
         self.choice_points.push(choice_point);
@@ -834,6 +845,8 @@ impl<'p, 's> Runtime<'p, 's> {
 
         self.frame_stack = choice_point.frame_stack;
         self.push_frame(choice_point.resume_frame);
+
+        self.current_patthern_id = choice_point.current_pattern_id;
 
         true
     }
