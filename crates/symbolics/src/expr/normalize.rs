@@ -1,4 +1,4 @@
-use std::collections::BTreeMap;
+use std::collections::HashMap;
 
 use numbers::Number;
 
@@ -118,7 +118,7 @@ fn flatten(head_symbol: &str, args: Vec<RawExpr>) -> Vec<NormExpr> {
 
 fn normalize_raw_add(args: Vec<RawExpr>) -> NormExpr {
     let mut constant_term = Number::zero();
-    let mut terms = BTreeMap::new();
+    let mut terms = HashMap::new();
 
     for arg in flatten(ADD_HEAD, args) {
         if arg.is_indeterminate() {
@@ -180,6 +180,8 @@ fn normalize_raw_add(args: Vec<RawExpr>) -> NormExpr {
         new_args.push(node);
     }
 
+    new_args.sort();
+
     if new_args.is_empty() {
         RawExpr::new_number_integer(0).into_normexpr_unsafe()
     } else if new_args.len() == 1 {
@@ -223,7 +225,7 @@ pub(super) fn split_coefficient(expr: NormExpr) -> (Number, Option<NormExpr>) {
 
 fn normalize_raw_mul(args: Vec<RawExpr>) -> NormExpr {
     let mut constant_term = Number::one();
-    let mut terms: BTreeMap<NormExpr, Vec<RawExpr>> = BTreeMap::new();
+    let mut terms: HashMap<NormExpr, Vec<RawExpr>> = HashMap::new();
 
     for arg in flatten(MUL_HEAD, args) {
         if arg.is_number_zero() || arg.is_indeterminate() {
