@@ -3,7 +3,7 @@ use std::{collections::HashMap, fmt::Debug, rc::Rc};
 use crate::{
     atom::Atom,
     expr::{Expr, ExprKind, NormExpr, RawExpr},
-    pattern::program::{Program, VarId},
+    pattern::program::{PatternId, Program, VarId},
 };
 
 #[derive(Clone)]
@@ -16,6 +16,7 @@ pub(super) enum EnvBinding<'s> {
 pub struct Environment<'p, 's> {
     bindings: HashMap<VarId, EnvBinding<'s>>,
     program: &'p Program,
+    pattern_id: PatternId,
 }
 
 pub struct ErrorBindCollision;
@@ -25,6 +26,7 @@ impl<'p, 's> Environment<'p, 's> {
         Self {
             bindings: HashMap::new(),
             program,
+            pattern_id: program.entry_pattern_id,
         }
     }
 
@@ -107,6 +109,14 @@ impl<'p, 's> Environment<'p, 's> {
             One(_) => None,
             Many(val) => Some(val.as_slice()),
         }
+    }
+
+    pub(super) fn set_pattern_id(&mut self, id: PatternId) {
+        self.pattern_id = id;
+    }
+
+    pub fn pattern_id(&self) -> PatternId {
+        self.pattern_id
     }
 }
 
