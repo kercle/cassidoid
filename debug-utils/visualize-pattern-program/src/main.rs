@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use parser::parse;
 use symbolics::{
     expr::RawExpr,
-    pattern::program::{ArgPlan, Compiler, InstrId, Instruction, Program},
+    pattern::program::{ArgPlan, Compiler, InstrId, Instruction, PatternId, Program},
 };
 
 struct InstructionGraph<'p> {
@@ -130,6 +130,7 @@ impl<'p> InstructionGraph<'p> {
             }
             Alternatives { branches } => {
                 let mut label = format!("<n> Alternatives ");
+                current_node_id.push_str(":n");
 
                 for (slot_index, (pattern_id, next_instr)) in branches.iter().enumerate() {
                     self.walk_program(*next_instr, format!("i{cur_instr}:a{slot_index}"));
@@ -151,19 +152,23 @@ impl<'p> InstructionGraph<'p> {
 fn main() {
     let mut programs = Vec::new();
 
-    for arg in std::env::args().skip(1) {
+    for (pat_id, arg) in std::env::args().skip(1).enumerate() {
         let ast = parse(&arg).expect(&format!("Cannot compile pattern `{arg}`"));
 
         let expr: RawExpr = ast.into();
-        let program = Compiler::default().compile(&expr.normalize());
+        let norm_expr = expr.normalize();
+        let program = Compiler::default()
+            .with_pattern_id(pat_id as PatternId)
+            .compile(&norm_expr);
 
         programs.push(program);
     }
 
-    if let Some(program) = programs.get(0) {
-        let graph = InstructionGraph::new(program);
-        println!("{}", graph.to_dot());
-    } else {
-        eprintln!("No pattern specified.");
+    let mut merged_program = programs.remove(0);
+    for program in programs.into_iter() {
+        merged_program = Compiler::default().merge(merged_program, program);
     }
+
+    let graph = InstructionGraph::new(&merged_program);
+    println!("{}", graph.to_dot());
 }
