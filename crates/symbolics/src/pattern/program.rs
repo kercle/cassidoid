@@ -4,6 +4,7 @@ use std::str::FromStr;
 
 use crate::builtin::*;
 use crate::builtins::patterns::hold_pattern::HOLD_PATTERN_HEAD;
+use crate::builtins::patterns::optional::OPTIONAL_HEAD;
 use crate::expr::walk::ExprTopDownWalker;
 use crate::expr::{ExprKind, NormExpr};
 use crate::pattern::{PatternPredicate, builtin::*};
@@ -185,6 +186,9 @@ impl Compiler {
                     inner,
                     bind,
                 })
+            }
+            Node { args: _args, .. } if pat_expr.is_application_of(OPTIONAL_HEAD, 1) => {
+                todo!()
             }
             Node { head, args } => {
                 if self.is_literal(pat_expr) {

@@ -78,18 +78,42 @@ impl From<ParserAst> for RawExpr {
             Blank {
                 bind_name,
                 head_constraint,
-                optional: _optional,
-            } => make_blank_variant(BLANK_ONE_HEAD, bind_name, head_constraint),
+                optional,
+            } => {
+                let inner = make_blank_variant(BLANK_ONE_HEAD, bind_name, head_constraint);
+
+                if optional {
+                    RawExpr::new_unary_node(builtins::patterns::optional::OPTIONAL_HEAD, inner)
+                } else {
+                    inner
+                }
+            }
             BlankSeq {
                 bind_name,
                 head_constraint,
-                optional: _optional,
-            } => make_blank_variant(BLANK_SEQ_HEAD, bind_name, head_constraint),
+                optional,
+            } => {
+                let inner = make_blank_variant(BLANK_SEQ_HEAD, bind_name, head_constraint);
+
+                if optional {
+                    RawExpr::new_unary_node(builtins::patterns::optional::OPTIONAL_HEAD, inner)
+                } else {
+                    inner
+                }
+            }
             BlankNullSeq {
                 bind_name,
                 head_constraint,
-                optional: _optional,
-            } => make_blank_variant(BLANK_NULL_SEQ_HEAD, bind_name, head_constraint),
+                optional,
+            } => {
+                let inner = make_blank_variant(BLANK_NULL_SEQ_HEAD, bind_name, head_constraint);
+
+                if optional {
+                    RawExpr::new_unary_node(builtins::patterns::optional::OPTIONAL_HEAD, inner)
+                } else {
+                    inner
+                }
+            }
             Compound { nodes } => {
                 let nodes = nodes.into_iter().map(Self::from).collect();
                 Self::new_node(builtins::scoping::compound::COMPOUND_HEAD, nodes)
