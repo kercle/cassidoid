@@ -11,7 +11,7 @@ pub struct Factorial;
 impl BuiltIn for Factorial {
     fn doc(&self) -> BuiltInDoc {
         BuiltInDoc {
-            category: BuiltInCategory::Patterns,
+            category: BuiltInCategory::ElementaryArithmetic,
             title: FACTORIAL_HEAD,
             summary: "Represents the factorial.",
             pattern_doc: vec![PatternDoc::new(
