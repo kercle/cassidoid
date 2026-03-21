@@ -111,6 +111,10 @@ fn ast_to_token_stream(ast: ParserAst) -> proc_macro2::TokenStream {
             let rhs = ast_to_token_stream(*rhs);
             quote! { #ast_path::new_pow(#lhs, #rhs) }
         }
+        Factorial { arg } => {
+            let arg = ast_to_token_stream(*arg);
+            quote! { #ast_path::new_factorial(#arg) }
+        }
         FunctionCall { name, args } => {
             let args: Vec<proc_macro2::TokenStream> =
                 args.into_iter().map(ast_to_token_stream).collect();

@@ -1,6 +1,6 @@
 use crate::{
     builtin::*,
-    builtins,
+    builtins::{self, elementary::arithmetic::factorial::FACTORIAL_HEAD},
     expr::{Expr, ExprKind, RawExpr},
     pattern::{BLANK_NULL_SEQ_HEAD, BLANK_ONE_HEAD, BLANK_SEQ_HEAD, PATTERN_HEAD},
 };
@@ -68,6 +68,7 @@ impl From<ParserAst> for RawExpr {
             Mul { lhs, rhs } => Self::new_binary_node(MUL_HEAD, Self::from(*lhs), Self::from(*rhs)),
             Div { lhs, rhs } => Self::new_binary_node(DIV_HEAD, Self::from(*lhs), Self::from(*rhs)),
             Pow { lhs, rhs } => Self::new_binary_node(POW_HEAD, Self::from(*lhs), Self::from(*rhs)),
+            Factorial { arg } => Self::new_unary_node(FACTORIAL_HEAD, Self::from(*arg)),
             FunctionCall { name, args } => {
                 let head = Self::new_symbol(name);
                 let args = args.into_iter().map(Self::from).collect();

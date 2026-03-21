@@ -102,10 +102,22 @@ fn parse_atom(stream: &mut TokenStream) -> Result<ParserAst, ParseError> {
     }
 }
 
-fn parse_power(stream: &mut TokenStream) -> Result<ParserAst, ParseError> {
-    // <power> ::= <atom> { "^" <power> }
+fn parse_factorial(stream: &mut TokenStream) -> Result<ParserAst, ParseError> {
+    // <power> ::= <atom> !
 
-    let mut result = parse_atom(stream)?;
+    let result = parse_atom(stream)?;
+
+    if stream.next_if_matches_token(&Token::Exclamation).is_some() {
+        Ok(ParserAst::new_factorial(result))
+    } else {
+        Ok(result)
+    }
+}
+
+fn parse_power(stream: &mut TokenStream) -> Result<ParserAst, ParseError> {
+    // <power> ::= <factorial> { "^" <power> }
+
+    let mut result = parse_factorial(stream)?;
 
     if stream.next_if_matches_token(&Token::Caret).is_some() {
         result = ParserAst::new_pow(result, parse_signed_power(stream)?);

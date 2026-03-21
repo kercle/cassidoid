@@ -53,6 +53,9 @@ pub enum ParserAst {
         lhs: Box<ParserAst>,
         rhs: Box<ParserAst>,
     },
+    Factorial {
+        arg: Box<ParserAst>,
+    },
     FunctionCall {
         name: String,
         args: Vec<ParserAst>,
@@ -212,6 +215,10 @@ impl ParserAst {
             lhs: Box::new(lhs),
             rhs: Box::new(rhs),
         }
+    }
+
+    pub fn new_factorial(arg: ParserAst) -> Self {
+        ParserAst::Factorial { arg: Box::new(arg) }
     }
 
     pub fn new_cos(arg: ParserAst) -> Self {
