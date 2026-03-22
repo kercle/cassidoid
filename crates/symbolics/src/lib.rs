@@ -4,6 +4,7 @@ pub mod eval;
 pub mod expr;
 pub mod format;
 pub mod kernel;
+pub mod kernel_helpers;
 pub mod macros;
 pub mod pattern;
 pub mod poly;

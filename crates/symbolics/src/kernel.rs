@@ -40,26 +40,8 @@ impl Default for Kernel {
 }
 
 impl Kernel {
-    fn register_initial_builtins(&mut self) {
-        self.register_builtin_default::<builtins::Add>(false);
-        self.register_builtin_default::<builtins::Sub>(false);
-        self.register_builtin_default::<builtins::Mul>(false);
-        self.register_builtin_default::<builtins::Div>(false);
-        self.register_builtin_default::<builtins::Pow>(false);
-        self.register_builtin_default::<builtins::Factorial>(false);
-
-        self.register_builtin_default::<builtins::Compound>(false);
-
-        self.register_builtin_default::<builtins::Integrate>(true);
-        self.register_builtin_default::<builtins::Derivative>(true);
-
-        self.register_builtin_default::<builtins::Simplify>(true);
-        self.register_builtin(
-            Box::new(builtins::Expand::new(self.binomial_generator.clone())),
-            true,
-        );
-
-        self.register_builtin_default::<builtins::Help>(false);
+    pub fn binomial_generator(&self) -> Shared<BinomialGenerator> {
+        self.binomial_generator.clone()
     }
 
     pub fn register_builtin_default<B: BuiltIn + Default + 'static>(&mut self, auto_apply: bool) {
