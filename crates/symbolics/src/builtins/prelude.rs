@@ -49,5 +49,10 @@ pub use relational::less_equal::LessEqual;
 
 pub use scoping::compound::Compound;
 
+// --- Simplification ---------------------------------------------------------
+
+pub use simplification::expand::Expand;
+pub use simplification::simplify::Simplify;
+
 // --- System -----------------------------------------------------------------
 pub use system::help::Help;

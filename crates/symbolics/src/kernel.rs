@@ -41,27 +41,25 @@ impl Default for Kernel {
 
 impl Kernel {
     fn register_initial_builtins(&mut self) {
-        self.register_builtin_default::<builtins::elementary::arithmetic::Add>(false);
-        self.register_builtin_default::<builtins::elementary::arithmetic::Sub>(false);
-        self.register_builtin_default::<builtins::elementary::arithmetic::Mul>(false);
-        self.register_builtin_default::<builtins::elementary::arithmetic::Div>(false);
-        self.register_builtin_default::<builtins::elementary::arithmetic::Pow>(false);
-        self.register_builtin_default::<builtins::elementary::arithmetic::Factorial>(false);
+        self.register_builtin_default::<builtins::Add>(false);
+        self.register_builtin_default::<builtins::Sub>(false);
+        self.register_builtin_default::<builtins::Mul>(false);
+        self.register_builtin_default::<builtins::Div>(false);
+        self.register_builtin_default::<builtins::Pow>(false);
+        self.register_builtin_default::<builtins::Factorial>(false);
 
-        self.register_builtin_default::<builtins::scoping::Compound>(false);
+        self.register_builtin_default::<builtins::Compound>(false);
 
-        self.register_builtin_default::<builtins::calculus::Integrate>(true);
-        self.register_builtin_default::<builtins::calculus::Derivative>(true);
+        self.register_builtin_default::<builtins::Integrate>(true);
+        self.register_builtin_default::<builtins::Derivative>(true);
 
-        self.register_builtin_default::<builtins::simplification::Simplify>(true);
+        self.register_builtin_default::<builtins::Simplify>(true);
         self.register_builtin(
-            Box::new(builtins::simplification::Expand::new(
-                self.binomial_generator.clone(),
-            )),
+            Box::new(builtins::Expand::new(self.binomial_generator.clone())),
             true,
         );
 
-        self.register_builtin_default::<builtins::system::Help>(false);
+        self.register_builtin_default::<builtins::Help>(false);
     }
 
     pub fn register_builtin_default<B: BuiltIn + Default + 'static>(&mut self, auto_apply: bool) {
