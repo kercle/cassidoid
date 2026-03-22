@@ -5,7 +5,6 @@ use crate::{
     atom::Atom,
     builtins,
     expr::{ExprKind, RawExpr},
-    pattern::BLANK_ONE_HEAD,
 };
 
 pub static EXPR_PLACEHOLDER: std::sync::LazyLock<RawExpr> =
@@ -59,7 +58,7 @@ impl RawExpr {
     }
 
     pub fn new_blank() -> Self {
-        Self::new_node(BLANK_ONE_HEAD, vec![])
+        Self::new_node(builtins::Blank::head(), vec![])
     }
 
     pub fn collapse_add(args: Vec<RawExpr>) -> RawExpr {

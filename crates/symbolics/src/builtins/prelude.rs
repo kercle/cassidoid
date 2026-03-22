@@ -35,8 +35,13 @@ pub use evaluation_control::hold_pattern::HoldPattern;
 
 // --- Patterns ---------------------------------------------------------------
 
-pub use patterns::optional::Optional;
+pub use patterns::blank::Blank;
+pub use patterns::blank_null_seq::BlankNullSeq;
+pub use patterns::blank_seq::BlankSeq;
 pub use patterns::condition::Condition;
+pub use patterns::optional::Optional;
+pub use patterns::pattern::Pattern;
+pub use patterns::pattern_test::PatternTest;
 
 // --- Relational -------------------------------------------------------------
 

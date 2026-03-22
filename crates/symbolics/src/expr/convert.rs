@@ -1,9 +1,6 @@
 use crate::{
     builtins::{self, traits::BuiltIn},
     expr::{Expr, ExprKind, RawExpr},
-    pattern::{
-        BLANK_NULL_SEQ_HEAD, BLANK_ONE_HEAD, BLANK_SEQ_HEAD, PATTERN_HEAD, PATTERN_TEST_HEAD,
-    },
 };
 
 use numbers::Number;
@@ -103,7 +100,7 @@ impl From<ParserAst> for RawExpr {
                 head_constraint,
                 optional,
             } => {
-                let inner = make_blank_variant(BLANK_ONE_HEAD, bind_name, head_constraint);
+                let inner = make_blank_variant(builtins::Blank::head(), bind_name, head_constraint);
 
                 if optional {
                     RawExpr::new_unary_node(builtins::Optional::head(), inner)
@@ -116,7 +113,8 @@ impl From<ParserAst> for RawExpr {
                 head_constraint,
                 optional,
             } => {
-                let inner = make_blank_variant(BLANK_SEQ_HEAD, bind_name, head_constraint);
+                let inner =
+                    make_blank_variant(builtins::BlankSeq::head(), bind_name, head_constraint);
 
                 if optional {
                     RawExpr::new_unary_node(builtins::Optional::head(), inner)
@@ -129,7 +127,8 @@ impl From<ParserAst> for RawExpr {
                 head_constraint,
                 optional,
             } => {
-                let inner = make_blank_variant(BLANK_NULL_SEQ_HEAD, bind_name, head_constraint);
+                let inner =
+                    make_blank_variant(builtins::BlankNullSeq::head(), bind_name, head_constraint);
 
                 if optional {
                     RawExpr::new_unary_node(builtins::Optional::head(), inner)
@@ -138,7 +137,7 @@ impl From<ParserAst> for RawExpr {
                 }
             }
             PatternTest { pattern, predicate } => RawExpr::new_binary_node(
-                PATTERN_TEST_HEAD,
+                builtins::PatternTest::head(),
                 Self::from(*pattern),
                 Self::from(*predicate),
             ),
@@ -168,7 +167,10 @@ fn make_blank_variant(
     let ret = RawExpr::new_node(head, args);
 
     if let Some(bind_name) = bind_name {
-        RawExpr::new_node(PATTERN_HEAD, vec![RawExpr::new_symbol(bind_name), ret])
+        RawExpr::new_node(
+            builtins::Pattern::head(),
+            vec![RawExpr::new_symbol(bind_name), ret],
+        )
     } else {
         ret
     }

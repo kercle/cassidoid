@@ -13,14 +13,10 @@ mod tests;
 
 use std::{fmt::Debug, str::FromStr};
 
-use crate::expr::{ExprKind, NormExpr, walk::ExprTopDownWalker};
-
-// TODO: Move these to built-ins
-pub const PATTERN_HEAD: &str = "Pattern";
-pub const PATTERN_TEST_HEAD: &str = "PatternTest";
-pub const BLANK_ONE_HEAD: &str = "Blank";
-pub const BLANK_SEQ_HEAD: &str = "BlankSeq";
-pub const BLANK_NULL_SEQ_HEAD: &str = "BlankNullSeq";
+use crate::{
+    builtins::{self, traits::BuiltIn},
+    expr::{ExprKind, NormExpr, walk::ExprTopDownWalker},
+};
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum PatternPredicate {
@@ -104,7 +100,7 @@ impl<'a> Pattern<'a> {
     fn from_pattern_node(expr: &'a NormExpr) -> Option<Pattern<'a>> {
         match expr.kind() {
             ExprKind::Node { head, args }
-                if head.matches_symbol(PATTERN_TEST_HEAD) && args.len() == 2 =>
+                if head.matches_symbol(builtins::PatternTest::head()) && args.len() == 2 =>
             {
                 let pat = args.first()?;
                 let pred = args
@@ -129,14 +125,14 @@ impl<'a> Pattern<'a> {
                 }
             }
             ExprKind::Node { head, args }
-                if head.matches_symbol(PATTERN_HEAD) && args.len() == 2 =>
+                if head.matches_symbol(builtins::Pattern::head()) && args.len() == 2 =>
             {
                 let e = args.last()?;
                 let h = e.head()?;
 
-                if h.matches_symbol(BLANK_ONE_HEAD)
-                    || h.matches_symbol(BLANK_SEQ_HEAD)
-                    || h.matches_symbol(BLANK_NULL_SEQ_HEAD)
+                if h.matches_symbol(builtins::Blank::head())
+                    || h.matches_symbol(builtins::BlankSeq::head())
+                    || h.matches_symbol(builtins::BlankNullSeq::head())
                 {
                     let bind_name = args.first()?.get_symbol()?;
                     Some(Self::from_pattern_node(e)?.with_bind_name(bind_name))
@@ -145,19 +141,19 @@ impl<'a> Pattern<'a> {
                 }
             }
             ExprKind::Node { head, args } if args.len() <= 1 => {
-                if head.matches_symbol(BLANK_ONE_HEAD) {
+                if head.matches_symbol(builtins::Blank::head()) {
                     Some(Pattern::Blank {
                         bind_name: None,
                         match_head: args.first(),
                         predicate: None,
                     })
-                } else if head.matches_symbol(BLANK_SEQ_HEAD) {
+                } else if head.matches_symbol(builtins::BlankSeq::head()) {
                     Some(Pattern::BlankSeq {
                         bind_name: None,
                         match_head: args.first(),
                         predicate: None,
                     })
-                } else if head.matches_symbol(BLANK_NULL_SEQ_HEAD) {
+                } else if head.matches_symbol(builtins::BlankNullSeq::head()) {
                     Some(Pattern::BlankNullSeq {
                         bind_name: None,
                         match_head: args.first(),
@@ -175,10 +171,10 @@ impl<'a> Pattern<'a> {
         let mut descend = false;
         for e in ExprTopDownWalker::new(expr) {
             if let ExprKind::Node { head, .. } = e.kind()
-                && (head.matches_symbol(PATTERN_HEAD)
-                    || head.matches_symbol(BLANK_ONE_HEAD)
-                    || head.matches_symbol(BLANK_SEQ_HEAD)
-                    || head.matches_symbol(BLANK_NULL_SEQ_HEAD))
+                && (head.matches_symbol(builtins::Pattern::head())
+                    || head.matches_symbol(builtins::Blank::head())
+                    || head.matches_symbol(builtins::BlankSeq::head())
+                    || head.matches_symbol(builtins::BlankNullSeq::head()))
             {
                 // There are possibly still non-literal patterns in tree -> descend
                 descend = true;
