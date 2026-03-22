@@ -4,10 +4,7 @@ use numbers::Number;
 
 use crate::{
     atom::Atom,
-    builtin::{
-        CANNONICAL_HEAD_HOLD, CANNONICAL_HEAD_SQRT, CANNONICAL_SYM_ABSENT,
-        CANNONICAL_SYM_INDETERMINATE,
-    },
+    builtin::{CANNONICAL_HEAD_SQRT, CANNONICAL_SYM_ABSENT, CANNONICAL_SYM_INDETERMINATE},
     builtins::{self, traits::BuiltIn},
     expr::{ExprKind, NormExpr, RawExpr},
 };
@@ -111,7 +108,7 @@ fn normalize_raw_node(head_expr: RawExpr, args: Vec<RawExpr>) -> NormExpr {
             let one_half = Number::new_rational_from_i64(1, 2).unwrap();
             RawExpr::new_binary_node(builtins::Pow::head(), arg, one_half.into()).normalize()
         }
-        Some(CANNONICAL_HEAD_HOLD) | Some(builtins::HoldPattern::HEAD) if args.len() == 1 => {
+        Some(builtins::Hold::HEAD) | Some(builtins::HoldPattern::HEAD) if args.len() == 1 => {
             NormExpr::new_unchecked(ExprKind::Node {
                 head: Box::new(head_expr.into_normexpr_unsafe()),
                 args: args.into_iter().map(|a| a.into_normexpr_unsafe()).collect(),

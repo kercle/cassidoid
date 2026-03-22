@@ -2,6 +2,7 @@ use std::fmt::{Debug, Display, Formatter};
 
 pub mod calculus;
 pub mod elementary;
+pub mod evaluation_control;
 pub mod logic;
 pub mod patterns;
 pub mod relational;
@@ -18,6 +19,7 @@ pub enum BuiltInCategory {
     Calculus,
     ElementaryArithmetic,
     ElementaryFunctions,
+    EvaluationControl,
     Patterns,
     Scoping,
     Simplification,
@@ -32,6 +34,7 @@ impl Display for BuiltInCategory {
             Calculus => write!(f, "Calculus"),
             ElementaryArithmetic => write!(f, "Elementary arithmetic"),
             ElementaryFunctions => write!(f, "Elementary functions"),
+            EvaluationControl => write!(f, "Evaluation control"),
             Patterns => write!(f, "Patterns"),
             Scoping => write!(f, "Scoping"),
             Simplification => write!(f, "Simplification"),

@@ -3,7 +3,6 @@ use numbers::Number;
 use crate::builtins::traits::BuiltIn;
 use crate::{
     atom::Atom,
-    builtin::CANNONICAL_HEAD_LIST,
     builtins,
     expr::{ExprKind, RawExpr},
     pattern::BLANK_ONE_HEAD,
@@ -61,10 +60,6 @@ impl RawExpr {
 
     pub fn new_blank() -> Self {
         Self::new_node(BLANK_ONE_HEAD, vec![])
-    }
-
-    pub fn new_list(args: Vec<RawExpr>) -> Self {
-        Self::new_node(CANNONICAL_HEAD_LIST, args)
     }
 
     pub fn collapse_add(args: Vec<RawExpr>) -> RawExpr {

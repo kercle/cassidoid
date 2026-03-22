@@ -25,7 +25,7 @@ impl BuiltIn for HoldPattern {
 
     fn doc(&self) -> BuiltInDoc {
         BuiltInDoc {
-            category: BuiltInCategory::Patterns,
+            category: BuiltInCategory::EvaluationControl,
             title: Self::head(),
             summary: "Holding patterns without normalizing them.",
             pattern_doc: vec![PatternDoc::new(

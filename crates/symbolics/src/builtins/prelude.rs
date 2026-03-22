@@ -17,9 +17,13 @@ pub use elementary::arithmetic::neg::Neg;
 pub use elementary::arithmetic::factorial::Factorial;
 pub use elementary::arithmetic::pow::Pow;
 
+// --- Evaluation Control -----------------------------------------------------
+
+pub use evaluation_control::hold::Hold;
+pub use evaluation_control::hold_pattern::HoldPattern;
+
 // --- Patterns ---------------------------------------------------------------
 
-pub use patterns::hold_pattern::HoldPattern;
 pub use patterns::optional::Optional;
 
 // --- Relational -------------------------------------------------------------

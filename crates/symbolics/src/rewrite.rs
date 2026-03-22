@@ -1,5 +1,5 @@
 use crate::{
-    builtin::CANNONICAL_HEAD_HOLD,
+    builtins,
     expr::{ExprKind, NormExpr, RawExpr},
     pattern::{
         environment::Environment,
@@ -99,7 +99,7 @@ impl NormExpr {
     pub fn release_all_holds(self) -> Self {
         self.into_raw()
             .map_bottom_up(&|expr| {
-                if expr.is_application_of(CANNONICAL_HEAD_HOLD, 1) {
+                if expr.is_application_of(builtins::Hold::HEAD, 1) {
                     let ExprKind::Node { mut args, .. } = expr.into_kind() else {
                         unreachable!()
                     };
