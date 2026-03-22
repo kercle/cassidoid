@@ -1,5 +1,10 @@
 use super::*;
 
+// --- Calculus ---------------------------------------------------------------
+
+pub use calculus::derivative::Derivative;
+pub use calculus::integrate::Integrate;
+
 // --- Elementary Arithmetic --------------------------------------------------
 
 pub use elementary::arithmetic::add::Add;

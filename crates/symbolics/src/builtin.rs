@@ -43,11 +43,6 @@ pub fn is_application_of_tan<S>(expr: Expr<S>) -> bool {
     expr.is_application_of(CANNONICAL_HEAD_TAN, 1)
 }
 
-// Calculus
-
-pub const CANNONICAL_HEAD_DERIVATIVE: &str = "Diff";
-pub const CANNONICAL_HEAD_INTEGRATE: &str = "Integrate";
-
 // Other
 
 pub const CANNONICAL_SYM_ABSENT: &str = "Absent";

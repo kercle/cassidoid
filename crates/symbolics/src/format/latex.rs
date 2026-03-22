@@ -4,9 +4,9 @@ use crate::expr::{ExprKind, RawExpr};
 use crate::{
     atom::Atom,
     builtin::{
-        CANNONICAL_HEAD_COS, CANNONICAL_HEAD_DERIVATIVE, CANNONICAL_HEAD_EXP,
-        CANNONICAL_HEAD_INTEGRATE, CANNONICAL_HEAD_LOG, CANNONICAL_HEAD_SIN, CANNONICAL_HEAD_SQRT,
-        CANNONICAL_HEAD_TAN, CANNONICAL_SYM_INDETERMINATE, CANNONICAL_SYM_PLUS_INFINITY,
+        CANNONICAL_HEAD_COS, CANNONICAL_HEAD_EXP, CANNONICAL_HEAD_LOG, CANNONICAL_HEAD_SIN,
+        CANNONICAL_HEAD_SQRT, CANNONICAL_HEAD_TAN, CANNONICAL_SYM_INDETERMINATE,
+        CANNONICAL_SYM_PLUS_INFINITY,
     },
 };
 use numbers::Number;
@@ -138,7 +138,10 @@ fn render_derivative(args: &[RawExpr]) -> String {
     if x.is_symbol() {
         format!("\\frac{{ \\partial }}{{ \\partial {x_latex} }}\\left({f_latex}\\right)")
     } else {
-        format!("\\text{{{CANNONICAL_HEAD_DERIVATIVE}}}\\left[{f_latex}, {x_latex}\\right]")
+        format!(
+            "\\text{{{}}}\\left[{f_latex}, {x_latex}\\right]",
+            builtins::Derivative::head()
+        )
     }
 }
 
@@ -259,11 +262,11 @@ fn expr_to_latex_inner(expr: &RawExpr) -> String {
             render_one_arg("\\tan", &args[0])
         }
 
-        ExprKind::Node { args, .. } if expr.is_application_of(CANNONICAL_HEAD_DERIVATIVE, 2) => {
+        ExprKind::Node { args, .. } if expr.is_application_of(builtins::Derivative::head(), 2) => {
             render_derivative(args)
         }
 
-        ExprKind::Node { args, .. } if expr.is_application_of(CANNONICAL_HEAD_INTEGRATE, 2) => {
+        ExprKind::Node { args, .. } if expr.is_application_of(builtins::Integrate::head(), 2) => {
             render_integrate(args)
         }
 
