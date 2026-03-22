@@ -1,5 +1,5 @@
 import { h as p, aR as A, aS as S, N as T, aT as E, aU as M, aV as x, aW as L, aX as N } from "./BfX1JZpI.js";
-let te, Q, ee, y;
+let te, Z, ee, y;
 let __tla = (async () => {
   const U = /* @__PURE__ */ Symbol("is custom element"), W = /* @__PURE__ */ Symbol("is html"), I = S ? "link" : "LINK";
   ee = function(e) {
@@ -41,7 +41,7 @@ let __tla = (async () => {
     }
     return n;
   }
-  const C = "" + new URL("../assets/kernel_bg.fuCv_F-l.wasm", import.meta.url).href, B = async (e = {}, t) => {
+  const R = "" + new URL("../assets/kernel_bg.DuZjbR30.wasm", import.meta.url).href, B = async (e = {}, t) => {
     let n;
     if (t.startsWith("data:")) {
       const o = t.replace(/^data:.*?base64,/, "");
@@ -63,11 +63,11 @@ let __tla = (async () => {
     }
     return n.instance.exports;
   };
-  function R(e) {
+  function C(e) {
     let t, n;
     try {
-      const o = j(e, _.__wbindgen_malloc, _.__wbindgen_realloc), s = w, a = _.eval_input(o, s);
-      return t = a[0], n = a[1], F(a[0], a[1]);
+      const o = F(e, _.__wbindgen_malloc, _.__wbindgen_realloc), s = w, a = _.eval_input(o, s);
+      return t = a[0], n = a[1], j(a[0], a[1]);
     } finally {
       _.__wbindgen_free(t, n, 1);
     }
@@ -76,14 +76,14 @@ let __tla = (async () => {
     const e = _.__wbindgen_externrefs, t = e.grow(4);
     e.set(0, void 0), e.set(t + 0, void 0), e.set(t + 1, null), e.set(t + 2, true), e.set(t + 3, false);
   }
-  function F(e, t) {
+  function j(e, t) {
     return e = e >>> 0, H(e, t);
   }
   let l = null;
   function u() {
     return (l === null || l.byteLength === 0) && (l = new Uint8Array(_.memory.buffer)), l;
   }
-  function j(e, t, n) {
+  function F(e, t, n) {
     if (n === void 0) {
       const i = d.encode(e), c = t(i.length, 1) >>> 0;
       return u().subarray(c, c + i.length).set(i), w = i.length, c;
@@ -133,7 +133,7 @@ let __tla = (async () => {
     "./kernel_bg.js": {
       __wbindgen_init_externref_table: D
     }
-  }, C), J = f.memory, K = f.eval_input, P = f.__wbindgen_externrefs, V = f.__wbindgen_malloc, Y = f.__wbindgen_realloc, $ = f.__wbindgen_free, v = f.__wbindgen_start, q = Object.freeze(Object.defineProperty({
+  }, R), J = f.memory, K = f.eval_input, P = f.__wbindgen_externrefs, V = f.__wbindgen_malloc, Y = f.__wbindgen_realloc, $ = f.__wbindgen_free, v = f.__wbindgen_start, q = Object.freeze(Object.defineProperty({
     __proto__: null,
     __wbindgen_externrefs: P,
     __wbindgen_free: $,
@@ -164,7 +164,7 @@ let __tla = (async () => {
         connected: true
       })), {
         send: async (r) => {
-          const i = await R(r), c = typeof i == "string" ? JSON.parse(i) : i;
+          const i = await C(r), c = typeof i == "string" ? JSON.parse(i) : i;
           n((m) => (o(m.data, c), {
             ...m,
             connected: true
@@ -181,18 +181,18 @@ let __tla = (async () => {
       send: (r) => a.send(r)
     };
   }
-  Q = z();
+  Z = z();
   te = function(e) {
     const t = {
       eval: e
     };
-    Q.send(JSON.stringify(t));
+    Z.send(JSON.stringify(t));
   };
 })();
 export {
   __tla,
   te as a,
-  Q as b,
+  Z as b,
   ee as r,
   y as s
 };
