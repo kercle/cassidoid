@@ -1,7 +1,7 @@
-import { h as p, aR as A, aS as S, N as T, aT as E, aU as M, aV as x, aW as L, aX as N } from "./BfX1JZpI.js";
-let te, Z, ee, y;
+import { h as p, aR as A, aS as S, N as T, aT as E, aU as M, aV as x, aW as L, aX as I } from "./BfX1JZpI.js";
+let te, Q, ee, y;
 let __tla = (async () => {
-  const U = /* @__PURE__ */ Symbol("is custom element"), W = /* @__PURE__ */ Symbol("is html"), I = S ? "link" : "LINK";
+  const N = /* @__PURE__ */ Symbol("is custom element"), U = /* @__PURE__ */ Symbol("is html"), W = S ? "link" : "LINK";
   ee = function(e) {
     if (p) {
       var t = false, n = () => {
@@ -21,12 +21,12 @@ let __tla = (async () => {
   };
   y = function(e, t, n, o) {
     var s = O(e);
-    p && (s[t] = e.getAttribute(t), t === "src" || t === "srcset" || t === "href" && e.nodeName === I) || s[t] !== (s[t] = n) && (t === "loading" && (e[M] = n), n == null ? e.removeAttribute(t) : typeof n != "string" && k(e).includes(t) ? e[t] = n : e.setAttribute(t, n));
+    p && (s[t] = e.getAttribute(t), t === "src" || t === "srcset" || t === "href" && e.nodeName === W) || s[t] !== (s[t] = n) && (t === "loading" && (e[M] = n), n == null ? e.removeAttribute(t) : typeof n != "string" && k(e).includes(t) ? e[t] = n : e.setAttribute(t, n));
   };
   function O(e) {
     return e.__attributes ?? (e.__attributes = {
-      [U]: e.nodeName.includes("-"),
-      [W]: e.namespaceURI === A
+      [N]: e.nodeName.includes("-"),
+      [U]: e.namespaceURI === A
     });
   }
   var h = /* @__PURE__ */ new Map();
@@ -41,7 +41,7 @@ let __tla = (async () => {
     }
     return n;
   }
-  const R = "" + new URL("../assets/kernel_bg.DuZjbR30.wasm", import.meta.url).href, B = async (e = {}, t) => {
+  const B = "" + new URL("../assets/kernel_bg.BId5oK5s.wasm", import.meta.url).href, C = async (e = {}, t) => {
     let n;
     if (t.startsWith("data:")) {
       const o = t.replace(/^data:.*?base64,/, "");
@@ -63,7 +63,7 @@ let __tla = (async () => {
     }
     return n.instance.exports;
   };
-  function C(e) {
+  function R(e) {
     let t, n;
     try {
       const o = F(e, _.__wbindgen_malloc, _.__wbindgen_realloc), s = w, a = _.eval_input(o, s);
@@ -125,30 +125,30 @@ let __tla = (async () => {
     };
   });
   let w = 0, _;
-  function X(e) {
+  function K(e) {
     _ = e;
   }
   URL = globalThis.URL;
-  const f = await B({
+  const f = await C({
     "./kernel_bg.js": {
       __wbindgen_init_externref_table: D
     }
-  }, R), J = f.memory, K = f.eval_input, P = f.__wbindgen_externrefs, V = f.__wbindgen_malloc, Y = f.__wbindgen_realloc, $ = f.__wbindgen_free, v = f.__wbindgen_start, q = Object.freeze(Object.defineProperty({
+  }, B), X = f.memory, J = f.eval_input, P = f.__wbindgen_externrefs, V = f.__wbindgen_malloc, Y = f.__wbindgen_realloc, $ = f.__wbindgen_free, v = f.__wbindgen_start, q = Object.freeze(Object.defineProperty({
     __proto__: null,
     __wbindgen_externrefs: P,
     __wbindgen_free: $,
     __wbindgen_malloc: V,
     __wbindgen_realloc: Y,
     __wbindgen_start: v,
-    eval_input: K,
-    memory: J
+    eval_input: J,
+    memory: X
   }, Symbol.toStringTag, {
     value: "Module"
   }));
-  X(q);
+  K(q);
   v();
   function z() {
-    const { subscribe: e, set: t, update: n } = N({
+    const { subscribe: e, set: t, update: n } = I({
       data: {
         history: []
       },
@@ -164,7 +164,7 @@ let __tla = (async () => {
         connected: true
       })), {
         send: async (r) => {
-          const i = await C(r), c = typeof i == "string" ? JSON.parse(i) : i;
+          const i = await R(r), c = typeof i == "string" ? JSON.parse(i) : i;
           n((m) => (o(m.data, c), {
             ...m,
             connected: true
@@ -181,18 +181,18 @@ let __tla = (async () => {
       send: (r) => a.send(r)
     };
   }
-  Z = z();
+  Q = z();
   te = function(e) {
     const t = {
       eval: e
     };
-    Z.send(JSON.stringify(t));
+    Q.send(JSON.stringify(t));
   };
 })();
 export {
   __tla,
   te as a,
-  Z as b,
+  Q as b,
   ee as r,
   y as s
 };
