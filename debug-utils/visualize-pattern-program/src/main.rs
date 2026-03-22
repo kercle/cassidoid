@@ -89,6 +89,8 @@ impl<'p> InstructionGraph<'p> {
 
                 node_opts.insert("shape", "box".to_string());
                 node_opts.insert("label", label);
+                node_opts.insert("style", "filled".to_string());
+                node_opts.insert("fillcolor", "lightgreen".to_string());
 
                 if let Some(pat) = head_pattern {
                     self.walk_program(*pat, format!("i{cur_instr}:h"));
@@ -100,6 +102,8 @@ impl<'p> InstructionGraph<'p> {
 
                 node_opts.insert("shape", "box".to_string());
                 node_opts.insert("label", label);
+                node_opts.insert("style", "filled".to_string());
+                node_opts.insert("fillcolor", "lightgreen".to_string());
 
                 if let Some(pat) = head_pattern {
                     self.walk_program(*pat, format!("i{cur_instr}:h"));
@@ -116,7 +120,7 @@ impl<'p> InstructionGraph<'p> {
                 node_opts.insert("shape", "component".to_string());
                 node_opts.insert("label", label);
                 node_opts.insert("style", "filled".to_string());
-                node_opts.insert("fillcolor", "lightred".to_string());
+                node_opts.insert("fillcolor", "pink".to_string());
 
                 self.walk_program(*inner, format!("i{cur_instr}:h"));
             }
