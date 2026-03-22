@@ -263,6 +263,15 @@ fn expr_to_latex_inner(expr: &RawExpr) -> String {
             render_integrate(args)
         }
 
+        ExprKind::Node { head,  args ,..} if head.matches_symbol(builtins::Tuple::head()) => {
+            let args_str = args
+                .iter()
+                .map(|arg| expr_to_latex_with_pos(arg, Position::Root))
+                .collect::<Vec<_>>()
+                .join(", ");
+            format!("\\left({args_str}\\right)")
+        }
+
         ExprKind::Node { head, args } => {
             let Some(name) = head.get_symbol() else {
                 unimplemented!()

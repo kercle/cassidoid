@@ -200,6 +200,15 @@ fn expr_to_latex_inner(expr: &RawExpr) -> String {
             format!("{}!", expr_to_input_with_pos(&args[0], Position::FactArg))
         }
 
+        ExprKind::Node { head,  args ,..} if head.matches_symbol(builtins::Tuple::head()) => {
+            let args_str = args
+                .iter()
+                .map(|arg| expr_to_input_with_pos(arg, Position::Root))
+                .collect::<Vec<_>>()
+                .join(", ");
+            format!("({args_str})")
+        }
+
         ExprKind::Node { head, args } => {
             let Some(name) = head.get_symbol() else {
                 unimplemented!()
