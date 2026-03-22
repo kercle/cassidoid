@@ -148,6 +148,11 @@ fn ast_to_token_stream(ast: ParserAst) -> proc_macro2::TokenStream {
             let head_constraint_ts = optional_string_to_token_stream(head_constraint);
             quote! { #ast_path::new_blank_null_seq(#bind_name_ts, #head_constraint_ts, #optional) }
         }
+        PatternTest { pattern, predicate } => {
+            let pattern_ts = ast_to_token_stream(*pattern);
+            let predicate_ts = ast_to_token_stream(*predicate);
+            quote! { #ast_path::new_pattern_test(#pattern_ts, #predicate_ts) }
+        }
         Compound { .. } => todo!(),
     }
 }

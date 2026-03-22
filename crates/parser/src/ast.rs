@@ -78,6 +78,10 @@ pub enum ParserAst {
         head_constraint: Option<String>,
         optional: bool,
     },
+    PatternTest {
+        pattern: Box<ParserAst>,
+        predicate: Box<ParserAst>,
+    },
 }
 
 impl ParserAst {
@@ -140,6 +144,13 @@ impl ParserAst {
             bind_name,
             head_constraint,
             optional,
+        }
+    }
+
+    pub fn new_pattern_test(pattern: ParserAst, predicate: ParserAst) -> Self {
+        ParserAst::PatternTest {
+            pattern: Box::new(pattern),
+            predicate: Box::new(predicate),
         }
     }
 

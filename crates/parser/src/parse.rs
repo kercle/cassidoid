@@ -13,7 +13,7 @@ fn parse_identifier_or_call(stream: &mut TokenStream) -> Result<ParserAst, Parse
     //    | <identifier> "[" "]"
     //    | <identifier> "[" <block> { "," <block> }* ")"
 
-    let Some(symbol_or_pattern) = stream.next_if_symbol_or_pattern().cloned() else {
+    let Some(symbol_or_pattern) = stream.next_if_identifier_or_pattern().cloned() else {
         return Err(ParseError {
             message: "Expected a symbol or a pattern".to_string(),
             at_token: stream.peek().cloned(),
@@ -37,10 +37,6 @@ fn parse_identifier_or_call(stream: &mut TokenStream) -> Result<ParserAst, Parse
     };
 
     if stream.next_if_matches_token(&Token::LeftBracket).is_none() {
-        // return ParserAst::new_symbol_or_pattern(symbol_or_pattern).map_err(|err| ParseError {
-        //     message: err.message,
-        //     at_token: stream.peek().cloned(),
-        // });
         return Ok(ast_node);
     }
 
@@ -102,12 +98,28 @@ fn parse_atom(stream: &mut TokenStream) -> Result<ParserAst, ParseError> {
     }
 }
 
+fn parse_pattern_test(stream: &mut TokenStream) -> Result<ParserAst, ParseError> {
+    // <pattern_test> ::= <atom> [ ("?") <atom> ]
+
+    let pattern = parse_atom(stream)?;
+
+    if stream.next_if_matches_token(&Token::QuestionMark).is_some() {
+        let predicate = parse_atom(stream)?;
+        Ok(ParserAst::new_pattern_test(pattern, predicate))
+    } else {
+        Ok(pattern)
+    }
+}
+
 fn parse_factorial(stream: &mut TokenStream) -> Result<ParserAst, ParseError> {
-    // <power> ::= <atom> !
+    // <power> ::= <pattern_test> [ "!" ]
 
-    let result = parse_atom(stream)?;
+    let result = parse_pattern_test(stream)?;
 
-    if stream.next_if_matches_token(&Token::Exclamation).is_some() {
+    if stream
+        .next_if_matches_token(&Token::ExclamationMark)
+        .is_some()
+    {
         Ok(ParserAst::new_factorial(result))
     } else {
         Ok(result)

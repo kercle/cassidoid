@@ -2,7 +2,9 @@ use crate::{
     builtin::*,
     builtins::{self, elementary::arithmetic::factorial::FACTORIAL_HEAD},
     expr::{Expr, ExprKind, RawExpr},
-    pattern::{BLANK_NULL_SEQ_HEAD, BLANK_ONE_HEAD, BLANK_SEQ_HEAD, PATTERN_HEAD},
+    pattern::{
+        BLANK_NULL_SEQ_HEAD, BLANK_ONE_HEAD, BLANK_SEQ_HEAD, PATTERN_HEAD, PATTERN_TEST_HEAD,
+    },
 };
 
 use numbers::Number;
@@ -118,6 +120,11 @@ impl From<ParserAst> for RawExpr {
                     inner
                 }
             }
+            PatternTest { pattern, predicate } => RawExpr::new_binary_node(
+                PATTERN_TEST_HEAD,
+                Self::from(*pattern),
+                Self::from(*predicate),
+            ),
             Compound { nodes } => {
                 let nodes = nodes.into_iter().map(Self::from).collect();
                 Self::new_node(builtins::scoping::compound::COMPOUND_HEAD, nodes)

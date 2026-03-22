@@ -45,8 +45,8 @@ pub enum Token {
     Pipe,         // '|'
     Caret,        // '^'
     Tilde,        // '~'
-    Exclamation,  // '!'
-    Question,     // '?'
+    ExclamationMark,  // '!'
+    QuestionMark, // '?'
     LessThan,     // '<'
     GreaterThan,  // '>'
 
@@ -349,7 +349,7 @@ impl TokenStream {
                 iter.next(); // Consume '!'
                 tokens.push((Token::DoubleExcl, pos));
             } else {
-                tokens.push((Token::Exclamation, pos));
+                tokens.push((Token::ExclamationMark, pos));
             }
         } else if c == '<' {
             iter.next(); // Consume '<'
@@ -400,7 +400,7 @@ impl TokenStream {
                 '|' => Token::Pipe,
                 '^' => Token::Caret,
                 '~' => Token::Tilde,
-                '?' => Token::Question,
+                '?' => Token::QuestionMark,
                 _ => return false, // Not an operator character
             };
 
@@ -515,7 +515,17 @@ impl TokenStream {
         self.next_if_matches(|t| t == token)
     }
 
-    pub fn next_if_symbol_or_pattern(&mut self) -> Option<&Token> {
+    pub fn next_if_identifier(&mut self) -> Option<&str> {
+        let token = self.next_if_matches(|t| matches!(t, Token::Identifier(_)))?;
+
+        let Token::Identifier(value) = token else {
+            unreachable!();
+        };
+
+        Some(value)
+    }
+
+    pub fn next_if_identifier_or_pattern(&mut self) -> Option<&Token> {
         self.next_if_matches(|t| matches!(t, Token::Identifier(_) | Token::Pattern { .. }))
     }
 
