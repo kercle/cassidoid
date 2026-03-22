@@ -142,6 +142,11 @@ impl From<ParserAst> for RawExpr {
                 Self::from(*pattern),
                 Self::from(*predicate),
             ),
+            Condition { pattern, predicate } => RawExpr::new_binary_node(
+                builtins::Condition::head(),
+                Self::from(*pattern),
+                Self::from(*predicate),
+            ),
             Compound { nodes } => {
                 let nodes = nodes.into_iter().map(Self::from).collect();
                 Self::new_node(builtins::Compound::head(), nodes)

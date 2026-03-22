@@ -239,10 +239,25 @@ fn parse_cmp(stream: &mut TokenStream) -> Result<ParserAst, ParseError> {
     Ok(result)
 }
 
-fn parse_expression(stream: &mut TokenStream) -> Result<ParserAst, ParseError> {
-    // <expression> ::= <cmp>
+fn parse_condition(stream: &mut TokenStream) -> Result<ParserAst, ParseError> {
+    // <cond> ::= <cmp> [ "/;" <cmd> ]
 
-    parse_cmp(stream)
+    let mut result = parse_cmp(stream)?;
+
+    while stream
+        .next_if_matches(|token| matches!(token, Token::SlashSemicolon))
+        .is_some()
+    {
+        result = ParserAst::new_condition(result, parse_cmp(stream)?);
+    }
+
+    Ok(result)
+}
+
+fn parse_expression(stream: &mut TokenStream) -> Result<ParserAst, ParseError> {
+    // <expression> ::= <cond>
+
+    parse_condition(stream)
 }
 
 fn parse_block(stream: &mut TokenStream) -> Result<ParserAst, ParseError> {
@@ -306,6 +321,20 @@ pub fn parse(input: &str) -> Result<ParserAst, BoxedError> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_parse_addition_order() {
+        let input = "a + b + c";
+        let ast = parse(input).expect("Failed to parse expression");
+
+        assert_eq!(
+            ast,
+            ParserAst::new_add(
+                ParserAst::new_add(ParserAst::new_symbol("a"), ParserAst::new_symbol("b")),
+                ParserAst::new_symbol("c")
+            )
+        );
+    }
 
     #[test]
     fn test_parse_expression_long() {

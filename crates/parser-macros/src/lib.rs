@@ -153,6 +153,11 @@ fn ast_to_token_stream(ast: ParserAst) -> proc_macro2::TokenStream {
             let predicate_ts = ast_to_token_stream(*predicate);
             quote! { #ast_path::new_pattern_test(#pattern_ts, #predicate_ts) }
         }
+        Condition { pattern, predicate } => {
+            let pattern_ts = ast_to_token_stream(*pattern);
+            let predicate_ts = ast_to_token_stream(*predicate);
+            quote! { #ast_path::new_condition(#pattern_ts, #predicate_ts) }
+        }
         Compound { .. } => todo!(),
     }
 }

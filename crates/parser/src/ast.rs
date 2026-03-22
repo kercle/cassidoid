@@ -82,6 +82,10 @@ pub enum ParserAst {
         pattern: Box<ParserAst>,
         predicate: Box<ParserAst>,
     },
+    Condition {
+        pattern: Box<ParserAst>,
+        predicate: Box<ParserAst>,
+    }
 }
 
 impl ParserAst {
@@ -149,6 +153,13 @@ impl ParserAst {
 
     pub fn new_pattern_test(pattern: ParserAst, predicate: ParserAst) -> Self {
         ParserAst::PatternTest {
+            pattern: Box::new(pattern),
+            predicate: Box::new(predicate),
+        }
+    }
+
+    pub fn new_condition(pattern: ParserAst, predicate: ParserAst) -> Self {
+        ParserAst::Condition {
             pattern: Box::new(pattern),
             predicate: Box::new(predicate),
         }

@@ -15,6 +15,7 @@ use std::{fmt::Debug, str::FromStr};
 
 use crate::expr::{ExprKind, NormExpr, walk::ExprTopDownWalker};
 
+// TODO: Move these to built-ins
 pub const PATTERN_HEAD: &str = "Pattern";
 pub const PATTERN_TEST_HEAD: &str = "PatternTest";
 pub const BLANK_ONE_HEAD: &str = "Blank";

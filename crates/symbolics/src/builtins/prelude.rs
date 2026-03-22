@@ -36,6 +36,7 @@ pub use evaluation_control::hold_pattern::HoldPattern;
 // --- Patterns ---------------------------------------------------------------
 
 pub use patterns::optional::Optional;
+pub use patterns::condition::Condition;
 
 // --- Relational -------------------------------------------------------------
 
