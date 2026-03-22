@@ -7,13 +7,13 @@ use crate::{
 };
 
 #[derive(Default)]
-pub struct Sub;
+pub struct Neg;
 
-impl Sub {
-    pub const HEAD: &'static str = "Sub";
+impl Neg {
+    pub const HEAD: &'static str = "Neg";
 }
 
-impl BuiltIn for Sub {
+impl BuiltIn for Neg {
     #[inline(always)]
     fn head() -> &'static str {
         Self::HEAD
@@ -27,13 +27,13 @@ impl BuiltIn for Sub {
         BuiltInDoc {
             category: BuiltInCategory::ElementaryArithmetic,
             title: Self::head(),
-            summary: "Internal representation of the difference of two terms.",
+            summary: "Internal representation of the negation.",
             pattern_doc: vec![PatternDoc::new(
-                raw_expr!(Sub[a_, b_]),
-                "Syntactic sugar for Add[a, Mul[-1, b]].",
+                raw_expr!(Neg[t_]),
+                "This expression represents $-t$.",
             )],
             examples: vec![],
-            related: vec!["Add", "Mul", "Div"],
+            related: vec!["Sub", "Mul"],
         }
     }
 }

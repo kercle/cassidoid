@@ -1,3 +1,5 @@
+use crate::builtins;
+use crate::builtins::traits::BuiltIn;
 use crate::expr::{ExprKind, RawExpr};
 use crate::{
     atom::Atom,
@@ -7,7 +9,6 @@ use crate::{
         CANNONICAL_HEAD_TAN, CANNONICAL_SYM_INDETERMINATE, CANNONICAL_SYM_PLUS_INFINITY,
     },
 };
-use crate::{builtin::*, builtins};
 use numbers::Number;
 
 // Determines the placement of paranthesis, depending on
@@ -39,37 +40,39 @@ fn needs_parens(expr: &RawExpr, pos: Position) -> bool {
 
         Position::SubRhs => {
             // a-(b+c),  a-(b-c),  a-(-c)
-            expr.has_head_symbol(ADD_HEAD)
-                || expr.is_application_of(SUB_HEAD, 2)
-                || expr.is_application_of(NEG_HEAD, 1)
+            expr.has_head_symbol(builtins::Add::head())
+                || expr.is_application_of(builtins::Sub::head(), 2)
+                || expr.is_application_of(builtins::Neg::head(), 1)
         }
 
         Position::NegOperand => {
             // -(a+b),  -(a-b)
-            expr.has_head_symbol(ADD_HEAD) || expr.is_application_of(SUB_HEAD, 2)
+            expr.has_head_symbol(builtins::Add::head())
+                || expr.is_application_of(builtins::Sub::head(), 2)
         }
 
         Position::MulOperand => {
             // (a+b)*c
-            expr.has_head_symbol(ADD_HEAD) || expr.is_application_of(SUB_HEAD, 2)
+            expr.has_head_symbol(builtins::Add::head())
+                || expr.is_application_of(builtins::Sub::head(), 2)
         }
 
         Position::PowBase => {
             // (a+b)^n,  (a*b)^n,  (a/b)^n,  (-a)^n
-            expr.has_head_symbol(ADD_HEAD)
-                || expr.is_application_of(SUB_HEAD, 2)
-                || expr.has_head_symbol(MUL_HEAD)
-                || expr.is_application_of(DIV_HEAD, 2)
-                || expr.is_application_of(NEG_HEAD, 1)
+            expr.has_head_symbol(builtins::Add::head())
+                || expr.is_application_of(builtins::Sub::head(), 2)
+                || expr.has_head_symbol(builtins::Mul::head())
+                || expr.is_application_of(builtins::Div::head(), 2)
+                || expr.is_application_of(builtins::Neg::head(), 1)
         }
 
         Position::FactArg => {
             // (a+b)!,  (a*b)!,  (a/b)!,  (-a)!
-            expr.has_head_symbol(ADD_HEAD)
-                || expr.is_application_of(SUB_HEAD, 2)
-                || expr.has_head_symbol(MUL_HEAD)
-                || expr.is_application_of(DIV_HEAD, 2)
-                || expr.is_application_of(NEG_HEAD, 1)
+            expr.has_head_symbol(builtins::Add::head())
+                || expr.is_application_of(builtins::Sub::head(), 2)
+                || expr.has_head_symbol(builtins::Mul::head())
+                || expr.is_application_of(builtins::Div::head(), 2)
+                || expr.is_application_of(builtins::Neg::head(), 1)
         }
     }
 }
@@ -192,38 +195,38 @@ fn expr_to_latex_inner(expr: &RawExpr) -> String {
             ..
         } => greek_letter(name),
 
-        ExprKind::Node { args, .. } if expr.is_application_of(NEG_HEAD, 1) => {
+        ExprKind::Node { args, .. } if expr.is_application_of(builtins::Neg::head(), 1) => {
             format!(
                 "-{}",
                 expr_to_latex_with_pos(&args[0], Position::NegOperand)
             )
         }
 
-        ExprKind::Node { args, .. } if expr.has_head_symbol(ADD_HEAD) => args
+        ExprKind::Node { args, .. } if expr.has_head_symbol(builtins::Add::head()) => args
             .iter()
             .map(|arg| expr_to_latex_with_pos(arg, Position::AddOperand))
             .collect::<Vec<_>>()
             .join(" + "),
 
-        ExprKind::Node { args, .. } if expr.is_application_of(SUB_HEAD, 2) => {
+        ExprKind::Node { args, .. } if expr.is_application_of(builtins::Sub::head(), 2) => {
             let lhs = expr_to_latex_with_pos(&args[0], Position::SubLhs);
             let rhs = expr_to_latex_with_pos(&args[1], Position::SubRhs);
             format!("{lhs} - {rhs}")
         }
 
-        ExprKind::Node { args, .. } if expr.has_head_symbol(MUL_HEAD) => args
+        ExprKind::Node { args, .. } if expr.has_head_symbol(builtins::Mul::head()) => args
             .iter()
             .map(|arg| expr_to_latex_with_pos(arg, Position::MulOperand))
             .collect::<Vec<_>>()
             .join(" \\cdot "),
 
-        ExprKind::Node { args, .. } if expr.is_application_of(DIV_HEAD, 2) => format!(
+        ExprKind::Node { args, .. } if expr.is_application_of(builtins::Div::head(), 2) => format!(
             "\\frac{{{}}}{{{}}}",
             expr_to_latex_with_pos(&args[0], Position::DivChild),
             expr_to_latex_with_pos(&args[1], Position::DivChild),
         ),
 
-        ExprKind::Node { args, .. } if expr.is_application_of(POW_HEAD, 2) => {
+        ExprKind::Node { args, .. } if expr.is_application_of(builtins::Pow::head(), 2) => {
             let base = expr_to_latex_with_pos(&args[0], Position::PowBase);
             let exp = expr_to_latex_with_pos(&args[1], Position::PowExp);
             format!("{{{base}}}^{{{exp}}}")

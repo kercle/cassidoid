@@ -1,6 +1,7 @@
 use crate::{
     atom::Atom,
     builtin::*,
+    builtins::{self, traits::BuiltIn},
     expr::{Expr, ExprKind, NormExpr, RawExpr, normalize::split_coefficient},
 };
 use numbers::Number;
@@ -33,7 +34,7 @@ impl FactorList {
             }
 
             self.factors.push(num.into());
-        } else if expr.is_application_of(NEG_HEAD, 1) {
+        } else if expr.is_application_of(builtins::Neg::head(), 1) {
             let ExprKind::Node { mut args, .. } = expr.kind else {
                 unreachable!()
             };
@@ -63,7 +64,7 @@ impl NormExpr {
                     Atom::number(numerator).into()
                 } else {
                     RawExpr::new_binary_node(
-                        DIV_HEAD,
+                        builtins::Div::head(),
                         Atom::number(numerator).into(),
                         Atom::number(denominator).into(),
                     )
@@ -77,13 +78,15 @@ impl NormExpr {
             ExprKind::Atom {
                 entry: Atom::Number(num),
             } => Self::resugar_number(num),
-            ExprKind::Node { head, args } if head.matches_symbol(ADD_HEAD) => {
+            ExprKind::Node { head, args } if head.matches_symbol(builtins::Add::head()) => {
                 Self::resugar_add(args)
             }
-            ExprKind::Node { head, args } if head.matches_symbol(MUL_HEAD) => {
+            ExprKind::Node { head, args } if head.matches_symbol(builtins::Mul::head()) => {
                 Self::resugar_mul(args)
             }
-            ExprKind::Node { head, args } if head.matches_symbol(POW_HEAD) && args.len() == 2 => {
+            ExprKind::Node { head, args }
+                if head.matches_symbol(builtins::Pow::head()) && args.len() == 2 =>
+            {
                 let [lhs, rhs]: [NormExpr; 2] = args.try_into().unwrap();
                 Self::resugar_pow(lhs, rhs)
             }
@@ -102,7 +105,10 @@ impl NormExpr {
             // This is for the case when the addition is wrapped in
             // Hold or HoldPattern.
             // Otherwise, normalization would collapse those.
-            return RawExpr::new_node(ADD_HEAD, args.into_iter().map(|a| a.into_raw()).collect());
+            return RawExpr::new_node(
+                builtins::Add::head(),
+                args.into_iter().map(|a| a.into_raw()).collect(),
+            );
         }
 
         let mut positives = Vec::new();
@@ -119,14 +125,14 @@ impl NormExpr {
                     negatives.push(term);
                 } else if coeff.is_positive() {
                     positives.push(RawExpr::new_binary_node(
-                        MUL_HEAD,
+                        builtins::Mul::head(),
                         Self::resugar_number(coeff),
                         term,
                     ));
                 } else {
                     coeff.flip_sign();
                     negatives.push(RawExpr::new_binary_node(
-                        MUL_HEAD,
+                        builtins::Mul::head(),
                         Self::resugar_number(coeff),
                         term,
                     ));
@@ -140,12 +146,12 @@ impl NormExpr {
         }
 
         if positives.is_empty() {
-            RawExpr::new_unary_node(NEG_HEAD, RawExpr::collapse_add(negatives))
+            RawExpr::new_unary_node(builtins::Neg::head(), RawExpr::collapse_add(negatives))
         } else if negatives.is_empty() {
             RawExpr::collapse_add(positives)
         } else {
             RawExpr::new_binary_node(
-                SUB_HEAD,
+                builtins::Sub::head(),
                 RawExpr::collapse_add(positives),
                 RawExpr::collapse_add(negatives),
             )
@@ -157,7 +163,10 @@ impl NormExpr {
             // This is for the case when the addition is wrapped in
             // Hold or HoldPattern.
             // Otherwise, normalization would collapse those.
-            return RawExpr::new_node(MUL_HEAD, args.into_iter().map(|a| a.into_raw()).collect());
+            return RawExpr::new_node(
+                builtins::Mul::head(),
+                args.into_iter().map(|a| a.into_raw()).collect(),
+            );
         }
 
         let mut numerator = FactorList::new();
@@ -179,7 +188,7 @@ impl NormExpr {
                 None => {}
             }
 
-            let [base, exp]: [NormExpr; 2] = if arg.is_application_of(POW_HEAD, 2) {
+            let [base, exp]: [NormExpr; 2] = if arg.is_application_of(builtins::Pow::head(), 2) {
                 // If it's a power, we take a closer look at arguments.
 
                 let ExprKind::Node { args, .. } = arg.kind else {
@@ -207,14 +216,14 @@ impl NormExpr {
                     Self::resugar_inner(exp_rest)
                 } else {
                     RawExpr::new_node(
-                        MUL_HEAD,
+                        builtins::Mul::head(),
                         vec![
                             Self::resugar_number(coeff_abs),
                             Self::resugar_inner(exp_rest),
                         ],
                     )
                 };
-                RawExpr::new_binary_node(POW_HEAD, Self::resugar_inner(base), rhs)
+                RawExpr::new_binary_node(builtins::Pow::head(), Self::resugar_inner(base), rhs)
             } else {
                 Self::resugar_pow_numeric_exp(base, &coeff_abs)
             };
@@ -229,19 +238,19 @@ impl NormExpr {
         let ret_unsigned = match (numerator.factors.is_empty(), denominator.factors.is_empty()) {
             (_, true) => RawExpr::collapse_mul(numerator.factors),
             (true, _) => RawExpr::new_binary_node(
-                DIV_HEAD,
+                builtins::Div::head(),
                 RawExpr::new_number(Number::one()),
                 RawExpr::collapse_mul(denominator.factors),
             ),
             (false, false) => RawExpr::new_binary_node(
-                DIV_HEAD,
+                builtins::Div::head(),
                 RawExpr::collapse_mul(numerator.factors),
                 RawExpr::collapse_mul(denominator.factors),
             ),
         };
 
         if numerator.is_negative ^ denominator.is_negative {
-            RawExpr::new_unary_node(NEG_HEAD, ret_unsigned)
+            RawExpr::new_unary_node(builtins::Neg::head(), ret_unsigned)
         } else {
             ret_unsigned
         }
@@ -250,7 +259,7 @@ impl NormExpr {
     fn resugar_pow(lhs: NormExpr, rhs: NormExpr) -> RawExpr {
         let Some(rhs_num) = rhs.get_number() else {
             return RawExpr::new_binary_node(
-                POW_HEAD,
+                builtins::Pow::head(),
                 Self::resugar_inner(lhs),
                 Self::resugar_inner(rhs),
             );
@@ -270,14 +279,14 @@ impl NormExpr {
             RawExpr::new_unary_node(CANNONICAL_HEAD_SQRT, Self::resugar_inner(lhs))
         } else {
             RawExpr::new_binary_node(
-                POW_HEAD,
+                builtins::Pow::head(),
                 Self::resugar_inner(lhs),
                 Self::resugar_number(rhs_num),
             )
         };
 
         if is_neg_exp {
-            RawExpr::new_binary_node(DIV_HEAD, Expr::from_i64(1), res)
+            RawExpr::new_binary_node(builtins::Div::head(), Expr::from_i64(1), res)
         } else {
             res
         }

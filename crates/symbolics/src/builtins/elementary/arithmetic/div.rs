@@ -9,10 +9,14 @@ use crate::{
 #[derive(Default)]
 pub struct Div;
 
+impl Div {
+    pub const HEAD: &'static str = "Div";
+}
+
 impl BuiltIn for Div {
     #[inline(always)]
     fn head() -> &'static str {
-        "Div"
+        Self::HEAD
     }
 
     fn head_dyn(&self) -> &'static str {

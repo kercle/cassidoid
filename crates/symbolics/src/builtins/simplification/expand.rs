@@ -2,9 +2,8 @@ use numbers::{Number, alg::binomial::BinomialGenerator, integer::BigInteger};
 
 use crate::{
     atom::Atom,
-    builtin::{ADD_HEAD, MUL_HEAD, POW_HEAD},
     builtins::{
-        BuiltInCategory,
+        self, BuiltInCategory,
         traits::{BuiltIn, BuiltInDoc, PatternDoc},
     },
     expr::{ExprKind, NormExpr, RawExpr, constructors::EXPR_PLACEHOLDER},
@@ -76,7 +75,7 @@ pub(super) fn build_rewriter(_binomial_gen: Shared<BinomialGenerator>) -> Rewrit
                 // polynomials would not be feasable anyway.
 
                 return RawExpr::new_binary_node(
-                    POW_HEAD,
+                    builtins::Pow::head(),
                     sum.clone().into_raw(),
                     m.clone().into_raw(),
                 );
@@ -101,7 +100,7 @@ pub(super) fn build_rewriter(_binomial_gen: Shared<BinomialGenerator>) -> Rewrit
                 *arg = new_expr;
             }
 
-            RawExpr::new_node(ADD_HEAD, args)
+            RawExpr::new_node(builtins::Add::head(), args)
         },
     );
 
@@ -208,16 +207,16 @@ fn expand_multinomial(sum: &NormExpr, overall_factors: Option<&[&NormExpr]>, n: 
 
         for (factor, &exponent) in args.iter().zip(comb) {
             factors.push(RawExpr::new_binary_node(
-                POW_HEAD,
+                builtins::Pow::head(),
                 factor.clone().into_raw(),
                 RawExpr::new_number_integer(exponent as i64),
             ));
         }
 
-        new_args.push(RawExpr::new_node(MUL_HEAD, factors));
+        new_args.push(RawExpr::new_node(builtins::Mul::head(), factors));
     }
 
-    RawExpr::new_node(ADD_HEAD, new_args)
+    RawExpr::new_node(builtins::Add::head(), new_args)
 }
 
 #[cfg(test)]

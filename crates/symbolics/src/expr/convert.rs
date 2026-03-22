@@ -1,5 +1,4 @@
 use crate::{
-    builtin::*,
     builtins::{self, traits::BuiltIn},
     expr::{Expr, ExprKind, RawExpr},
     pattern::{
@@ -56,24 +55,40 @@ impl From<ParserAst> for RawExpr {
             LesserThan { lhs, rhs } => {
                 Self::new_binary_node(builtins::Less::head(), Self::from(*lhs), Self::from(*rhs))
             }
-            LesserEq { lhs, rhs } => {
-                Self::new_binary_node(builtins::LessEqual::head(), Self::from(*lhs), Self::from(*rhs))
-            }
+            LesserEq { lhs, rhs } => Self::new_binary_node(
+                builtins::LessEqual::head(),
+                Self::from(*lhs),
+                Self::from(*rhs),
+            ),
             Equals { lhs, rhs } => {
                 Self::new_binary_node(builtins::Equal::head(), Self::from(*lhs), Self::from(*rhs))
             }
-            GreaterEq { lhs, rhs } => {
-                Self::new_binary_node(builtins::GreaterEqual::head(), Self::from(*lhs), Self::from(*rhs))
+            GreaterEq { lhs, rhs } => Self::new_binary_node(
+                builtins::GreaterEqual::head(),
+                Self::from(*lhs),
+                Self::from(*rhs),
+            ),
+            GreaterThan { lhs, rhs } => Self::new_binary_node(
+                builtins::Greater::head(),
+                Self::from(*lhs),
+                Self::from(*rhs),
+            ),
+            Add { lhs, rhs } => {
+                Self::new_binary_node(builtins::Add::head(), Self::from(*lhs), Self::from(*rhs))
             }
-            GreaterThan { lhs, rhs } => {
-                Self::new_binary_node(builtins::Greater::head(), Self::from(*lhs), Self::from(*rhs))
+            Sub { lhs, rhs } => {
+                Self::new_binary_node(builtins::Sub::head(), Self::from(*lhs), Self::from(*rhs))
             }
-            Add { lhs, rhs } => Self::new_binary_node(ADD_HEAD, Self::from(*lhs), Self::from(*rhs)),
-            Sub { lhs, rhs } => Self::new_binary_node(SUB_HEAD, Self::from(*lhs), Self::from(*rhs)),
-            Negation { arg } => Self::new_unary_node(NEG_HEAD, Self::from(*arg)),
-            Mul { lhs, rhs } => Self::new_binary_node(MUL_HEAD, Self::from(*lhs), Self::from(*rhs)),
-            Div { lhs, rhs } => Self::new_binary_node(DIV_HEAD, Self::from(*lhs), Self::from(*rhs)),
-            Pow { lhs, rhs } => Self::new_binary_node(POW_HEAD, Self::from(*lhs), Self::from(*rhs)),
+            Negation { arg } => Self::new_unary_node(builtins::Neg::head(), Self::from(*arg)),
+            Mul { lhs, rhs } => {
+                Self::new_binary_node(builtins::Mul::head(), Self::from(*lhs), Self::from(*rhs))
+            }
+            Div { lhs, rhs } => {
+                Self::new_binary_node(builtins::Div::head(), Self::from(*lhs), Self::from(*rhs))
+            }
+            Pow { lhs, rhs } => {
+                Self::new_binary_node(builtins::Pow::head(), Self::from(*lhs), Self::from(*rhs))
+            }
             Factorial { arg } => {
                 Self::new_unary_node(builtins::Factorial::head(), Self::from(*arg))
             }

@@ -5,10 +5,10 @@ use numbers::Number;
 use crate::{
     atom::Atom,
     builtin::{
-        ADD_HEAD, CANNONICAL_HEAD_HOLD, CANNONICAL_HEAD_SQRT, CANNONICAL_SYM_ABSENT,
-        CANNONICAL_SYM_INDETERMINATE, DIV_HEAD, MUL_HEAD, NEG_HEAD, POW_HEAD, SUB_HEAD,
+        CANNONICAL_HEAD_HOLD, CANNONICAL_HEAD_SQRT, CANNONICAL_SYM_ABSENT,
+        CANNONICAL_SYM_INDETERMINATE,
     },
-    builtins,
+    builtins::{self, traits::BuiltIn},
     expr::{ExprKind, NormExpr, RawExpr},
 };
 
@@ -49,29 +49,30 @@ fn normalize_raw_node(head_expr: RawExpr, args: Vec<RawExpr>) -> NormExpr {
     // Usually, it is just removed, but we want Pow[x, Absent] to
     // reduce to x, while Pow[Absent, x] reduces to Pow[x]. Contrary
     // to Mathematica, Cassidoid does not normalize Pow[x] to x.
-    let args = if head_expr.matches_symbol(POW_HEAD) && args.len() == 2 {
+    let args = if head_expr.matches_symbol(builtins::Pow::head()) && args.len() == 2 {
         args
     } else {
         filter_absent(args)
     };
 
     match head_expr.get_symbol() {
-        Some(ADD_HEAD) => normalize_raw_add(args),
-        Some(SUB_HEAD) if args.len() == 2 => {
+        Some(builtins::Add::HEAD) => normalize_raw_add(args),
+        Some(builtins::Sub::HEAD) if args.len() == 2 => {
             let [lhs, rhs]: [RawExpr; 2] = args.try_into().unwrap();
             RawExpr::new_binary_node(
-                ADD_HEAD,
+                builtins::Add::head(),
                 lhs,
-                RawExpr::new_binary_node(MUL_HEAD, Number::minus_one().into(), rhs),
+                RawExpr::new_binary_node(builtins::Mul::head(), Number::minus_one().into(), rhs),
             )
             .normalize()
         }
-        Some(NEG_HEAD) if args.len() == 1 => {
+        Some(builtins::Neg::HEAD) if args.len() == 1 => {
             let [arg]: [RawExpr; 1] = args.try_into().unwrap();
-            RawExpr::new_binary_node(MUL_HEAD, Number::minus_one().into(), arg).normalize()
+            RawExpr::new_binary_node(builtins::Mul::head(), Number::minus_one().into(), arg)
+                .normalize()
         }
-        Some(MUL_HEAD) => normalize_raw_mul(args),
-        Some(DIV_HEAD) if args.len() == 2 => {
+        Some(builtins::Mul::HEAD) => normalize_raw_mul(args),
+        Some(builtins::Div::HEAD) if args.len() == 2 => {
             let [lhs, rhs]: [RawExpr; 2] = args.try_into().unwrap();
 
             if rhs.is_number_zero() {
@@ -79,13 +80,13 @@ fn normalize_raw_node(head_expr: RawExpr, args: Vec<RawExpr>) -> NormExpr {
             }
 
             RawExpr::new_binary_node(
-                MUL_HEAD,
+                builtins::Mul::head(),
                 lhs,
-                RawExpr::new_binary_node(POW_HEAD, rhs, Number::minus_one().into()),
+                RawExpr::new_binary_node(builtins::Pow::head(), rhs, Number::minus_one().into()),
             )
             .normalize()
         }
-        Some(POW_HEAD) if args.len() == 2 => {
+        Some(builtins::Pow::HEAD) if args.len() == 2 => {
             let [base, exponent]: [RawExpr; 2] = args.try_into().unwrap();
             normalize_raw_pow(base, exponent)
         }
@@ -108,7 +109,7 @@ fn normalize_raw_node(head_expr: RawExpr, args: Vec<RawExpr>) -> NormExpr {
         Some(CANNONICAL_HEAD_SQRT) if args.len() == 1 => {
             let [arg]: [RawExpr; 1] = args.try_into().unwrap();
             let one_half = Number::new_rational_from_i64(1, 2).unwrap();
-            RawExpr::new_binary_node(POW_HEAD, arg, one_half.into()).normalize()
+            RawExpr::new_binary_node(builtins::Pow::head(), arg, one_half.into()).normalize()
         }
         Some(CANNONICAL_HEAD_HOLD) | Some(builtins::HoldPattern::HEAD) if args.len() == 1 => {
             NormExpr::new_unchecked(ExprKind::Node {
@@ -160,7 +161,7 @@ fn normalize_raw_add(args: Vec<RawExpr>) -> NormExpr {
     let mut constant_term = Number::zero();
     let mut terms = HashMap::new();
 
-    for arg in flatten(ADD_HEAD, args) {
+    for arg in flatten(builtins::Add::head(), args) {
         if arg.is_indeterminate() {
             // Early exit when we encounter indeterminate
             return arg;
@@ -193,7 +194,7 @@ fn normalize_raw_add(args: Vec<RawExpr>) -> NormExpr {
         }
 
         let coeff = RawExpr::new_number(coeff).normalize();
-        let node = if term.has_head_symbol(MUL_HEAD) {
+        let node = if term.has_head_symbol(builtins::Mul::head()) {
             let ExprKind::Node { head, args } = term.into_kind() else {
                 unreachable!("Coefficients should already by isolated");
             };
@@ -214,7 +215,7 @@ fn normalize_raw_add(args: Vec<RawExpr>) -> NormExpr {
         } else if coeff.is_number_one() {
             term
         } else {
-            NormExpr::new_simple_node_unchecked(MUL_HEAD, vec![coeff, term])
+            NormExpr::new_simple_node_unchecked(builtins::Mul::head(), vec![coeff, term])
         };
 
         new_args.push(node);
@@ -227,7 +228,7 @@ fn normalize_raw_add(args: Vec<RawExpr>) -> NormExpr {
     } else if new_args.len() == 1 {
         new_args.pop().unwrap()
     } else {
-        NormExpr::new_simple_node_unchecked(ADD_HEAD, new_args)
+        NormExpr::new_simple_node_unchecked(builtins::Add::head(), new_args)
     }
 }
 
@@ -237,7 +238,7 @@ pub(super) fn split_coefficient(expr: NormExpr) -> (Number, Option<NormExpr>) {
             entry: Atom::Number(val),
             ..
         } => (val, None),
-        ExprKind::Node { head, mut args } if head.matches_symbol(MUL_HEAD) => {
+        ExprKind::Node { head, mut args } if head.matches_symbol(builtins::Mul::head()) => {
             if let Some(coeff) = args.first().and_then(|e| e.get_number()) {
                 let coeff = coeff.clone();
                 let _ = args.remove(0);
@@ -249,13 +250,19 @@ pub(super) fn split_coefficient(expr: NormExpr) -> (Number, Option<NormExpr>) {
                 } else {
                     (
                         coeff,
-                        Some(NormExpr::new_simple_node_unchecked(MUL_HEAD, args)),
+                        Some(NormExpr::new_simple_node_unchecked(
+                            builtins::Mul::head(),
+                            args,
+                        )),
                     )
                 }
             } else {
                 (
                     Number::one(),
-                    Some(NormExpr::new_simple_node_unchecked(MUL_HEAD, args)),
+                    Some(NormExpr::new_simple_node_unchecked(
+                        builtins::Mul::head(),
+                        args,
+                    )),
                 )
             }
         }
@@ -267,7 +274,7 @@ fn normalize_raw_mul(args: Vec<RawExpr>) -> NormExpr {
     let mut constant_term = Number::one();
     let mut terms: HashMap<NormExpr, Vec<RawExpr>> = HashMap::new();
 
-    for arg in flatten(MUL_HEAD, args) {
+    for arg in flatten(builtins::Mul::head(), args) {
         if arg.is_number_zero() || arg.is_indeterminate() {
             // In these cases we can exit early.
             return arg;
@@ -282,7 +289,7 @@ fn normalize_raw_mul(args: Vec<RawExpr>) -> NormExpr {
             continue;
         }
 
-        let [base, exponent]: [NormExpr; 2] = if arg.is_application_of(POW_HEAD, 2) {
+        let [base, exponent]: [NormExpr; 2] = if arg.is_application_of(builtins::Pow::head(), 2) {
             let ExprKind::Node { args, .. } = arg.kind else {
                 // we've already made sure that we have a pow node.
                 unreachable!()
@@ -317,7 +324,7 @@ fn normalize_raw_mul(args: Vec<RawExpr>) -> NormExpr {
     }
 
     for (base, exponents) in terms.into_iter() {
-        let assembled_exp = RawExpr::new_node(ADD_HEAD, exponents).normalize();
+        let assembled_exp = RawExpr::new_node(builtins::Add::head(), exponents).normalize();
 
         if assembled_exp.is_indeterminate() {
             return assembled_exp;
@@ -330,7 +337,7 @@ fn normalize_raw_mul(args: Vec<RawExpr>) -> NormExpr {
             new_args.push(base);
         } else if !assembled_exp.is_number_zero() {
             new_args.push(NormExpr::new_simple_node_unchecked(
-                POW_HEAD,
+                builtins::Pow::head(),
                 vec![base, assembled_exp],
             ));
         }
@@ -343,19 +350,19 @@ fn normalize_raw_mul(args: Vec<RawExpr>) -> NormExpr {
     } else if new_args.len() == 1 {
         new_args.pop().unwrap()
     } else {
-        NormExpr::new_simple_node_unchecked(MUL_HEAD, new_args)
+        NormExpr::new_simple_node_unchecked(builtins::Mul::head(), new_args)
     }
 }
 
 fn normalize_raw_pow(base: RawExpr, exponent: RawExpr) -> NormExpr {
     if exponent.matches_symbol(CANNONICAL_SYM_ABSENT) {
         if base.matches_symbol(CANNONICAL_SYM_ABSENT) {
-            return RawExpr::new_node(POW_HEAD, vec![]).into_normexpr_unsafe();
+            return RawExpr::new_node(builtins::Pow::head(), vec![]).into_normexpr_unsafe();
         }
 
         return base.normalize();
     } else if base.matches_symbol(CANNONICAL_SYM_ABSENT) {
-        return RawExpr::new_unary_node(POW_HEAD, exponent).normalize();
+        return RawExpr::new_unary_node(builtins::Pow::head(), exponent).normalize();
     }
 
     let norm_base = base.normalize();
@@ -383,9 +390,12 @@ fn normalize_raw_pow(base: RawExpr, exponent: RawExpr) -> NormExpr {
             if let Ok(num) = base_num.pow(exp_num) {
                 RawExpr::new_number(num).normalize()
             } else {
-                NormExpr::new_simple_node_unchecked(POW_HEAD, vec![norm_base, norm_exponent])
+                NormExpr::new_simple_node_unchecked(
+                    builtins::Pow::head(),
+                    vec![norm_base, norm_exponent],
+                )
             }
-        } else if norm_base.is_application_of(POW_HEAD, 2) {
+        } else if norm_base.is_application_of(builtins::Pow::head(), 2) {
             let ExprKind::Node { args, .. } = norm_base.kind else {
                 // we've already made sure that we have a pow node.
                 unreachable!()
@@ -394,11 +404,11 @@ fn normalize_raw_pow(base: RawExpr, exponent: RawExpr) -> NormExpr {
             let [lhs, rhs]: [NormExpr; 2] = args.try_into().unwrap();
 
             NormExpr::new_simple_node_unchecked(
-                POW_HEAD,
+                builtins::Pow::head(),
                 vec![
                     lhs,
                     RawExpr::new_binary_node(
-                        MUL_HEAD,
+                        builtins::Mul::head(),
                         rhs.into_raw(),
                         RawExpr::new_number(exp_num.clone()),
                     )
@@ -406,17 +416,20 @@ fn normalize_raw_pow(base: RawExpr, exponent: RawExpr) -> NormExpr {
                 ],
             )
         } else {
-            NormExpr::new_simple_node_unchecked(POW_HEAD, vec![norm_base, norm_exponent])
+            NormExpr::new_simple_node_unchecked(
+                builtins::Pow::head(),
+                vec![norm_base, norm_exponent],
+            )
         }
     } else {
-        NormExpr::new_simple_node_unchecked(POW_HEAD, vec![norm_base, norm_exponent])
+        NormExpr::new_simple_node_unchecked(builtins::Pow::head(), vec![norm_base, norm_exponent])
     }
 }
 
 #[cfg(test)]
 mod normalize_comprehensive_tests {
     use crate::{
-        builtin::{ADD_HEAD, MUL_HEAD, POW_HEAD},
+        builtins::{self, traits::BuiltIn},
         expr::{Expr, RawExpr},
         raw_expr,
     };
@@ -627,8 +640,11 @@ mod normalize_comprehensive_tests {
     #[test]
     fn test_neg_symbol() {
         let expr = raw_expr!(Neg[x]);
-        let expected =
-            RawExpr::new_binary_node(MUL_HEAD, RawExpr::new_number(-1), RawExpr::new_symbol("x"));
+        let expected = RawExpr::new_binary_node(
+            builtins::Mul::head(),
+            RawExpr::new_number(-1),
+            RawExpr::new_symbol("x"),
+        );
         assert_eq!(expr.normalize().into_raw(), expected);
     }
 
@@ -642,8 +658,11 @@ mod normalize_comprehensive_tests {
     #[test]
     fn test_sub_basic() {
         let expr = raw_expr!(x - 3);
-        let expected =
-            RawExpr::new_binary_node(ADD_HEAD, RawExpr::new_number(-3), RawExpr::new_symbol("x"));
+        let expected = RawExpr::new_binary_node(
+            builtins::Add::head(),
+            RawExpr::new_number(-3),
+            RawExpr::new_symbol("x"),
+        );
         assert_eq!(expr.normalize().into_raw(), expected);
     }
 
@@ -651,7 +670,7 @@ mod normalize_comprehensive_tests {
     fn test_sqrt_desugars_to_pow_half() {
         let expr = raw_expr!(Sqrt[x]);
         let expected = RawExpr::new_binary_node(
-            POW_HEAD,
+            builtins::Pow::head(),
             RawExpr::new_symbol("x"),
             RawExpr::new_number_rational(1, 2).unwrap(),
         );

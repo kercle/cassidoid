@@ -1,11 +1,10 @@
 use std::collections::HashMap;
 
+use crate::builtins;
+use crate::builtins::traits::BuiltIn;
 use crate::{
     atom::Atom,
-    builtin::{
-        ADD_HEAD, CANNONICAL_HEAD_COS, CANNONICAL_HEAD_EXP, CANNONICAL_HEAD_LOG,
-        CANNONICAL_HEAD_SIN, MUL_HEAD, POW_HEAD,
-    },
+    builtin::{CANNONICAL_HEAD_COS, CANNONICAL_HEAD_EXP, CANNONICAL_HEAD_LOG, CANNONICAL_HEAD_SIN},
     expr::{Expr, ExprKind},
 };
 
@@ -94,11 +93,11 @@ impl EvalProgram {
             unreachable!();
         };
 
-        if head.matches_symbol(ADD_HEAD) {
+        if head.matches_symbol(builtins::Add::head()) {
             self.instructions.push(Instruction::AddMany(args.len()));
-        } else if head.matches_symbol(MUL_HEAD) {
+        } else if head.matches_symbol(builtins::Mul::head()) {
             self.instructions.push(Instruction::MulMany(args.len()));
-        } else if head.matches_symbol(POW_HEAD) {
+        } else if head.matches_symbol(builtins::Pow::head()) {
             self.instructions.push(Instruction::Pow);
         } else if head.matches_symbol(CANNONICAL_HEAD_EXP) {
             self.instructions.push(Instruction::Exp);

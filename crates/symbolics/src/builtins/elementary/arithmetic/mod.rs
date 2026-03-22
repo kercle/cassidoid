@@ -4,6 +4,7 @@ pub mod factorial;
 pub mod mul;
 pub mod pow;
 pub mod sub;
+pub mod neg;
 
 pub use add::Add;
 pub use div::Div;

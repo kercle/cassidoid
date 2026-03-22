@@ -4,13 +4,6 @@
 
 use crate::expr::Expr;
 
-pub const ADD_HEAD: &str = "Add";
-pub const SUB_HEAD: &str = "Sub";
-pub const MUL_HEAD: &str = "Mul";
-pub const DIV_HEAD: &str = "Div";
-pub const NEG_HEAD: &str = "Neg";
-pub const POW_HEAD: &str = "Pow";
-
 // Exponentials
 
 pub const CANNONICAL_HEAD_EXP: &str = "Exp";

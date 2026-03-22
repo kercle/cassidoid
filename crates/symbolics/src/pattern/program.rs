@@ -2,6 +2,7 @@ use std::collections::HashMap;
 use std::fmt::Debug;
 use std::str::FromStr;
 
+use crate::builtins::traits::BuiltIn;
 use crate::expr::walk::ExprTopDownWalker;
 use crate::expr::{ExprKind, NormExpr, RawExpr};
 use crate::pattern::{PatternPredicate, builtin::*};
@@ -152,7 +153,7 @@ pub struct Compiler {
 }
 
 fn is_multiset_default(expr: &NormExpr) -> bool {
-    expr.has_head_symbol(ADD_HEAD) || expr.has_head_symbol(MUL_HEAD)
+    expr.has_head_symbol(builtins::Add::head()) || expr.has_head_symbol(builtins::Mul::head())
 }
 
 impl Default for Compiler {
