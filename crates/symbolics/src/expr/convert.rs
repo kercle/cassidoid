@@ -1,6 +1,6 @@
 use crate::{
     builtin::*,
-    builtins::{self, elementary::arithmetic::factorial::FACTORIAL_HEAD},
+    builtins::{self, traits::BuiltIn},
     expr::{Expr, ExprKind, RawExpr},
     pattern::{
         BLANK_NULL_SEQ_HEAD, BLANK_ONE_HEAD, BLANK_SEQ_HEAD, PATTERN_HEAD, PATTERN_TEST_HEAD,
@@ -74,7 +74,9 @@ impl From<ParserAst> for RawExpr {
             Mul { lhs, rhs } => Self::new_binary_node(MUL_HEAD, Self::from(*lhs), Self::from(*rhs)),
             Div { lhs, rhs } => Self::new_binary_node(DIV_HEAD, Self::from(*lhs), Self::from(*rhs)),
             Pow { lhs, rhs } => Self::new_binary_node(POW_HEAD, Self::from(*lhs), Self::from(*rhs)),
-            Factorial { arg } => Self::new_unary_node(FACTORIAL_HEAD, Self::from(*arg)),
+            Factorial { arg } => {
+                Self::new_unary_node(builtins::Factorial::head(), Self::from(*arg))
+            }
             FunctionCall { name, args } => {
                 let head = Self::new_symbol(name);
                 let args = args.into_iter().map(Self::from).collect();
@@ -89,7 +91,7 @@ impl From<ParserAst> for RawExpr {
                 let inner = make_blank_variant(BLANK_ONE_HEAD, bind_name, head_constraint);
 
                 if optional {
-                    RawExpr::new_unary_node(builtins::patterns::optional::OPTIONAL_HEAD, inner)
+                    RawExpr::new_unary_node(builtins::Optional::head(), inner)
                 } else {
                     inner
                 }
@@ -102,7 +104,7 @@ impl From<ParserAst> for RawExpr {
                 let inner = make_blank_variant(BLANK_SEQ_HEAD, bind_name, head_constraint);
 
                 if optional {
-                    RawExpr::new_unary_node(builtins::patterns::optional::OPTIONAL_HEAD, inner)
+                    RawExpr::new_unary_node(builtins::Optional::head(), inner)
                 } else {
                     inner
                 }
@@ -115,7 +117,7 @@ impl From<ParserAst> for RawExpr {
                 let inner = make_blank_variant(BLANK_NULL_SEQ_HEAD, bind_name, head_constraint);
 
                 if optional {
-                    RawExpr::new_unary_node(builtins::patterns::optional::OPTIONAL_HEAD, inner)
+                    RawExpr::new_unary_node(builtins::Optional::head(), inner)
                 } else {
                     inner
                 }
@@ -127,7 +129,7 @@ impl From<ParserAst> for RawExpr {
             ),
             Compound { nodes } => {
                 let nodes = nodes.into_iter().map(Self::from).collect();
-                Self::new_node(builtins::scoping::compound::COMPOUND_HEAD, nodes)
+                Self::new_node(builtins::Compound::head(), nodes)
             }
         }
     }

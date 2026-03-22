@@ -2,12 +2,10 @@ use std::collections::HashMap;
 use std::fmt::Debug;
 use std::str::FromStr;
 
-use crate::builtin::*;
-use crate::builtins::patterns::hold_pattern::HOLD_PATTERN_HEAD;
-use crate::builtins::patterns::optional::OPTIONAL_HEAD;
 use crate::expr::walk::ExprTopDownWalker;
 use crate::expr::{ExprKind, NormExpr, RawExpr};
 use crate::pattern::{PatternPredicate, builtin::*};
+use crate::{builtin::*, builtins};
 
 pub type InstrId = usize;
 pub type VarId = u32;
@@ -262,7 +260,7 @@ impl Compiler {
                     bind,
                 })
             }
-            Node { args, .. } if pat_expr.is_application_of(OPTIONAL_HEAD, 1) => {
+            Node { args, .. } if pat_expr.is_application_of(builtins::Optional::HEAD, 1) => {
                 let inner = args.first().unwrap();
                 self.compile_pattern(inner, bind)
             }
@@ -304,7 +302,7 @@ impl Compiler {
         children: &[NormExpr],
         bind: Option<VarId>,
     ) -> InstrId {
-        if head.matches_symbol(HOLD_PATTERN_HEAD) && children.len() == 1 {
+        if head.matches_symbol(builtins::HoldPattern::HEAD) && children.len() == 1 {
             // HoldPattern is not compiled to an instruction.
             self.hold_pattern_counter += 1;
             let instr_id = self.compile_pattern(children.first().unwrap(), bind);
@@ -315,7 +313,7 @@ impl Compiler {
 
         if let Some(optional_pos) = children
             .iter()
-            .position(|expr| expr.is_application_of(OPTIONAL_HEAD, 1))
+            .position(|expr| expr.is_application_of(builtins::Optional::HEAD, 1))
         {
             return self.compile_node_with_optional_child(head, children, optional_pos, bind);
         }
@@ -379,7 +377,7 @@ impl Compiler {
                 if i == optional_child_pos {
                     raw
                 } else {
-                    RawExpr::new_unary_node(HOLD_PATTERN_HEAD, raw)
+                    RawExpr::new_unary_node(builtins::HoldPattern::HEAD, raw)
                 }
             };
 

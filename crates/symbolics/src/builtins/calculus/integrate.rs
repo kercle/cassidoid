@@ -19,7 +19,7 @@ impl Integrate {
     pub fn new() -> Self {
         Self {
             pattern_doc: vec![PatternDoc::new(
-                "Integrate[f_, x_?IsSymbol]",
+                raw_expr!( Integrate[f_, x_?IsSymbol] ),
                 "gives the indefinite integral (anti-derivative) $\\int f(x)\\!{\\rm d}x$",
             )],
             rewriter: build_rewriter(),
@@ -34,10 +34,19 @@ impl Default for Integrate {
 }
 
 impl BuiltIn for Integrate {
+    #[inline(always)]
+    fn head() -> &'static str {
+        "Integrate"
+    }
+
+    fn head_dyn(&self) -> &'static str {
+        Self::head()
+    }
+
     fn doc(&self) -> BuiltInDoc {
         BuiltInDoc {
             category: BuiltInCategory::Calculus,
-            title: "Integration",
+            title: Self::head(),
             summary: "Symbolically determine integrals of expressions.",
             pattern_doc: self.pattern_doc.clone(),
             examples: vec![
@@ -46,10 +55,6 @@ impl BuiltIn for Integrate {
             ],
             related: vec!["Diff"],
         }
-    }
-
-    fn head_symbol(&self) -> &'static str {
-        "Integrate"
     }
 
     fn apply_all(&self, expr: NormExpr) -> NormExpr {

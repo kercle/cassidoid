@@ -80,7 +80,7 @@ impl Kernel {
     pub fn get_builtin<T: AsRef<str>>(&self, head_name: T) -> Option<&dyn BuiltIn> {
         self.builtins
             .iter()
-            .find(|b| b.head_symbol() == head_name.as_ref())
+            .find(|b| b.head_dyn() == head_name.as_ref())
             .map(|v| &**v)
     }
 
@@ -108,7 +108,7 @@ impl Kernel {
             .map(|b| {
                 let doc = b.doc();
                 (
-                    b.head_symbol().to_string(),
+                    b.head_dyn().to_string(),
                     doc.summary.to_string(),
                     doc.category.to_string(),
                 )
@@ -119,7 +119,7 @@ impl Kernel {
     fn get_builtin_id<T: AsRef<str>>(&self, head_name: T) -> Option<usize> {
         self.builtins
             .iter()
-            .position(|b| b.head_symbol() == head_name.as_ref())
+            .position(|b| b.head_dyn() == head_name.as_ref())
     }
 
     pub fn eval<T: AsRef<str>>(&self, input: T) -> Result<NormExpr, KernelError> {

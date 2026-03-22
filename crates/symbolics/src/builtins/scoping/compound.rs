@@ -1,29 +1,35 @@
-use crate::builtins::{
-    BuiltInCategory,
-    traits::{BuiltIn, BuiltInDoc, PatternDoc},
+use crate::{
+    builtins::{
+        BuiltInCategory,
+        traits::{BuiltIn, BuiltInDoc, PatternDoc},
+    },
+    raw_expr,
 };
 
 #[derive(Default)]
 pub struct Compound;
 
-pub const COMPOUND_HEAD: &str = "Compound";
-
 impl BuiltIn for Compound {
+    #[inline(always)]
+    fn head() -> &'static str {
+        "Compound"
+    }
+
+    fn head_dyn(&self) -> &'static str {
+        Self::head()
+    }
+
     fn doc(&self) -> BuiltInDoc {
         BuiltInDoc {
             category: BuiltInCategory::Scoping,
-            title: "Compound",
+            title: Self::head(),
             summary: "Groups multiple expressions and evaluates to the last expression in the compound.",
             pattern_doc: vec![PatternDoc::new(
-                "Compound[t___]",
+                raw_expr!(Compound[t___]),
                 "If $t=[t_1,\\dots,t_n]$, arguments $t_1,\\dots,t_n$ are evaluated in succession. The resulting expression is given by $t_n$.",
             )],
             examples: vec![],
             related: vec![],
         }
-    }
-
-    fn head_symbol(&self) -> &'static str {
-        COMPOUND_HEAD
     }
 }

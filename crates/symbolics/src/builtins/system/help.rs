@@ -1,33 +1,41 @@
-use crate::builtins::{
-    BuiltInCategory,
-    traits::{BuiltIn, BuiltInDoc, PatternDoc},
+use crate::{
+    builtins::{
+        BuiltInCategory,
+        traits::{BuiltIn, BuiltInDoc, PatternDoc},
+    },
+    raw_expr,
 };
 
 #[derive(Default)]
 pub struct Help;
 
 impl BuiltIn for Help {
+    #[inline(always)]
+    fn head() -> &'static str {
+        "Help"
+    }
+
+    fn head_dyn(&self) -> &'static str {
+        Self::head()
+    }
+
     fn doc(&self) -> BuiltInDoc {
         BuiltInDoc {
             category: BuiltInCategory::System,
-            title: "Help",
+            title: Self::head(),
             summary: "Documentation for builtin functionality.",
             pattern_doc: vec![
                 PatternDoc::new(
-                    "Help[]",
+                    raw_expr!( Help[] ),
                     "Print table of contents with all built-in symbols.",
                 ),
                 PatternDoc::new(
-                    "Help[s_?IsSymbol]",
+                    raw_expr!( Help[s_?IsSymbol] ),
                     "Specific documentation of the given symbol.",
                 ),
             ],
             examples: vec![],
             related: vec![],
         }
-    }
-
-    fn head_symbol(&self) -> &'static str {
-        "Help"
     }
 }

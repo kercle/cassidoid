@@ -1,4 +1,7 @@
-use crate::{builtins::BuiltInCategory, expr::NormExpr};
+use crate::{
+    builtins::BuiltInCategory,
+    expr::{NormExpr, RawExpr},
+};
 
 #[derive(Clone, Debug)]
 pub struct BuiltInDoc {
@@ -12,25 +15,29 @@ pub struct BuiltInDoc {
 
 #[derive(Clone, Debug)]
 pub struct PatternDoc {
-    pub pattern: String,
+    pub pattern: RawExpr,
     pub summary: String,
 }
 
 impl PatternDoc {
-    pub fn new<S: ToString, T: ToString>(pattern: S, summary: T) -> Self {
+    pub fn new<T: ToString>(pattern: RawExpr, summary: T) -> Self {
         Self {
-            pattern: pattern.to_string(),
+            pattern,
             summary: summary.to_string(),
         }
     }
 }
 
 pub trait BuiltIn {
-    fn head_symbol(&self) -> &'static str;
-
     fn doc(&self) -> BuiltInDoc;
 
     fn apply_all(&self, expr: NormExpr) -> NormExpr {
         expr
     }
+
+    fn head() -> &'static str
+    where
+        Self: Sized;
+
+    fn head_dyn(&self) -> &'static str;
 }

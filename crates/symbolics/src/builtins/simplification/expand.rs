@@ -15,8 +15,6 @@ use crate::{
     rewrite::Rewriter,
 };
 
-pub const EXPAND_HEAD: &str = "Expand";
-
 pub struct Expand {
     pattern_doc: Vec<PatternDoc>,
     rewriter: Rewriter,
@@ -25,13 +23,25 @@ pub struct Expand {
 impl Expand {
     pub fn new(binomial_generator: Shared<BinomialGenerator>) -> Self {
         Self {
-            pattern_doc: vec![PatternDoc::new("Expand[t_]", "Expands the given term $t$.")],
+            pattern_doc: vec![PatternDoc::new(
+                raw_expr!(Expand[t_]),
+                "Expands the given term $t$.",
+            )],
             rewriter: build_rewriter(binomial_generator),
         }
     }
 }
 
 impl BuiltIn for Expand {
+    #[inline(always)]
+    fn head() -> &'static str {
+        "Expand"
+    }
+
+    fn head_dyn(&self) -> &'static str {
+        Self::head()
+    }
+
     fn doc(&self) -> BuiltInDoc {
         BuiltInDoc {
             category: BuiltInCategory::Simplification,
@@ -41,10 +51,6 @@ impl BuiltIn for Expand {
             examples: vec![("Expand[x*(4 + x*(5 - x))]", "4*x + 5*x^2 - x^3")],
             related: vec!["Simplify"],
         }
-    }
-
-    fn head_symbol(&self) -> &'static str {
-        "Expand"
     }
 
     fn apply_all(&self, expr: NormExpr) -> NormExpr {
@@ -76,7 +82,7 @@ pub(super) fn build_rewriter(_binomial_gen: Shared<BinomialGenerator>) -> Rewrit
                 );
             };
 
-            RawExpr::new_unary_node(EXPAND_HEAD, expand_multinomial(sum, ctx.get_seq("a"), n))
+            RawExpr::new_unary_node(Expand::head(), expand_multinomial(sum, ctx.get_seq("a"), n))
         },
     );
 
@@ -91,7 +97,7 @@ pub(super) fn build_rewriter(_binomial_gen: Shared<BinomialGenerator>) -> Rewrit
 
             for arg in args.iter_mut() {
                 let old_expr = std::mem::replace(arg, EXPR_PLACEHOLDER.clone());
-                let new_expr = RawExpr::new_unary_node(EXPAND_HEAD, old_expr);
+                let new_expr = RawExpr::new_unary_node(Expand::head(), old_expr);
                 *arg = new_expr;
             }
 

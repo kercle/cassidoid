@@ -5,6 +5,7 @@ use crate::{
         traits::{BuiltIn, BuiltInDoc, PatternDoc},
     },
     expr::NormExpr,
+    raw_expr,
     rewrite::Rewriter,
 };
 
@@ -24,7 +25,10 @@ impl Simplify {
         let known_values_rewriter = known_values::build_rewriter();
 
         Self {
-            pattern_doc: vec![PatternDoc::new("Simplify[t_]", "simplifies the term $t$")],
+            pattern_doc: vec![PatternDoc::new(
+                raw_expr!(Simplify[t_]),
+                "simplifies the term $t$",
+            )],
             factorization_rewriter,
             trigonometric_rewriter,
             known_values_rewriter,
@@ -39,6 +43,15 @@ impl Default for Simplify {
 }
 
 impl BuiltIn for Simplify {
+    #[inline(always)]
+    fn head() -> &'static str {
+        "Simplify"
+    }
+
+    fn head_dyn(&self) -> &'static str {
+        Self::head()
+    }
+
     fn doc(&self) -> BuiltInDoc {
         BuiltInDoc {
             category: BuiltInCategory::Simplification,
@@ -48,10 +61,6 @@ impl BuiltIn for Simplify {
             examples: vec![],
             related: vec!["Expand"],
         }
-    }
-
-    fn head_symbol(&self) -> &'static str {
-        "Simplify"
     }
 
     fn apply_all(&self, expr: NormExpr) -> NormExpr {

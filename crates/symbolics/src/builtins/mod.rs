@@ -8,6 +8,9 @@ pub mod simplification;
 pub mod system;
 pub mod traits;
 
+mod prelude;
+pub use prelude::*;
+
 #[derive(Clone, Copy)]
 pub enum BuiltInCategory {
     Calculus,

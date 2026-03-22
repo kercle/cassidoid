@@ -11,17 +11,12 @@ use crate::{
 };
 
 pub struct Derivative {
-    pattern_doc: Vec<PatternDoc>,
     rewriter: Rewriter,
 }
 
 impl Derivative {
     pub fn new() -> Self {
         Self {
-            pattern_doc: vec![PatternDoc::new(
-                "Diff[f_,x_?IsSymbol]",
-                "gives the partial derivative $\\frac{\\partial f}{\\partial x}$",
-            )],
             rewriter: build_rewriter(),
         }
     }
@@ -34,22 +29,30 @@ impl Default for Derivative {
 }
 
 impl BuiltIn for Derivative {
+    #[inline(always)]
+    fn head() -> &'static str {
+        "Diff"
+    }
+
+    fn head_dyn(&self) -> &'static str {
+        Self::head()
+    }
+
     fn doc(&self) -> BuiltInDoc {
         BuiltInDoc {
             category: BuiltInCategory::Calculus,
             title: "Derivative",
             summary: "Symbolically determine derivatives of expressions.",
-            pattern_doc: self.pattern_doc.clone(),
+            pattern_doc: vec![PatternDoc::new(
+                raw_expr!( Diff[f_,x_?IsSymbol] ),
+                "gives the partial derivative $\\frac{\\partial f}{\\partial x}$",
+            )],
             examples: vec![
                 ("Diff[Cos[Exp[x]], x]", "-Exp[x]*Sin[Exp[x]]"),
                 ("Diff[y,x]", "0"),
             ],
             related: vec!["Integrate"],
         }
-    }
-
-    fn head_symbol(&self) -> &'static str {
-        "Diff"
     }
 
     fn apply_all(&self, expr: NormExpr) -> NormExpr {

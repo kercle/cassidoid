@@ -8,10 +8,7 @@ use crate::{
         ADD_HEAD, CANNONICAL_HEAD_HOLD, CANNONICAL_HEAD_SQRT, CANNONICAL_SYM_ABSENT,
         CANNONICAL_SYM_INDETERMINATE, DIV_HEAD, MUL_HEAD, NEG_HEAD, POW_HEAD, SUB_HEAD,
     },
-    builtins::{
-        elementary::arithmetic::factorial::FACTORIAL_HEAD,
-        patterns::hold_pattern::HOLD_PATTERN_HEAD,
-    },
+    builtins,
     expr::{ExprKind, NormExpr, RawExpr},
 };
 
@@ -92,7 +89,7 @@ fn normalize_raw_node(head_expr: RawExpr, args: Vec<RawExpr>) -> NormExpr {
             let [base, exponent]: [RawExpr; 2] = args.try_into().unwrap();
             normalize_raw_pow(base, exponent)
         }
-        Some(FACTORIAL_HEAD) if args.len() == 1 => {
+        Some(builtins::Factorial::HEAD) if args.len() == 1 => {
             let [arg]: [RawExpr; 1] = args.try_into().unwrap();
             let arg = arg.normalize();
 
@@ -100,10 +97,12 @@ fn normalize_raw_node(head_expr: RawExpr, args: Vec<RawExpr>) -> NormExpr {
                 if let Ok(res) = num.factorial() {
                     RawExpr::new_number(res).into_normexpr_unsafe()
                 } else {
-                    RawExpr::new_unary_node(FACTORIAL_HEAD, arg.into_raw()).into_normexpr_unsafe()
+                    RawExpr::new_unary_node(builtins::Factorial::HEAD, arg.into_raw())
+                        .into_normexpr_unsafe()
                 }
             } else {
-                RawExpr::new_unary_node(FACTORIAL_HEAD, arg.into_raw()).into_normexpr_unsafe()
+                RawExpr::new_unary_node(builtins::Factorial::HEAD, arg.into_raw())
+                    .into_normexpr_unsafe()
             }
         }
         Some(CANNONICAL_HEAD_SQRT) if args.len() == 1 => {
@@ -111,7 +110,7 @@ fn normalize_raw_node(head_expr: RawExpr, args: Vec<RawExpr>) -> NormExpr {
             let one_half = Number::new_rational_from_i64(1, 2).unwrap();
             RawExpr::new_binary_node(POW_HEAD, arg, one_half.into()).normalize()
         }
-        Some(CANNONICAL_HEAD_HOLD) | Some(HOLD_PATTERN_HEAD) if args.len() == 1 => {
+        Some(CANNONICAL_HEAD_HOLD) | Some(builtins::HoldPattern::HEAD) if args.len() == 1 => {
             NormExpr::new_unchecked(ExprKind::Node {
                 head: Box::new(head_expr.into_normexpr_unsafe()),
                 args: args.into_iter().map(|a| a.into_normexpr_unsafe()).collect(),

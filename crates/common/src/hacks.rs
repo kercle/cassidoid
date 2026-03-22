@@ -101,7 +101,7 @@ pub fn help(input: String, kernel: &Kernel, expr: &NormExpr) -> Option<KernelMes
         patterns: doc
             .pattern_doc
             .into_iter()
-            .map(|e| (e.pattern, e.summary))
+            .map(|e| (e.pattern.to_input_form(), e.summary))
             .collect(),
         examples: doc
             .examples

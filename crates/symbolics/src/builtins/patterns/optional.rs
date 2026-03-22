@@ -1,29 +1,39 @@
-use crate::builtins::{
-    BuiltInCategory,
-    traits::{BuiltIn, BuiltInDoc, PatternDoc},
+use crate::{
+    builtins::{
+        BuiltInCategory,
+        traits::{BuiltIn, BuiltInDoc, PatternDoc},
+    },
+    raw_expr,
 };
-
-pub const OPTIONAL_HEAD: &str = "Optional";
 
 #[derive(Default)]
 pub struct Optional;
 
+impl Optional {
+    pub const HEAD: &'static str = "Optional";
+}
+
 impl BuiltIn for Optional {
+    #[inline(always)]
+    fn head() -> &'static str {
+        Self::HEAD
+    }
+
+    fn head_dyn(&self) -> &'static str {
+        Self::head()
+    }
+
     fn doc(&self) -> BuiltInDoc {
         BuiltInDoc {
             category: BuiltInCategory::Patterns,
-            title: self.head_symbol(),
+            title: Self::head(),
             summary: "Holding patterns without normalizing them.",
             pattern_doc: vec![PatternDoc::new(
-                "HoldPattern[p_]",
+                raw_expr!(HoldPattern[p_]),
                 "The pattern $p$ is not evaluated until the pattern is being used.",
             )],
             examples: vec![],
             related: vec![],
         }
-    }
-
-    fn head_symbol(&self) -> &'static str {
-        OPTIONAL_HEAD
     }
 }

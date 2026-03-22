@@ -1,29 +1,39 @@
-use crate::builtins::{
-    BuiltInCategory,
-    traits::{BuiltIn, BuiltInDoc, PatternDoc},
+use crate::{
+    builtins::{
+        BuiltInCategory,
+        traits::{BuiltIn, BuiltInDoc, PatternDoc},
+    },
+    raw_expr,
 };
-
-pub const HOLD_PATTERN_HEAD: &str = "HoldPattern";
 
 #[derive(Default)]
 pub struct HoldPattern;
 
+impl HoldPattern {
+    pub const HEAD: &'static str = "HoldPattern";
+}
+
 impl BuiltIn for HoldPattern {
+    #[inline(always)]
+    fn head() -> &'static str {
+        Self::HEAD
+    }
+
+    fn head_dyn(&self) -> &'static str {
+        Self::head()
+    }
+
     fn doc(&self) -> BuiltInDoc {
         BuiltInDoc {
             category: BuiltInCategory::Patterns,
-            title: "HoldPattern",
+            title: Self::head(),
             summary: "Holding patterns without normalizing them.",
             pattern_doc: vec![PatternDoc::new(
-                "HoldPattern[p_]",
+                raw_expr!(HoldPattern[p_]),
                 "The pattern $p$ is not evaluated until the pattern is being used.",
             )],
             examples: vec![],
             related: vec![],
         }
-    }
-
-    fn head_symbol(&self) -> &'static str {
-        HOLD_PATTERN_HEAD
     }
 }

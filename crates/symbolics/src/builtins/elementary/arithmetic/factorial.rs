@@ -1,29 +1,39 @@
-use crate::builtins::{
-    BuiltInCategory,
-    traits::{BuiltIn, BuiltInDoc, PatternDoc},
+use crate::{
+    builtins::{
+        BuiltInCategory,
+        traits::{BuiltIn, BuiltInDoc, PatternDoc},
+    },
+    raw_expr,
 };
-
-pub const FACTORIAL_HEAD: &str = "Factorial";
 
 #[derive(Default)]
 pub struct Factorial;
 
+impl Factorial {
+    pub const HEAD: &'static str = "Factorial";
+}
+
 impl BuiltIn for Factorial {
+    #[inline(always)]
+    fn head() -> &'static str {
+        Self::HEAD
+    }
+
+    fn head_dyn(&self) -> &'static str {
+        Self::head()
+    }
+
     fn doc(&self) -> BuiltInDoc {
         BuiltInDoc {
             category: BuiltInCategory::ElementaryArithmetic,
-            title: FACTORIAL_HEAD,
+            title: Self::head(),
             summary: "Represents the factorial.",
             pattern_doc: vec![PatternDoc::new(
-                "Factorial[x_]",
+                raw_expr!(Factorial[x_]),
                 "Represents the factorial of the given expression.",
             )],
             examples: vec![],
             related: vec![],
         }
-    }
-
-    fn head_symbol(&self) -> &'static str {
-        FACTORIAL_HEAD
     }
 }

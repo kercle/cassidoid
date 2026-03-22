@@ -1,5 +1,3 @@
-use crate::builtin::*;
-use crate::builtins::elementary::arithmetic::factorial::FACTORIAL_HEAD;
 use crate::expr::{ExprKind, RawExpr};
 use crate::{
     atom::Atom,
@@ -9,6 +7,7 @@ use crate::{
         CANNONICAL_HEAD_TAN, CANNONICAL_SYM_INDETERMINATE, CANNONICAL_SYM_PLUS_INFINITY,
     },
 };
+use crate::{builtin::*, builtins};
 use numbers::Number;
 
 // Determines the placement of paranthesis, depending on
@@ -230,7 +229,7 @@ fn expr_to_latex_inner(expr: &RawExpr) -> String {
             format!("{{{base}}}^{{{exp}}}")
         }
 
-        ExprKind::Node { args, .. } if expr.is_application_of(FACTORIAL_HEAD, 1) => {
+        ExprKind::Node { args, .. } if expr.is_application_of(builtins::Factorial::HEAD, 1) => {
             format!("{}!", expr_to_latex_with_pos(&args[0], Position::FactArg))
         }
 
