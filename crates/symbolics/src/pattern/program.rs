@@ -262,8 +262,9 @@ impl Compiler {
                     bind,
                 })
             }
-            Node { args: _args, .. } if pat_expr.is_application_of(OPTIONAL_HEAD, 1) => {
-                todo!()
+            Node { args, .. } if pat_expr.is_application_of(OPTIONAL_HEAD, 1) => {
+                let inner = args.first().unwrap();
+                self.compile_pattern(inner, bind)
             }
             Node { head, args } => {
                 if self.is_literal(pat_expr) {
@@ -342,26 +343,26 @@ impl Compiler {
     ) -> InstrId {
         let mut children: Vec<_> = children.iter().map(|e| e.clone().into_raw()).collect();
 
-        // that's the node Optional[...]
-        let Some(optional) = children.get(optional_child_pos) else {
-            unreachable!();
-        };
+        let optional_inner = std::mem::replace(
+            &mut children[optional_child_pos],
+            RawExpr::new_symbol(CANNONICAL_SYM_ABSENT),
+        );
+        let branch_absent =
+            self.reduce_node_in_optional_branch(head, &children, optional_child_pos, bind);
 
-        // we need the inner part
-        let Some(optional_inner) = optional.get_arg(0) else {
-            // compile_node_with_optional_child is only called when this child
-            // is Optional with arity 1.
+        let ExprKind::Node { mut args, .. } = optional_inner.into_kind() else {
             unreachable!()
         };
 
-        children[optional_child_pos] = optional_inner.clone();
-        let branch_a = self.reduce_node_in_optional_branch(head, &children, bind);
-
-        children.remove(optional_child_pos);
-        let branch_b = self.reduce_node_in_optional_branch(head, &children, bind);
+        children[optional_child_pos] = args.pop().unwrap();
+        let branch_present =
+            self.reduce_node_in_optional_branch(head, &children, optional_child_pos, bind);
 
         self.emit(Instruction::Alternatives {
-            branches: vec![(self.pattern_id, branch_a), (self.pattern_id, branch_b)],
+            branches: vec![
+                (self.pattern_id, branch_present),
+                (self.pattern_id, branch_absent),
+            ],
         })
     }
 
@@ -369,12 +370,23 @@ impl Compiler {
         &mut self,
         head: &NormExpr,
         children: &[RawExpr],
+        optional_child_pos: usize,
         bind: Option<VarId>,
     ) -> InstrId {
         let children = if self.hold_pattern_counter > 0 {
+            let wrap_with_hold_pattern = |i: usize, e: &RawExpr| {
+                let raw = e.clone().into_raw();
+                if i == optional_child_pos {
+                    raw
+                } else {
+                    RawExpr::new_unary_node(HOLD_PATTERN_HEAD, raw)
+                }
+            };
+
             children
                 .iter()
-                .map(|e| RawExpr::new_unary_node(HOLD_PATTERN_HEAD, e.clone().into_raw()))
+                .enumerate()
+                .map(|(i, e)| wrap_with_hold_pattern(i, e))
                 .collect()
         } else {
             children.to_vec()
