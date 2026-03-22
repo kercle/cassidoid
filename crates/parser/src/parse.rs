@@ -11,7 +11,7 @@ use crate::{
 fn parse_identifier_or_call(stream: &mut TokenStream) -> Result<ParserAst, ParseError> {
     // <identifier_or_function_call> ::= <identifier>
     //    | <identifier> "[" "]"
-    //    | <identifier> "[" <block> { "," <block> }* ")"
+    //    | <identifier> "[" <parse_expression> { "," <expression_or_enclosed_block> }* ")"
 
     let Some(symbol_or_pattern) = stream.next_if_identifier_or_pattern().cloned() else {
         return Err(ParseError {
@@ -48,13 +48,13 @@ fn parse_identifier_or_call(stream: &mut TokenStream) -> Result<ParserAst, Parse
         return Ok(ParserAst::new_function_call(name, vec![]));
     }
 
-    let mut args = vec![parse_block(stream)?];
+    let mut args = vec![parse_expression_or_enclosed_block(stream)?];
     loop {
         if stream.next_if_matches_token(&Token::Comma).is_none() {
             break; // No more arguments
         }
 
-        args.push(parse_block(stream)?);
+        args.push(parse_expression_or_enclosed_block(stream)?);
     }
 
     if stream.next_if_matches_token(&Token::RightBracket).is_none() {
@@ -77,7 +77,7 @@ fn parse_atom(stream: &mut TokenStream) -> Result<ParserAst, ParseError> {
     //    | <identifier_or_function_call>
 
     if stream.next_if_matches_token(&Token::LeftParen).is_some() {
-        let expr = parse_block(stream)?;
+        let expr = parse_expression_tuple_or_block(stream)?;
 
         if stream.next_if_matches_token(&Token::RightParen).is_some() {
             Ok(expr)
@@ -254,20 +254,48 @@ fn parse_condition(stream: &mut TokenStream) -> Result<ParserAst, ParseError> {
     Ok(result)
 }
 
-fn parse_expression(stream: &mut TokenStream) -> Result<ParserAst, ParseError> {
-    // <expression> ::= <cond>
+fn parse_expression_or_enclosed_block(stream: &mut TokenStream) -> Result<ParserAst, ParseError> {
+    // <expression_or_enclosed_block> ::= <cond> | "{" <block> "}"
 
-    parse_condition(stream)
+    if stream.next_if_matches_token(&Token::LeftBrace).is_some() {
+        let block = parse_expression_tuple_or_block(stream)?;
+        if stream.next_if_matches_token(&Token::RightBrace).is_none() {
+            return Err(ParseError {
+                message: "Expected closing brace '}'".to_string(),
+                at_token: stream.peek().cloned(),
+            });
+        }
+
+        Ok(block)
+    } else {
+        parse_condition(stream)
+    }
 }
 
-fn parse_block(stream: &mut TokenStream) -> Result<ParserAst, ParseError> {
-    // <block> ::= <expression> { ";" <expression> }*
+fn parse_expression_or_tuple(stream: &mut TokenStream) -> Result<ParserAst, ParseError> {
+    // <expression_or_tuple> ::= <cond> { "," <cmd> }*
+
+    let mut tuple = vec![parse_condition(stream)?];
+
+    while stream.next_if_matches_token(&Token::Comma).is_some() {
+        tuple.push(parse_condition(stream)?);
+    }
+
+    if tuple.len() == 1 {
+        Ok(tuple.pop().unwrap())
+    } else {
+        Ok(ParserAst::new_tuple(tuple))
+    }
+}
+
+fn parse_expression_tuple_or_block(stream: &mut TokenStream) -> Result<ParserAst, ParseError> {
+    // <block> ::= <expression_or_tuple> { ";" <expression_or_tuple> }*
     //    | "{" <block> "}"
 
     let mut nodes = Vec::new();
 
     if stream.next_if_matches_token(&Token::LeftBrace).is_some() {
-        let block = parse_block(stream)?;
+        let block = parse_expression_tuple_or_block(stream)?;
         if stream.next_if_matches_token(&Token::RightBrace).is_none() {
             return Err(ParseError {
                 message: "Expected closing brace '}'".to_string(),
@@ -278,7 +306,7 @@ fn parse_block(stream: &mut TokenStream) -> Result<ParserAst, ParseError> {
         Ok(block)
     } else {
         loop {
-            let expr = parse_expression(stream)?;
+            let expr = parse_expression_or_tuple(stream)?;
             nodes.push(expr);
 
             if stream.next_if_matches_token(&Token::Semicolon).is_none() {
@@ -302,7 +330,7 @@ fn parse_block(stream: &mut TokenStream) -> Result<ParserAst, ParseError> {
 pub fn parse(input: &str) -> Result<ParserAst, BoxedError> {
     let mut stream = TokenStream::from_str(input)?;
 
-    let ast = parse_block(&mut stream);
+    let ast = parse_expression_tuple_or_block(&mut stream);
 
     if ast.is_ok() && !stream.end_of_stream() {
         return Err(ParseError {

@@ -63,6 +63,9 @@ pub enum ParserAst {
     Compound {
         nodes: Vec<ParserAst>,
     },
+    Tuple {
+        components: Vec<ParserAst>,
+    },
     Blank {
         bind_name: Option<String>,
         head_constraint: Option<String>,
@@ -85,7 +88,7 @@ pub enum ParserAst {
     Condition {
         pattern: Box<ParserAst>,
         predicate: Box<ParserAst>,
-    }
+    },
 }
 
 impl ParserAst {
@@ -268,6 +271,10 @@ impl ParserAst {
 
     pub fn new_block(nodes: Vec<ParserAst>) -> Self {
         ParserAst::Compound { nodes }
+    }
+
+    pub fn new_tuple(components: Vec<ParserAst>) -> Self {
+        ParserAst::Tuple { components }
     }
 
     pub fn value_from_constant(&self) -> Option<Number> {

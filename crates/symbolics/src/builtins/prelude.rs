@@ -60,5 +60,9 @@ pub use scoping::compound::Compound;
 pub use simplification::expand::Expand;
 pub use simplification::simplify::Simplify;
 
+// --- Structure --------------------------------------------------------------
+
+pub use structure::tuple::Tuple;
+
 // --- System -----------------------------------------------------------------
 pub use system::help::Help;

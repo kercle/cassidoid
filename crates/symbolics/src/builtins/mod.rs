@@ -8,6 +8,7 @@ pub mod patterns;
 pub mod relational;
 pub mod scoping;
 pub mod simplification;
+pub mod structure;
 pub mod system;
 pub mod traits;
 
@@ -26,6 +27,7 @@ pub enum BuiltInCategory {
     Relational,
     Scoping,
     Simplification,
+    Structure,
     System,
 }
 
@@ -42,6 +44,7 @@ impl Display for BuiltInCategory {
             Relational => write!(f, "Relational"),
             Scoping => write!(f, "Scoping"),
             Simplification => write!(f, "Simplification"),
+            Structure => write!(f, "Structure"),
             System => write!(f, "System"),
         }
     }

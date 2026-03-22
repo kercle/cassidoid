@@ -150,6 +150,10 @@ impl From<ParserAst> for RawExpr {
                 let nodes = nodes.into_iter().map(Self::from).collect();
                 Self::new_node(builtins::Compound::head(), nodes)
             }
+            Tuple { components } => {
+                let components = components.into_iter().map(Self::from).collect();
+                Self::new_node(builtins::Tuple::head(), components)
+            }
         }
     }
 }
