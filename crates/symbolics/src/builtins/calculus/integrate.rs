@@ -75,7 +75,7 @@ fn build_rewriter() -> Rewriter {
         ),
         // =============== Basic ===============
         (
-            norm_expr!( Integrate[c_?IsNumber, x_?IsSymbol] ),
+            norm_expr!( Integrate[c_, x_?IsSymbol] /; FreeOf[c, x] ),
             raw_expr!(c * x),
         ),
         (
@@ -83,20 +83,16 @@ fn build_rewriter() -> Rewriter {
             raw_expr!(x ^ 2 / 2),
         ),
         (
-            norm_expr!( Integrate[c_?IsSymbol, x_?IsSymbol] ),
-            raw_expr!(c * x),
+            norm_expr!( Integrate[x_ * f__, x_?IsSymbol] ),
+            raw_expr!(x * Integrate[Mul[f], x] - Integrate[Integrate[Mul[f], x], x]),
         ),
-        // (
-        //     norm_expr!( Integrate[x_ * f__, x_?IsSymbol] ),
-        //     raw_expr!(x * Integrate[Mul[f], x] - Integrate[Integrate[Mul[f], x], x]),
-        // ),
-        // (
-        //     norm_expr!( Integrate[x_^n_?IsPositiveInteger * f__, x_?IsSymbol] ),
-        //     raw_expr!(x^n * Integrate[Mul[f], x] - n * Integrate[x^(n-1) * Integrate[Mul[f], x], x]),
-        // ),
+        (
+            norm_expr!( Integrate[x_^n_?IsPositiveInteger * f__, x_?IsSymbol] ),
+            raw_expr!(x^n * Integrate[Mul[f], x] - n * Integrate[x^(n-1) * Integrate[Mul[f], x], x]),
+        ),
         // =============== Powers ===============
         (
-            norm_expr!( Integrate[1 / x_, x_?IsSymbol] ),
+            norm_expr!( Integrate[1 / x, x_?IsSymbol] ),
             raw_expr!(Log[Abs[x]]),
         ),
         (
