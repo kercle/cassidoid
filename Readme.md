@@ -6,7 +6,7 @@ This project emerged from my PDE solver where I experimented with WebGL and WebA
 
 ## Demo
 
-The project comes with a library that provides WASM bindings, which allows one to embed the CAS in a website. To try it out, visit [the demo website](https://kercle.github.io/cassidoid/).
+The project comes with a library that provides WASM bindings, which allows one to embed the CAS in a website. To try it out, visit [the demo website](https://kercle.github.io/cassida/).
 
 Example screenshot of the web app demonstrating plotting and differentiation:
 ![Demo Screenshot](assets/screenshot.png)
@@ -70,7 +70,7 @@ The syntax of the expressions is Mathematica inspired.
 
 ## Logo
 
-The logo features a [tortoise beetle (cassidoid)](https://en.wikipedia.org/wiki/Cassidinae). I looked for bugs featuring pretty patterns when then tortoise beetles showed up. Coincidentally, the subfamily is also called *Cassidinae*, which - starting with CAS - was the perfect match. 🙂
+The logo features a [tortoise beetle](https://en.wikipedia.org/wiki/Cassidinae). The name is taken from the genus Cassida.
 
 ## Disclaimer on use of AI
 

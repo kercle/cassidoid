@@ -7,7 +7,7 @@
 		<img width="60" src={logo} class="mr-6 mb-6 opacity-80" alt="Logo" />
 	</div>
 	<div>
-		<p class="font-sans text-3xl opacity-80">Cassidoid</p>
+		<p class="font-sans text-3xl opacity-80">Cassida</p>
 		<p class="mt-2 font-sans">
 			<span class="badge badge-accent mr-2 font-mono">Help[]</span>shows an overview of available
 			builtin functionality.

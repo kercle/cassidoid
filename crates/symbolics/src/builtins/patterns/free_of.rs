@@ -27,7 +27,7 @@ impl BuiltIn for FreeOf {
         BuiltInDoc {
             category: BuiltInCategory::Patterns,
             title: Self::head(),
-            summary: "Tests if no sub-expressions of a given subject matches the provided pattern. This is Cassidoids analogue to Mathematicas `FreeQ`.",
+            summary: "Tests if no sub-expressions of a given subject matches the provided pattern. This is Cassidas analogue to Mathematicas `FreeQ`.",
             pattern_doc: vec![PatternDoc::new(
                 raw_expr!(FreeOf[t_, p_]),
                 "Walks over all subexpressions of $t$ and returns `False` if any match if found. Otherwise it returns `True`.",

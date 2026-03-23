@@ -44,7 +44,7 @@ fn normalize_raw_node(head_expr: RawExpr, args: Vec<RawExpr>) -> NormExpr {
     // Absent is a special symbol used in pattern matching optionals
     // Usually, it is just removed, but we want Pow[x, Absent] to
     // reduce to x, while Pow[Absent, x] reduces to Pow[x]. Contrary
-    // to Mathematica, Cassidoid does not normalize Pow[x] to x.
+    // to Mathematica, Cassida does not normalize Pow[x] to x.
     let args = if head_expr.matches_symbol(builtins::Pow::head()) && args.len() == 2 {
         args
     } else {
