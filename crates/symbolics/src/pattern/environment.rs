@@ -7,7 +7,7 @@ use crate::{
 };
 
 #[derive(Clone)]
-pub(super) enum EnvBinding<'s> {
+pub enum EnvBinding<'s> {
     One(&'s NormExpr),
     Many(Rc<Vec<&'s NormExpr>>),
 }
@@ -120,6 +120,13 @@ impl<'p, 's> Environment<'p, 's> {
 
     pub fn pattern_id(&self) -> PatternId {
         self.pattern_id
+    }
+
+    pub fn iter(&self) -> impl Iterator<Item = (&str, &EnvBinding<'s>)> {
+        self.bindings.iter().filter_map(|(var_id, binding)| {
+            let name = self.program.var(*var_id)?;
+            Some((name, binding))
+        })
     }
 }
 

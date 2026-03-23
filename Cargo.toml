@@ -10,6 +10,7 @@ members = [
     "crates/parser",
     "crates/parser-macros",
     "debug-utils/visualize-pattern-program",
+    "debug-utils/list-matches",
 ]
 
 [profile.profiling]
