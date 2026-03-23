@@ -92,8 +92,8 @@ fn build_rewriter() -> Rewriter {
         ),
         // =============== Powers ===============
         (
-            norm_expr!( Integrate[1 / x, x_?IsSymbol] ),
-            raw_expr!(Log[Abs[x]]),
+            norm_expr!( Integrate[1 / (a_. + b_. * x_), x_?IsSymbol] /; FreeOf[(a, b), x] ),
+            raw_expr!(Log[Abs[a + b * x]] / b),
         ),
         (
             norm_expr!( Integrate[x_ ^ k_?IsNumber, x_?IsSymbol] ),
@@ -101,22 +101,22 @@ fn build_rewriter() -> Rewriter {
         ),
         // =============== Exponentials ===============
         (
-            norm_expr!( Integrate[Exp[x_], x_?IsSymbol] ),
-            raw_expr!(Exp[x]),
+            norm_expr!( Integrate[Exp[a_. + b_. * x_], x_?IsSymbol] /; FreeOf[(a, b), x] ),
+            raw_expr!(Exp[a + b * x] / b),
         ),
         // =============== Logarithms ===============
         (
-            norm_expr!( Integrate[Log[x_], x_?IsSymbol] ),
-            raw_expr!(x * Log[x] - x),
+            norm_expr!( Integrate[Log[a_. + b_. * x_], x_?IsSymbol] /; FreeOf[(a, b), x] ),
+            raw_expr!((a / b + x) * Log[a + b * x] - x),
         ),
         // =============== Trigonometric functions ===============
         (
-            norm_expr!( Integrate[Sin[x_], x_?IsSymbol] ),
-            raw_expr!(-Cos[x]),
+            norm_expr!( Integrate[Sin[a_. + b_. * x_], x_?IsSymbol] /; FreeOf[(a, b), x]  ),
+            raw_expr!(-Cos[a + b * x] / b),
         ),
         (
-            norm_expr!( Integrate[Cos[x_], x_?IsSymbol] ),
-            raw_expr!(Sin[x]),
+            norm_expr!( Integrate[Cos[a_. + b_. * x_], x_?IsSymbol] /; FreeOf[(a, b), x]  ),
+            raw_expr!(Sin[a + b * x] / b),
         ),
     ];
 
