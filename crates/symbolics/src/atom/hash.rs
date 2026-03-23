@@ -19,6 +19,10 @@ impl Hash for Atom {
                 2u8.hash(state);
                 v.hash(state);
             }
+            Boolean(b) => {
+                3u8.hash(state);
+                b.hash(state);
+            }
         }
     }
 }

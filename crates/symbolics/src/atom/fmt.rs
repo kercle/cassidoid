@@ -8,6 +8,7 @@ impl Debug for Atom {
             Atom::Number(value) => write!(f, "{value}"),
             Atom::Symbol(name) => write!(f, "{name}"),
             Atom::StringLiteral(value) => write!(f, "{value}"),
+            Atom::Boolean(value) => write!(f, "{value}"),
         }
     }
 }

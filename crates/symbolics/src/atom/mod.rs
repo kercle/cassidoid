@@ -10,6 +10,7 @@ pub enum Atom {
     Number(Number),
     Symbol(String),
     StringLiteral(String),
+    Boolean(bool),
 }
 
 impl Atom {
@@ -38,6 +39,7 @@ impl Atom {
             Atom::Number(_) => 0,
             Atom::Symbol(_) => 1,
             Atom::StringLiteral(_) => 2,
+            Atom::Boolean(_) => 3,
         }
     }
 

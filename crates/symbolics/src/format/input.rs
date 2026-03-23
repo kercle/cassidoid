@@ -123,6 +123,17 @@ fn expr_to_latex_inner(expr: &RawExpr) -> String {
         } => format!("\"{value}\""),
 
         ExprKind::Atom {
+            entry: Atom::Boolean(value),
+            ..
+        } => {
+            if *value {
+                builtins::symbols::TRUE.to_string()
+            } else {
+                builtins::symbols::FALSE.to_string()
+            }
+        }
+
+        ExprKind::Atom {
             entry: Atom::Symbol(name),
             ..
         } if name == builtins::symbols::INDETERMINATE => name.to_string(),
@@ -200,7 +211,7 @@ fn expr_to_latex_inner(expr: &RawExpr) -> String {
             format!("{}!", expr_to_input_with_pos(&args[0], Position::FactArg))
         }
 
-        ExprKind::Node { head,  args ,..} if head.matches_symbol(builtins::Tuple::head()) => {
+        ExprKind::Node { head, args, .. } if head.matches_symbol(builtins::Tuple::head()) => {
             let args_str = args
                 .iter()
                 .map(|arg| expr_to_input_with_pos(arg, Position::Root))

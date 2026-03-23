@@ -62,6 +62,9 @@ impl EvalProgram {
             ExprKind::Atom {
                 entry: Atom::StringLiteral(_),
             } => unimplemented!(),
+            ExprKind::Atom {
+                entry: Atom::Boolean(_),
+            } => unimplemented!(),
             ExprKind::Node { .. } => return self.compile_node(expr),
         }
 

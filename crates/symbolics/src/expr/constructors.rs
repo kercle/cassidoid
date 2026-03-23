@@ -57,6 +57,10 @@ impl RawExpr {
         Self::new_atom(Atom::Symbol(symb.as_ref().to_string()))
     }
 
+    pub fn new_boolean(value: bool) -> Self {
+        Self::new_atom(Atom::Boolean(value))
+    }
+
     pub fn new_blank() -> Self {
         Self::new_node(builtins::Blank::head(), vec![])
     }

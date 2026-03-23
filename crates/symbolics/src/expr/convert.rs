@@ -48,6 +48,8 @@ impl From<ParserAst> for RawExpr {
         use ParserAst::*;
         match ast {
             Constant { value } => Self::new_number(value),
+            Symbol { name } if name == builtins::symbols::TRUE => Self::new_boolean(true),
+            Symbol { name } if name == builtins::symbols::FALSE => Self::new_boolean(false),
             Symbol { name } => Self::new_symbol(name),
             LesserThan { lhs, rhs } => {
                 Self::new_binary_node(builtins::Less::head(), Self::from(*lhs), Self::from(*rhs))

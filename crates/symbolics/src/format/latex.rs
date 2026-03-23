@@ -191,6 +191,25 @@ fn expr_to_latex_inner(expr: &RawExpr) -> String {
             ..
         } => greek_letter(name),
 
+        ExprKind::Atom {
+            entry: Atom::Boolean(value),
+            ..
+        } => {
+            format!(
+                "\\text{{{}}}",
+                if *value {
+                    builtins::symbols::TRUE
+                } else {
+                    builtins::symbols::FALSE
+                }
+            )
+        }
+
+        ExprKind::Atom {
+            entry: Atom::StringLiteral(_),
+            ..
+        } => unimplemented!(),
+
         ExprKind::Node { args, .. } if expr.is_application_of(builtins::Neg::head(), 1) => {
             format!(
                 "-{}",
@@ -263,7 +282,7 @@ fn expr_to_latex_inner(expr: &RawExpr) -> String {
             render_integrate(args)
         }
 
-        ExprKind::Node { head,  args ,..} if head.matches_symbol(builtins::Tuple::head()) => {
+        ExprKind::Node { head, args, .. } if head.matches_symbol(builtins::Tuple::head()) => {
             let args_str = args
                 .iter()
                 .map(|arg| expr_to_latex_with_pos(arg, Position::Root))
@@ -278,8 +297,6 @@ fn expr_to_latex_inner(expr: &RawExpr) -> String {
             };
             render_generic_node(name, args)
         }
-
-        _ => todo!(),
     }
 }
 
