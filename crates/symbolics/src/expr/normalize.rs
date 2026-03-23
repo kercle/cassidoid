@@ -213,7 +213,9 @@ fn normalize_raw_add(args: Vec<RawExpr>) -> NormExpr {
         }
 
         let coeff = RawExpr::new_number(coeff).normalize();
-        let node = if term.has_head_symbol(builtins::Mul::head()) {
+        let node = if coeff.is_number_one() {
+            term
+        } else if term.has_head_symbol(builtins::Mul::head()) {
             let ExprKind::Node { head, args } = term.into_kind() else {
                 unreachable!("Coefficients should already by isolated");
             };
@@ -231,8 +233,6 @@ fn normalize_raw_add(args: Vec<RawExpr>) -> NormExpr {
                 head,
                 args: new_args,
             })
-        } else if coeff.is_number_one() {
-            term
         } else {
             NormExpr::new_simple_node_unchecked(builtins::Mul::head(), vec![coeff, term])
         };
@@ -899,6 +899,13 @@ mod normalize_comprehensive_tests {
     fn test_absent_in_pow_base_and_exp() {
         let expr = raw_expr!(Pow[Absent, Absent]);
         let expected = raw_expr!(Pow[]);
+        assert_eq!(expr.normalize().into_raw(), expected);
+    }
+
+    #[test]
+    fn test_add_does_not_introduce_dangling_factor_one() {
+        let expr = raw_expr!(Add[a, Mul[b, c]]);
+        let expected = raw_expr!(Add[a, Mul[b, c]]);
         assert_eq!(expr.normalize().into_raw(), expected);
     }
 }
