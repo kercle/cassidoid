@@ -116,7 +116,7 @@ pub(super) fn build_rewriter(_binomial_gen: Shared<BinomialGenerator>) -> Rewrit
         (norm_expr!(Expand[a_]), raw_expr!(a)),
     ];
 
-    rw.with_rules(
+    rw.with_rules_from_tuples(
         rules
             .into_iter()
             .map(|(pat, repl)| (pat, move |ctx: &Environment<'_, '_>| ctx.fill(repl.clone()))),

@@ -41,7 +41,7 @@ pub(super) fn build_rewriter() -> Rewriter {
         (norm_expr!(Log[1]), norm_expr!(0)),
     ];
 
-    Rewriter::new().with_rules(
+    Rewriter::new().with_rules_from_tuples(
         rules
             .into_iter()
             .map(|(pat, repl)| (pat, move |ctx: &Environment<'_, '_>| ctx.fill(repl.clone()))),

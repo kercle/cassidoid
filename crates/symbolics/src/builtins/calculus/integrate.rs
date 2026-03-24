@@ -120,7 +120,7 @@ fn build_rewriter() -> Rewriter {
         ),
     ];
 
-    Rewriter::new().with_rules(
+    Rewriter::new().with_rules_from_tuples(
         rules
             .into_iter()
             .map(|(pat, repl)| (pat, move |ctx: &Environment<'_, '_>| ctx.fill(repl.clone()))),

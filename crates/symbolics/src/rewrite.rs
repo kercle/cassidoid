@@ -40,7 +40,7 @@ impl Rewriter {
         self
     }
 
-    pub fn with_rules<I, F>(mut self, rules: I) -> Self
+    pub fn with_rules_from_tuples<I, F>(mut self, rules: I) -> Self
     where
         I: IntoIterator<Item = (NormExpr, F)>,
         F: Fn(&Environment<'_, '_>) -> RawExpr + Send + Sync + 'static,
@@ -49,6 +49,10 @@ impl Rewriter {
             self = self.with_rule(p, t);
         }
         self
+    }
+
+    pub fn with_rules<I, F>(mut self, rules: &RawExpr) -> Self {
+        todo!()
     }
 
     pub fn apply_first_match(&self, expr: NormExpr) -> NormExpr {
@@ -76,7 +80,7 @@ impl NormExpr {
         I: IntoIterator<Item = (NormExpr, F)>,
         F: Fn(&Environment<'_, '_>) -> RawExpr + Send + Sync + 'static,
     {
-        let rw: Rewriter = Rewriter::new().with_rules(rules);
+        let rw: Rewriter = Rewriter::new().with_rules_from_tuples(rules);
         self.rewrite_all(&rw, limit_guard)
     }
 
