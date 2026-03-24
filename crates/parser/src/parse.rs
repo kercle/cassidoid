@@ -254,6 +254,29 @@ fn parse_condition(stream: &mut TokenStream) -> Result<ParserAst, ParseError> {
     Ok(result)
 }
 
+fn parse_rule_delayed(stream: &mut TokenStream) -> Result<ParserAst, ParseError> {
+    // <rule_delayed> ::= <cond> { "^" <cond> }
+
+    let mut result = parse_condition(stream)?;
+
+    if stream.next_if_matches_token(&Token::ColonGt).is_some() {
+        result = ParserAst::new_rule_delayed(result, parse_rule_delayed(stream)?);
+    }
+
+    Ok(result)
+}
+
+fn parse_non_tuple_expr(stream: &mut TokenStream) -> Result<ParserAst, ParseError> {
+    // This functions is just a convenience function that
+    // passes stream to cmp, s.t. adding new low-precidence
+    // operators is less error-prone when updating the
+    // structural parser functions.
+
+    // <cond> ::= <rule_delayed>
+
+    parse_rule_delayed(stream)
+}
+
 fn parse_expression_or_enclosed_block(stream: &mut TokenStream) -> Result<ParserAst, ParseError> {
     // <expression_or_enclosed_block> ::= <cond> | "{" <block> "}"
 
@@ -268,17 +291,17 @@ fn parse_expression_or_enclosed_block(stream: &mut TokenStream) -> Result<Parser
 
         Ok(block)
     } else {
-        parse_condition(stream)
+        parse_non_tuple_expr(stream)
     }
 }
 
 fn parse_expression_or_tuple(stream: &mut TokenStream) -> Result<ParserAst, ParseError> {
     // <expression_or_tuple> ::= <cond> { "," <cmd> }*
 
-    let mut tuple = vec![parse_condition(stream)?];
+    let mut tuple = vec![parse_non_tuple_expr(stream)?];
 
     while stream.next_if_matches_token(&Token::Comma).is_some() {
-        tuple.push(parse_condition(stream)?);
+        tuple.push(parse_non_tuple_expr(stream)?);
     }
 
     if tuple.len() == 1 {

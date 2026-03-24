@@ -43,6 +43,7 @@ pub use patterns::free_of::FreeOf;
 pub use patterns::optional::Optional;
 pub use patterns::pattern::Pattern;
 pub use patterns::pattern_test::PatternTest;
+pub use patterns::rule_delayed::RuleDelayed;
 
 // --- Plotting ---------------------------------------------------------------
 

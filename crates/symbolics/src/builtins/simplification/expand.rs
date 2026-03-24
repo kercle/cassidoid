@@ -58,7 +58,7 @@ impl BuiltIn for Expand {
 }
 
 pub(super) fn build_rewriter(_binomial_gen: Shared<BinomialGenerator>) -> Rewriter {
-    let rw = Rewriter::new().with_rule(
+    let rw = Rewriter::new().with_native_rule(
         norm_expr!( Expand[a__. * HoldPattern[Pattern[sum, Add[__]]]^m_?IsPositiveInteger] ),
         move |ctx: &Environment<'_, '_>| {
             let sum = ctx.get_one("sum").unwrap();
@@ -85,7 +85,7 @@ pub(super) fn build_rewriter(_binomial_gen: Shared<BinomialGenerator>) -> Rewrit
         },
     );
 
-    let rw = rw.with_rule(
+    let rw = rw.with_native_rule(
         norm_expr!(Expand[Pattern[sum, _ + __]]),
         move |ctx: &Environment<'_, '_>| {
             let ExprKind::Node { mut args, .. } =

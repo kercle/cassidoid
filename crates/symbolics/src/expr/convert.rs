@@ -148,6 +148,14 @@ impl From<ParserAst> for RawExpr {
                 Self::from(*pattern),
                 Self::from(*predicate),
             ),
+            RuleDelayed {
+                pattern,
+                replacement,
+            } => RawExpr::new_binary_node(
+                builtins::RuleDelayed::head(),
+                Self::from(*pattern),
+                Self::from(*replacement),
+            ),
             Compound { nodes } => {
                 let nodes = nodes.into_iter().map(Self::from).collect();
                 Self::new_node(builtins::Compound::head(), nodes)

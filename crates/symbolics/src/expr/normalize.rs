@@ -113,6 +113,16 @@ fn normalize_raw_node(head_expr: RawExpr, args: Vec<RawExpr>) -> NormExpr {
                 args: args.into_iter().map(|a| a.into_normexpr_unsafe()).collect(),
             })
         }
+        Some(builtins::RuleDelayed::HEAD) if args.len() == 2 => {
+            let [pat, repl]: [RawExpr; 2] = args.try_into().unwrap();
+
+            RawExpr::new_binary_node(
+                builtins::RuleDelayed::HEAD,
+                pat.normalize().into_raw(),
+                repl,
+            )
+            .into_normexpr_unsafe()
+        }
         Some(builtins::Condition::HEAD) if args.len() == 2 => {
             let [inner, cond]: [RawExpr; 2] = args.try_into().unwrap();
 

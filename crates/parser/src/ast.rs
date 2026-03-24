@@ -89,6 +89,10 @@ pub enum ParserAst {
         pattern: Box<ParserAst>,
         predicate: Box<ParserAst>,
     },
+    RuleDelayed {
+        pattern: Box<ParserAst>,
+        replacement: Box<ParserAst>,
+    },
 }
 
 impl ParserAst {
@@ -275,6 +279,13 @@ impl ParserAst {
 
     pub fn new_tuple(components: Vec<ParserAst>) -> Self {
         ParserAst::Tuple { components }
+    }
+
+    pub fn new_rule_delayed(pattern: ParserAst, replacement: ParserAst) -> Self {
+        ParserAst::RuleDelayed {
+            pattern: Box::new(pattern),
+            replacement: Box::new(replacement),
+        }
     }
 
     pub fn value_from_constant(&self) -> Option<Number> {

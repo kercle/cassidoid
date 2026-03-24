@@ -1,5 +1,5 @@
 use crate::{
-    builtins,
+    builtins::{self, traits::BuiltIn},
     expr::{ExprKind, NormExpr, RawExpr},
     pattern::{
         environment::Environment,
@@ -25,7 +25,7 @@ impl Rewriter {
         Self::default()
     }
 
-    pub fn with_rule<F>(mut self, pattern: NormExpr, transform: F) -> Self
+    pub fn with_native_rule<F>(mut self, pattern: NormExpr, transform: F) -> Self
     where
         F: Fn(&Environment<'_, '_>) -> RawExpr + Send + Sync + 'static,
     {
@@ -46,13 +46,38 @@ impl Rewriter {
         F: Fn(&Environment<'_, '_>) -> RawExpr + Send + Sync + 'static,
     {
         for (p, t) in rules {
-            self = self.with_rule(p, t);
+            self = self.with_native_rule(p, t);
         }
         self
     }
 
-    pub fn with_rules<I, F>(mut self, rules: &RawExpr) -> Self {
-        todo!()
+    pub fn with_rule(self, rule: &NormExpr) -> Self {
+        if !rule.is_application_of(builtins::RuleDelayed::head(), 2) {
+            return self;
+        }
+
+        let pattern = rule.get_arg(0).unwrap().clone();
+        let replacement = rule.get_arg(1).unwrap().clone().into_raw();
+
+        self.with_native_rule(pattern, move |ctx: &Environment<'_, '_>| {
+            ctx.fill(replacement.clone())
+        })
+    }
+
+    pub fn with_rules<I, F>(mut self, rules: &NormExpr) -> Self {
+        if rules.has_head_symbol(builtins::RuleDelayed::head()) {
+            return self.with_rule(rules);
+        }
+
+        if !rules.has_head_symbol(builtins::Compound::head()) {
+            return self;
+        }
+
+        for rule in rules.iter_args().unwrap() {
+            self = self.with_rule(rule);
+        }
+
+        self
     }
 
     pub fn apply_first_match(&self, expr: NormExpr) -> NormExpr {
