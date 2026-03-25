@@ -1,7 +1,7 @@
-import { h as p, aR as A, aS as T, N as S, aT as M, aU as E, aV as x, aW as L, aX as N } from "./BfX1JZpI.js";
-let te, Z, ee, y;
+import { h as p, aR as A, aS as S, N as T, aT as M, aU as E, aV as x, aW as L, aX as W } from "./BfX1JZpI.js";
+let te, Q, ee, y;
 let __tla = (async () => {
-  const U = /* @__PURE__ */ Symbol("is custom element"), W = /* @__PURE__ */ Symbol("is html"), I = T ? "link" : "LINK";
+  const N = /* @__PURE__ */ Symbol("is custom element"), U = /* @__PURE__ */ Symbol("is html"), I = S ? "link" : "LINK";
   ee = function(e) {
     if (p) {
       var t = false, n = () => {
@@ -16,7 +16,7 @@ let __tla = (async () => {
           }
         }
       };
-      e.__on_r = n, S(n), M();
+      e.__on_r = n, T(n), M();
     }
   };
   y = function(e, t, n, o) {
@@ -25,8 +25,8 @@ let __tla = (async () => {
   };
   function O(e) {
     return e.__attributes ?? (e.__attributes = {
-      [U]: e.nodeName.includes("-"),
-      [W]: e.namespaceURI === A
+      [N]: e.nodeName.includes("-"),
+      [U]: e.namespaceURI === A
     });
   }
   var h = /* @__PURE__ */ new Map();
@@ -41,7 +41,7 @@ let __tla = (async () => {
     }
     return n;
   }
-  const B = "" + new URL("../assets/kernel_bg.BjTZrMeT.wasm", import.meta.url).href, C = async (e = {}, t) => {
+  const B = "" + new URL("../assets/kernel_bg.5QHMjoWH.wasm", import.meta.url).href, C = async (e = {}, t) => {
     let n;
     if (t.startsWith("data:")) {
       const o = t.replace(/^data:.*?base64,/, "");
@@ -66,8 +66,8 @@ let __tla = (async () => {
   function R(e) {
     let t, n;
     try {
-      const o = F(e, _.__wbindgen_malloc, _.__wbindgen_realloc), s = w, a = _.eval_input(o, s);
-      return t = a[0], n = a[1], j(a[0], a[1]);
+      const o = j(e, _.__wbindgen_malloc, _.__wbindgen_realloc), s = w, a = _.eval_input(o, s);
+      return t = a[0], n = a[1], H(a[0], a[1]);
     } finally {
       _.__wbindgen_free(t, n, 1);
     }
@@ -76,14 +76,14 @@ let __tla = (async () => {
     const e = _.__wbindgen_externrefs, t = e.grow(4);
     e.set(0, void 0), e.set(t + 0, void 0), e.set(t + 1, null), e.set(t + 2, true), e.set(t + 3, false);
   }
-  function j(e, t) {
-    return e = e >>> 0, H(e, t);
+  function H(e, t) {
+    return e = e >>> 0, G(e, t);
   }
   let l = null;
   function u() {
     return (l === null || l.byteLength === 0) && (l = new Uint8Array(_.memory.buffer)), l;
   }
-  function F(e, t, n) {
+  function j(e, t, n) {
     if (n === void 0) {
       const i = d.encode(e), c = t(i.length, 1) >>> 0;
       return u().subarray(c, c + i.length).set(i), w = i.length, c;
@@ -108,10 +108,10 @@ let __tla = (async () => {
     fatal: true
   });
   b.decode();
-  const G = 2146435072;
+  const F = 2146435072;
   let g = 0;
-  function H(e, t) {
-    return g += t, g >= G && (b = new TextDecoder("utf-8", {
+  function G(e, t) {
+    return g += t, g >= F && (b = new TextDecoder("utf-8", {
       ignoreBOM: true,
       fatal: true
     }), b.decode(), g = t), b.decode(u().subarray(e, e + t));
@@ -148,7 +148,7 @@ let __tla = (async () => {
   X(q);
   v();
   function z() {
-    const { subscribe: e, set: t, update: n } = N({
+    const { subscribe: e, set: t, update: n } = W({
       data: {
         history: []
       },
@@ -181,18 +181,18 @@ let __tla = (async () => {
       send: (r) => a.send(r)
     };
   }
-  Z = z();
+  Q = z();
   te = function(e) {
     const t = {
       eval: e
     };
-    Z.send(JSON.stringify(t));
+    Q.send(JSON.stringify(t));
   };
 })();
 export {
   __tla,
   te as a,
-  Z as b,
+  Q as b,
   ee as r,
   y as s
 };
