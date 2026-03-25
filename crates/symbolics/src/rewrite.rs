@@ -64,7 +64,7 @@ impl Rewriter {
         })
     }
 
-    pub fn with_rules<I, F>(mut self, rules: &NormExpr) -> Self {
+    pub fn with_rules(mut self, rules: &NormExpr) -> Self {
         if rules.has_head_symbol(builtins::RuleDelayed::head()) {
             return self.with_rule(rules);
         }

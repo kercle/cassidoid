@@ -273,7 +273,7 @@ impl ParserAst {
         }
     }
 
-    pub fn new_block(nodes: Vec<ParserAst>) -> Self {
+    pub fn new_compound(nodes: Vec<ParserAst>) -> Self {
         ParserAst::Compound { nodes }
     }
 

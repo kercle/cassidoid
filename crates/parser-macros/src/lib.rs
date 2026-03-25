@@ -170,7 +170,10 @@ fn ast_to_token_stream(ast: ParserAst) -> proc_macro2::TokenStream {
             let replacement_ts = ast_to_token_stream(*replacement);
             quote! { #ast_path::new_rule_delayed(#pattern_ts, #replacement_ts) }
         }
-        Compound { .. } => todo!(),
+        Compound { nodes } => {
+            let pattern_ts: Vec<_> = nodes.into_iter().map(ast_to_token_stream).collect();
+            quote! { #ast_path::new_compound(vec![#(#pattern_ts),*]) }
+        }
     }
 }
 

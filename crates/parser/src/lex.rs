@@ -388,6 +388,11 @@ impl TokenStream {
             if matches!(iter.peek(), Some(';')) {
                 iter.next(); // Consume ';'
                 tokens.push((Token::SlashSemicolon, pos));
+            } else if matches!(iter.peek(), Some('/')) {
+                // Remove comments
+                while let Some(c) = iter.next()
+                    && c != '\n'
+                {}
             } else {
                 tokens.push((Token::Slash, pos));
             }

@@ -329,6 +329,11 @@ fn parse_expression_tuple_or_block(stream: &mut TokenStream) -> Result<ParserAst
         Ok(block)
     } else {
         loop {
+            if let Some(Token::RightBrace) = stream.peek_token() {
+                // this happens when there is a semicolon before closing }
+                break;
+            }
+
             let expr = parse_expression_or_tuple(stream)?;
             nodes.push(expr);
 
@@ -345,7 +350,7 @@ fn parse_expression_tuple_or_block(stream: &mut TokenStream) -> Result<ParserAst
         } else if nodes.len() == 1 {
             Ok(nodes.pop().unwrap())
         } else {
-            Ok(ParserAst::new_block(nodes))
+            Ok(ParserAst::new_compound(nodes))
         }
     }
 }
@@ -577,7 +582,7 @@ mod tests {
 
         assert_eq!(
             ast,
-            ParserAst::new_block(vec![
+            ParserAst::new_compound(vec![
                 ParserAst::new_add(
                     ParserAst::new_constant(Number::from_str("3").unwrap()),
                     ParserAst::new_constant(Number::from_str("4").unwrap()),

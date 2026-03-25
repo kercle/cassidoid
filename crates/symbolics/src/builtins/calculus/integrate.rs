@@ -4,9 +4,7 @@ use crate::{
         traits::{BuiltIn, BuiltInDoc, PatternDoc},
     },
     expr::NormExpr,
-    norm_expr,
-    pattern::environment::Environment,
-    raw_expr,
+    norm_expr, raw_expr,
     rewrite::Rewriter,
 };
 
@@ -63,66 +61,35 @@ impl BuiltIn for Integrate {
 }
 
 fn build_rewriter() -> Rewriter {
-    let rules = vec![
+    Rewriter::new().with_rules(&norm_expr!({
         // =============== Linearity ===============
-        (
-            norm_expr!( Integrate[f_ + r__, x_?IsSymbol] ),
-            raw_expr!( Integrate[f, x] + Integrate[Add[r],x] ),
-        ),
-        (
-            norm_expr!( Integrate[c_ * r__, x_?IsSymbol] /; FreeOf[c, x] ),
-            raw_expr!( c * Integrate[Mul[r],x] ),
-        ),
-        // =============== Basic ===============
-        (
-            norm_expr!( Integrate[c_, x_?IsSymbol] /; FreeOf[c, x] ),
-            raw_expr!(c * x),
-        ),
-        (
-            norm_expr!( Integrate[x_, x_?IsSymbol] ),
-            raw_expr!(x ^ 2 / 2),
-        ),
-        (
-            norm_expr!( Integrate[x_ * f__, x_?IsSymbol] ),
-            raw_expr!(x * Integrate[Mul[f], x] - Integrate[Integrate[Mul[f], x], x]),
-        ),
-        (
-            norm_expr!( Integrate[x_^n_?IsPositiveInteger * f__, x_?IsSymbol] ),
-            raw_expr!(x^n * Integrate[Mul[f], x] - n * Integrate[x^(n-1) * Integrate[Mul[f], x], x]),
-        ),
-        // =============== Powers ===============
-        (
-            norm_expr!( Integrate[1 / (a_. + b_. * x_), x_?IsSymbol] /; FreeOf[(a, b), x] ),
-            raw_expr!(Log[Abs[a + b * x]] / b),
-        ),
-        (
-            norm_expr!( Integrate[x_ ^ k_?IsNumber, x_?IsSymbol] ),
-            raw_expr!(x ^ (k + 1) / (k + 1)),
-        ),
-        // =============== Exponentials ===============
-        (
-            norm_expr!( Integrate[Exp[a_. + b_. * x_], x_?IsSymbol] /; FreeOf[(a, b), x] ),
-            raw_expr!(Exp[a + b * x] / b),
-        ),
-        // =============== Logarithms ===============
-        (
-            norm_expr!( Integrate[Log[a_. + b_. * x_], x_?IsSymbol] /; FreeOf[(a, b), x] ),
-            raw_expr!((a / b + x) * Log[a + b * x] - x),
-        ),
-        // =============== Trigonometric functions ===============
-        (
-            norm_expr!( Integrate[Sin[a_. + b_. * x_], x_?IsSymbol] /; FreeOf[(a, b), x]  ),
-            raw_expr!(-Cos[a + b * x] / b),
-        ),
-        (
-            norm_expr!( Integrate[Cos[a_. + b_. * x_], x_?IsSymbol] /; FreeOf[(a, b), x]  ),
-            raw_expr!(Sin[a + b * x] / b),
-        ),
-    ];
 
-    Rewriter::new().with_rules_from_tuples(
-        rules
-            .into_iter()
-            .map(|(pat, repl)| (pat, move |ctx: &Environment<'_, '_>| ctx.fill(repl.clone()))),
-    )
+        Integrate[f_ + r__, x_?IsSymbol] :> Integrate[f, x] + Integrate[Add[r],x];
+        Integrate[c_ * r__, x_?IsSymbol] /; FreeOf[c, x] :> c * Integrate[Mul[r],x];
+
+        // =============== Basic ===============
+
+         Integrate[c_, x_?IsSymbol] /; FreeOf[c, x] :> c * x;
+         Integrate[x_, x_?IsSymbol] :>  x ^ 2 / 2;
+         Integrate[x_ * f__, x_?IsSymbol] :>  x * Integrate[Mul[f], x] - Integrate[Integrate[Mul[f], x], x];
+         Integrate[x_^n_?IsPositiveInteger * f__, x_?IsSymbol] :>  x^n * Integrate[Mul[f], x] - n * Integrate[x^(n-1) * Integrate[Mul[f], x], x];
+
+        // =============== Powers ===============
+
+        Integrate[1 / (a_. + b_. * x_), x_?IsSymbol] /; FreeOf[(a, b), x] :> Log[Abs[a + b * x]] / b;
+        Integrate[x_ ^ k_?IsNumber, x_?IsSymbol] :> x ^ (k + 1) / (k + 1);
+
+        // =============== Exponentials ===============
+
+        Integrate[Exp[a_. + b_. * x_], x_?IsSymbol] /; FreeOf[(a, b), x] :> Exp[a + b * x] / b;
+
+        // =============== Logarithms ===============
+
+        Integrate[Log[a_. + b_. * x_], x_?IsSymbol] /; FreeOf[(a, b), x] :> (a / b + x) * Log[a + b * x] - x;
+
+        // =============== Trigonometric functions ===============
+
+        Integrate[Sin[a_. + b_. * x_], x_?IsSymbol] /; FreeOf[(a, b), x] :> -Cos[a + b * x] / b;
+        Integrate[Cos[a_. + b_. * x_], x_?IsSymbol] /; FreeOf[(a, b), x] :> Sin[a + b * x] / b;
+    }))
 }

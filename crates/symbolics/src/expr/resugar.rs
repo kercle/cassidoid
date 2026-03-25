@@ -99,7 +99,6 @@ impl NormExpr {
     }
 
     fn resugar_add(args: Vec<Self>) -> RawExpr {
-        assert!(!args.is_empty());
         if args.is_empty() || args.len() == 1 {
             // This is for the case when the addition is wrapped in
             // Hold or HoldPattern.
