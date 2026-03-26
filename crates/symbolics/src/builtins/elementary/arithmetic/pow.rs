@@ -1,9 +1,8 @@
 use crate::{
     builtins::{
         BuiltInCategory,
-        traits::{BuiltIn, BuiltInDoc, PatternDoc},
-    },
-    raw_expr,
+        traits::{ApplicationError, BuiltIn, BuiltInDoc, PatternDoc},
+    }, ensure, expr::{Expr, NormExpr}, raw_expr
 };
 
 #[derive(Default)]
@@ -39,5 +38,11 @@ impl BuiltIn for Pow {
             examples: vec![("Pow[x, Absent]", "x")],
             related: vec!["Add", "Sub", "Mul", "Div"],
         }
+    }
+
+    fn check_application<S>(expr: &Expr<S>) -> Result<(), ApplicationError> {
+        ensure!(expr.args_len() == 2, ApplicationError::ArityMismatch);
+        ensure!(expr.is_head(Self::head()), ApplicationError::HeadMismatch);
+        Ok(())
     }
 }

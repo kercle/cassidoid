@@ -1,9 +1,8 @@
 use crate::{
     builtins::{
         BuiltInCategory,
-        traits::{BuiltIn, BuiltInDoc, PatternDoc},
-    },
-    raw_expr,
+        traits::{ApplicationError, BuiltIn, BuiltInDoc, PatternDoc},
+    }, ensure, expr::{Expr, NormExpr}, raw_expr
 };
 
 #[derive(Default)]
@@ -35,5 +34,11 @@ impl BuiltIn for Optional {
             examples: vec![],
             related: vec![],
         }
+    }
+
+    fn check_application<S>(expr: &Expr<S>) -> Result<(), ApplicationError> {
+        ensure!(expr.args_len() == 1, ApplicationError::ArityMismatch);
+        ensure!(expr.is_head(Self::head()), ApplicationError::HeadMismatch);
+        Ok(())
     }
 }

@@ -1,7 +1,7 @@
-use crate::builtins::{
+use crate::{builtins::{
     BuiltInCategory,
-    traits::{BuiltIn, BuiltInDoc},
-};
+    traits::{ApplicationError, BuiltIn, BuiltInDoc},
+}, ensure, expr::{Expr, NormExpr}};
 
 #[derive(Default)]
 pub struct Equal;
@@ -25,5 +25,10 @@ impl BuiltIn for Equal {
             examples: vec![],
             related: vec![],
         }
+    }
+
+    fn check_application<S>(expr: &Expr<S>) -> Result<(), ApplicationError> {
+        ensure!(expr.is_head(Self::head()), ApplicationError::HeadMismatch);
+        Ok(())
     }
 }

@@ -53,3 +53,10 @@ macro_rules! timed_eprintln {
         eprintln!("[{elapsed}ms] {}", format_args!($($arg)*));
     }};
 }
+
+#[macro_export]
+macro_rules! ensure {
+    ($cond:expr, $err:expr) => {
+        if !$cond { return Err($err); }
+    }
+}

@@ -1,8 +1,10 @@
 use crate::{
     builtins::{
-        BuiltInCategory,
-        traits::{BuiltIn, BuiltInDoc, PatternDoc},
+        self, BuiltInCategory,
+        traits::{ApplicationError, BuiltIn, BuiltInDoc, PatternDoc},
     },
+    ensure,
+    expr::{Expr, NormExpr},
     raw_expr,
 };
 
@@ -35,5 +37,16 @@ impl BuiltIn for Plot {
             examples: vec![],
             related: vec![],
         }
+    }
+
+    fn check_application<S>(expr: &Expr<S>) -> Result<(), ApplicationError> {
+        ensure!(expr.args_len() == 2, ApplicationError::ArityMismatch);
+        ensure!(expr.is_head(Self::head()), ApplicationError::HeadMismatch);
+        ensure!(
+            expr.get_arg(1)
+                .is_some_and(|e| e.is_head(builtins::Tuple::head())),
+            ApplicationError::ExpectedTupleAt(1)
+        );
+        Ok(())
     }
 }

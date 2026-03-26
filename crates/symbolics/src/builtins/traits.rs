@@ -1,6 +1,6 @@
 use crate::{
     builtins::BuiltInCategory,
-    expr::{NormExpr, RawExpr},
+    expr::{Expr, NormExpr, RawExpr},
 };
 
 #[derive(Clone, Debug)]
@@ -28,6 +28,13 @@ impl PatternDoc {
     }
 }
 
+pub enum ApplicationError {
+    HeadMismatch,
+    ArityMismatch,
+    ExpectedSymbolAt(usize),
+    ExpectedTupleAt(usize),
+}
+
 pub trait BuiltIn {
     fn doc(&self) -> BuiltInDoc;
 
@@ -40,4 +47,15 @@ pub trait BuiltIn {
         Self: Sized;
 
     fn head_dyn(&self) -> &'static str;
+
+    fn check_application<S>(expr: &Expr<S>) -> Result<(), ApplicationError>
+    where
+        Self: Sized;
+
+    fn is_application(expr: &NormExpr) -> bool
+    where
+        Self: Sized,
+    {
+        Self::check_application(expr).is_ok()
+    }
 }

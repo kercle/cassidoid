@@ -1,9 +1,10 @@
 use crate::{
     builtins::{
         BuiltInCategory,
-        traits::{BuiltIn, BuiltInDoc, PatternDoc},
+        traits::{ApplicationError, BuiltIn, BuiltInDoc, PatternDoc},
     },
-    expr::NormExpr,
+    ensure,
+    expr::{Expr, NormExpr},
     norm_expr,
     pattern::environment::Environment,
     raw_expr,
@@ -57,6 +58,16 @@ impl BuiltIn for Derivative {
 
     fn apply_all(&self, expr: NormExpr) -> NormExpr {
         expr.rewrite_all(&self.rewriter, 1000)
+    }
+
+    fn check_application<S>(expr: &Expr<S>) -> Result<(), ApplicationError> {
+        ensure!(expr.args_len() == 2, ApplicationError::ArityMismatch);
+        ensure!(
+            expr.get_arg(1).is_some_and(|a| a.is_symbol()),
+            ApplicationError::ExpectedSymbolAt(1)
+        );
+        ensure!(expr.is_head(Self::head()), ApplicationError::HeadMismatch);
+        Ok(())
     }
 }
 

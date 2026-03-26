@@ -1,17 +1,10 @@
 use numbers::{Number, alg::binomial::BinomialGenerator, integer::BigInteger};
 
 use crate::{
-    atom::Atom,
-    builtins::{
+    atom::Atom, builtins::{
         self, BuiltInCategory,
-        traits::{BuiltIn, BuiltInDoc, PatternDoc},
-    },
-    expr::{ExprKind, NormExpr, RawExpr, constructors::EXPR_PLACEHOLDER},
-    kernel::Shared,
-    norm_expr,
-    pattern::environment::Environment,
-    raw_expr,
-    rewrite::Rewriter,
+        traits::{ApplicationError, BuiltIn, BuiltInDoc, PatternDoc},
+    }, ensure, expr::{Expr, ExprKind, NormExpr, RawExpr, constructors::EXPR_PLACEHOLDER}, kernel::Shared, norm_expr, pattern::environment::Environment, raw_expr, rewrite::Rewriter
 };
 
 pub struct Expand {
@@ -54,6 +47,12 @@ impl BuiltIn for Expand {
 
     fn apply_all(&self, expr: NormExpr) -> NormExpr {
         expr.rewrite_all(&self.rewriter, 1000)
+    }
+
+    fn check_application<S>(expr: &Expr<S>) -> Result<(), ApplicationError> {
+        ensure!(expr.args_len() == 1, ApplicationError::ArityMismatch);
+        ensure!(expr.is_head(Self::head()), ApplicationError::HeadMismatch);
+        Ok(())
     }
 }
 

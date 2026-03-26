@@ -2,11 +2,8 @@ use crate::{
     builtins::{
         BuiltInCategory,
         simplification::{factor, known_values, trigonometric},
-        traits::{BuiltIn, BuiltInDoc, PatternDoc},
-    },
-    expr::NormExpr,
-    raw_expr,
-    rewrite::Rewriter,
+        traits::{ApplicationError, BuiltIn, BuiltInDoc, PatternDoc},
+    }, ensure, expr::{Expr, NormExpr}, raw_expr, rewrite::Rewriter
 };
 
 pub struct Simplify {
@@ -67,5 +64,11 @@ impl BuiltIn for Simplify {
         expr.rewrite_all(&self.known_values_rewriter, 10)
             .rewrite_all(&self.factorization_rewriter, 10)
             .rewrite_all(&self.trigonometric_rewriter, 10)
+    }
+
+    fn check_application<S>(expr: &Expr<S>) -> Result<(), ApplicationError> {
+        ensure!(expr.args_len() == 1, ApplicationError::ArityMismatch);
+        ensure!(expr.is_head(Self::head()), ApplicationError::HeadMismatch);
+        Ok(())
     }
 }
