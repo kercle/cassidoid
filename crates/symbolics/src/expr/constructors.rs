@@ -53,7 +53,7 @@ impl RawExpr {
         )?))
     }
 
-    pub fn new_symbol<T: AsRef<str>>(symb: T) -> Self {
+    pub fn new_symbol(symb: impl AsRef<str>) -> Self {
         Self::new_atom(Atom::Symbol(symb.as_ref().to_string()))
     }
 

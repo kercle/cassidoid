@@ -18,11 +18,11 @@ impl Atom {
         Self::Number(n)
     }
 
-    pub fn symbol<T: AsRef<str>>(s: T) -> Self {
+    pub fn symbol(s: impl AsRef<str>) -> Self {
         Self::Symbol(s.as_ref().to_string())
     }
 
-    pub fn string_literal<T: AsRef<str>>(s: T) -> Self {
+    pub fn string_literal(s: impl AsRef<str>) -> Self {
         Self::StringLiteral(s.as_ref().to_string())
     }
 

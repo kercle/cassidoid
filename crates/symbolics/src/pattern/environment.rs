@@ -88,11 +88,11 @@ impl<'p, 's> Environment<'p, 's> {
         self.bindings.remove(&bind_var);
     }
 
-    fn var_id_from_name<T: AsRef<str>>(&self, name: T) -> Option<VarId> {
+    fn var_id_from_name(&self, name: impl AsRef<str>) -> Option<VarId> {
         self.program.var_ids.get(name.as_ref()).cloned()
     }
 
-    pub fn get_one<T: AsRef<str>>(&self, name: T) -> Option<&'s NormExpr> {
+    pub fn get_one(&self, name: impl AsRef<str>) -> Option<&'s NormExpr> {
         use EnvBinding::*;
 
         let var_id = self.var_id_from_name(name.as_ref())?;
@@ -103,7 +103,7 @@ impl<'p, 's> Environment<'p, 's> {
         }
     }
 
-    pub fn get_seq<T: AsRef<str>>(&self, name: T) -> Option<&[&'s NormExpr]> {
+    pub fn get_seq(&self, name: impl AsRef<str>) -> Option<&[&'s NormExpr]> {
         use EnvBinding::*;
 
         let var_id = self.var_id_from_name(name.as_ref())?;

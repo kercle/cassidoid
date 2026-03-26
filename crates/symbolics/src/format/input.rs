@@ -29,60 +29,60 @@ fn needs_parens(expr: &RawExpr, pos: Position) -> bool {
 
         Position::SubRhs => {
             // a-(b+c),  a-(b-c),  a-(-c)
-            expr.has_head_symbol(builtins::Add::head())
+            expr.is_head(builtins::Add::head())
                 || expr.is_application_of(builtins::Sub::head(), 2)
                 || expr.is_application_of(builtins::Neg::head(), 1)
         }
 
         Position::NegOperand => {
             // -(a+b),  -(a-b)
-            expr.has_head_symbol(builtins::Add::head())
+            expr.is_head(builtins::Add::head())
                 || expr.is_application_of(builtins::Sub::head(), 2)
         }
 
         Position::MulOperand => {
             // (a+b)*c
-            expr.has_head_symbol(builtins::Add::head())
+            expr.is_head(builtins::Add::head())
                 || expr.is_application_of(builtins::Sub::head(), 2)
         }
 
         Position::DivLhs => {
             // (a+b)*c
-            expr.has_head_symbol(builtins::Add::head())
+            expr.is_head(builtins::Add::head())
                 || expr.is_application_of(builtins::Sub::head(), 2)
         }
 
         Position::DivRhs => {
             // a/(a+b), a/(a-b), a/(a*b), a/(a/b), a/(-a)
-            expr.has_head_symbol(builtins::Add::head())
+            expr.is_head(builtins::Add::head())
                 || expr.is_application_of(builtins::Sub::head(), 2)
-                || expr.has_head_symbol(builtins::Mul::head())
-                || expr.has_head_symbol(builtins::Div::head())
-                || expr.has_head_symbol(builtins::Neg::head())
+                || expr.is_head(builtins::Mul::head())
+                || expr.is_head(builtins::Div::head())
+                || expr.is_head(builtins::Neg::head())
         }
 
         Position::PowBase => {
             // (a+b)^n,  (a*b)^n,  (a/b)^n,  (-a)^n
-            expr.has_head_symbol(builtins::Add::head())
+            expr.is_head(builtins::Add::head())
                 || expr.is_application_of(builtins::Sub::head(), 2)
-                || expr.has_head_symbol(builtins::Mul::head())
+                || expr.is_head(builtins::Mul::head())
                 || expr.is_application_of(builtins::Div::head(), 2)
                 || expr.is_application_of(builtins::Neg::head(), 1)
         }
 
         Position::PowExp => {
-            expr.has_head_symbol(builtins::Add::head())
+            expr.is_head(builtins::Add::head())
                 || expr.is_application_of(builtins::Sub::head(), 2)
-                || expr.has_head_symbol(builtins::Mul::head())
+                || expr.is_head(builtins::Mul::head())
                 || expr.is_application_of(builtins::Div::head(), 2)
                 || expr.is_application_of(builtins::Neg::head(), 1)
         }
 
         Position::FactArg => {
             // (a+b)!,  (a*b)!,  (a/b)!,  (-a)!
-            expr.has_head_symbol(builtins::Add::head())
+            expr.is_head(builtins::Add::head())
                 || expr.is_application_of(builtins::Sub::head(), 2)
-                || expr.has_head_symbol(builtins::Mul::head())
+                || expr.is_head(builtins::Mul::head())
                 || expr.is_application_of(builtins::Div::head(), 2)
                 || expr.is_application_of(builtins::Neg::head(), 1)
                 || expr.is_application_of(builtins::Pow::head(), 2)
@@ -155,7 +155,7 @@ fn expr_to_latex_inner(expr: &RawExpr) -> String {
             )
         }
 
-        ExprKind::Node { args, .. } if expr.has_head_symbol(builtins::Add::head()) => {
+        ExprKind::Node { args, .. } if expr.is_head(builtins::Add::head()) => {
             if args.is_empty() {
                 format!("{}[]", builtins::Add::head())
             } else if args.len() == 1 {
@@ -178,7 +178,7 @@ fn expr_to_latex_inner(expr: &RawExpr) -> String {
             format!("{lhs} - {rhs}")
         }
 
-        ExprKind::Node { args, .. } if expr.has_head_symbol(builtins::Mul::head()) => {
+        ExprKind::Node { args, .. } if expr.is_head(builtins::Mul::head()) => {
             if args.is_empty() {
                 format!("{}[]", builtins::Mul::head())
             } else if args.len() == 1 {

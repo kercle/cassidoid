@@ -49,7 +49,7 @@ impl<S> Expr<S> {
         }
     }
 
-    pub fn matches_symbol<T: AsRef<str>>(&self, s: T) -> bool {
+    pub fn matches_symbol(&self, s: impl AsRef<str>) -> bool {
         matches!(self.kind(), ExprKind::Atom { entry: Atom::Symbol(t), .. } if t == s.as_ref())
     }
 
@@ -133,11 +133,11 @@ impl<S> Expr<S> {
         self.matches_symbol(builtins::symbols::INDETERMINATE)
     }
 
-    pub fn is_application_of<T: AsRef<str>>(&self, head_sym: T, arity: usize) -> bool {
-        self.has_head_symbol(head_sym) && self.args_len() == arity
+    pub fn is_application_of(&self, head_sym: impl AsRef<str>, arity: usize) -> bool {
+        self.is_head(head_sym) && self.args_len() == arity
     }
 
-    pub fn has_head_symbol<T: AsRef<str>>(&self, head_sym: T) -> bool {
+    pub fn is_head(&self, head_sym: impl AsRef<str>) -> bool {
         match self.kind() {
             ExprKind::Atom { .. } => false,
             ExprKind::Node { head, .. } => head.matches_symbol(head_sym),

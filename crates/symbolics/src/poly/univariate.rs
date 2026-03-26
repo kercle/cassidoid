@@ -21,7 +21,7 @@ impl UnivariatePolynomial {
         todo!()
     }
 
-    pub fn zero<T: AsRef<str>>(symbol: T) -> Self {
+    pub fn zero(symbol: impl AsRef<str>) -> Self {
         Self {
             coeff: vec![Number::zero()],
             symbol: symbol.as_ref().to_string(),

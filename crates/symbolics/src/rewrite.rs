@@ -74,11 +74,11 @@ impl Rewriter {
     }
 
     pub fn with_rules(mut self, rules: &NormExpr) -> Self {
-        if rules.has_head_symbol(builtins::RuleDelayed::head()) {
+        if rules.is_head(builtins::RuleDelayed::head()) {
             return self.with_rule(rules);
         }
 
-        if !rules.has_head_symbol(builtins::Compound::head()) {
+        if !rules.is_head(builtins::Compound::head()) {
             return self;
         }
 

@@ -33,37 +33,37 @@ fn needs_parens(expr: &RawExpr, pos: Position) -> bool {
 
         Position::SubRhs => {
             // a-(b+c),  a-(b-c),  a-(-c)
-            expr.has_head_symbol(builtins::Add::head())
+            expr.is_head(builtins::Add::head())
                 || expr.is_application_of(builtins::Sub::head(), 2)
                 || expr.is_application_of(builtins::Neg::head(), 1)
         }
 
         Position::NegOperand => {
             // -(a+b),  -(a-b)
-            expr.has_head_symbol(builtins::Add::head())
+            expr.is_head(builtins::Add::head())
                 || expr.is_application_of(builtins::Sub::head(), 2)
         }
 
         Position::MulOperand => {
             // (a+b)*c
-            expr.has_head_symbol(builtins::Add::head())
+            expr.is_head(builtins::Add::head())
                 || expr.is_application_of(builtins::Sub::head(), 2)
         }
 
         Position::PowBase => {
             // (a+b)^n,  (a*b)^n,  (a/b)^n,  (-a)^n
-            expr.has_head_symbol(builtins::Add::head())
+            expr.is_head(builtins::Add::head())
                 || expr.is_application_of(builtins::Sub::head(), 2)
-                || expr.has_head_symbol(builtins::Mul::head())
+                || expr.is_head(builtins::Mul::head())
                 || expr.is_application_of(builtins::Div::head(), 2)
                 || expr.is_application_of(builtins::Neg::head(), 1)
         }
 
         Position::FactArg => {
             // (a+b)!,  (a*b)!,  (a/b)!,  (-a)!
-            expr.has_head_symbol(builtins::Add::head())
+            expr.is_head(builtins::Add::head())
                 || expr.is_application_of(builtins::Sub::head(), 2)
-                || expr.has_head_symbol(builtins::Mul::head())
+                || expr.is_head(builtins::Mul::head())
                 || expr.is_application_of(builtins::Div::head(), 2)
                 || expr.is_application_of(builtins::Neg::head(), 1)
         }
@@ -217,7 +217,7 @@ fn expr_to_latex_inner(expr: &RawExpr) -> String {
             )
         }
 
-        ExprKind::Node { args, .. } if expr.has_head_symbol(builtins::Add::head()) => args
+        ExprKind::Node { args, .. } if expr.is_head(builtins::Add::head()) => args
             .iter()
             .map(|arg| expr_to_latex_with_pos(arg, Position::AddOperand))
             .collect::<Vec<_>>()
@@ -229,7 +229,7 @@ fn expr_to_latex_inner(expr: &RawExpr) -> String {
             format!("{lhs} - {rhs}")
         }
 
-        ExprKind::Node { args, .. } if expr.has_head_symbol(builtins::Mul::head()) => args
+        ExprKind::Node { args, .. } if expr.is_head(builtins::Mul::head()) => args
             .iter()
             .map(|arg| expr_to_latex_with_pos(arg, Position::MulOperand))
             .collect::<Vec<_>>()

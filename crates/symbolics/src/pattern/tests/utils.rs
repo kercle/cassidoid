@@ -13,9 +13,9 @@ pub(super) fn first_match<'p, 's>(
 pub(super) fn count_matches(pattern: &NormExpr, subject: &NormExpr) -> usize {
     let program = Compiler::new()
         .with_multiset_predicate(|e| {
-            e.has_head_symbol("CommutativeOp")
-                || e.has_head_symbol("Add")
-                || e.has_head_symbol("Mul")
+            e.is_head("CommutativeOp")
+                || e.is_head("Add")
+                || e.is_head("Mul")
         })
         .compile(pattern);
     let runtime = Runtime::new(&program, subject);

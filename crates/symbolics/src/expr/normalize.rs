@@ -26,7 +26,7 @@ impl NormExpr {
         self
     }
 
-    fn new_simple_node_unchecked<T: AsRef<str>>(head: T, args: Vec<Self>) -> Self {
+    fn new_simple_node_unchecked(head: impl AsRef<str>, args: Vec<Self>) -> Self {
         let head_kind = ExprKind::Atom {
             entry: Atom::Symbol(head.as_ref().to_string()),
         };
@@ -172,7 +172,7 @@ fn flatten(head_symbol: &str, args: Vec<RawExpr>) -> Vec<NormExpr> {
     for arg in args {
         let norm_arg = arg.normalize();
 
-        if norm_arg.has_head_symbol(head_symbol) {
+        if norm_arg.is_head(head_symbol) {
             let ExprKind::Node { args, .. } = norm_arg.into_kind() else {
                 unreachable!("We know at this point Expr has head symbol");
             };
@@ -225,7 +225,7 @@ fn normalize_raw_add(args: Vec<RawExpr>) -> NormExpr {
         let coeff = RawExpr::new_number(coeff).normalize();
         let node = if coeff.is_number_one() {
             term
-        } else if term.has_head_symbol(builtins::Mul::head()) {
+        } else if term.is_head(builtins::Mul::head()) {
             let ExprKind::Node { head, args } = term.into_kind() else {
                 unreachable!("Coefficients should already by isolated");
             };

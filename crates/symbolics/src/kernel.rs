@@ -57,7 +57,7 @@ impl Kernel {
         }
     }
 
-    pub fn get_builtin<T: AsRef<str>>(&self, head_name: T) -> Option<&dyn BuiltIn> {
+    pub fn get_builtin(&self, head_name: impl AsRef<str>) -> Option<&dyn BuiltIn> {
         self.builtins
             .iter()
             .find(|b| b.head_dyn() == head_name.as_ref())
@@ -70,7 +70,7 @@ impl Kernel {
         }
     }
 
-    pub fn set_auto_apply<T: AsRef<str>>(&mut self, head_name: T) -> Result<(), KernelError> {
+    pub fn set_auto_apply(&mut self, head_name: impl AsRef<str>) -> Result<(), KernelError> {
         let Some(id) = self.get_builtin_id(head_name) else {
             return Err(KernelError::UnknownBuiltIn);
         };
@@ -96,13 +96,13 @@ impl Kernel {
             .collect()
     }
 
-    fn get_builtin_id<T: AsRef<str>>(&self, head_name: T) -> Option<usize> {
+    fn get_builtin_id(&self, head_name: impl AsRef<str>) -> Option<usize> {
         self.builtins
             .iter()
             .position(|b| b.head_dyn() == head_name.as_ref())
     }
 
-    pub fn eval<T: AsRef<str>>(&self, input: T) -> Result<NormExpr, KernelError> {
+    pub fn eval(&self, input: impl AsRef<str>) -> Result<NormExpr, KernelError> {
         let ast_in = parse(input.as_ref())
             .map_err(|err| KernelError::EvaluationError(format!("Error parsing input: {}", err)))?;
 

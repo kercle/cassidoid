@@ -227,7 +227,7 @@ struct DefaultCallbacks;
 
 impl DefaultCallbacks {
     fn is_multiset(expr: &NormExpr) -> bool {
-        expr.has_head_symbol(builtins::Add::head()) || expr.has_head_symbol(builtins::Mul::head())
+        expr.is_head(builtins::Add::head()) || expr.is_head(builtins::Mul::head())
     }
 
     fn optional_default<'s>(

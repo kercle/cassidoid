@@ -116,7 +116,7 @@ impl ParserAst {
         Self::new_constant_from_i64(0)
     }
 
-    pub fn new_symbol<T: AsRef<str>>(name: T) -> Self {
+    pub fn new_symbol(name: impl AsRef<str>) -> Self {
         ParserAst::Symbol {
             name: name.as_ref().to_string(),
         }
@@ -322,7 +322,7 @@ impl ParserAst {
         matches!(self, ParserAst::Symbol { .. })
     }
 
-    pub fn matches_symbol<T: AsRef<str>>(&self, x: T) -> bool {
+    pub fn matches_symbol(&self, x: impl AsRef<str>) -> bool {
         if let ParserAst::Symbol { name, .. } = self {
             name == x.as_ref()
         } else {

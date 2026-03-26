@@ -23,7 +23,7 @@ impl<'p> EvalRuntime<'p> {
         }
     }
 
-    pub fn bind_var<T: AsRef<str>>(&mut self, name: T, value: f64) -> Result<(), EvalRuntimeError> {
+    pub fn bind_var(&mut self, name: impl AsRef<str>, value: f64) -> Result<(), EvalRuntimeError> {
         let &id = self
             .program
             .var_ids
