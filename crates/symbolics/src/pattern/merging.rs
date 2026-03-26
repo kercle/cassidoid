@@ -5,7 +5,7 @@ pub type VarId = u32;
 pub type PatternId = u32;
 
 #[derive(Default)]
-pub struct Merger {
+pub(super) struct Merger {
     build_context: BuildContext,
 }
 

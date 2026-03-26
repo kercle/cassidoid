@@ -6,6 +6,7 @@ use crate::builtins;
 use crate::builtins::traits::BuiltIn;
 use crate::expr::walk::ExprTopDownWalker;
 use crate::expr::{ExprKind, NormExpr, RawExpr};
+use crate::pattern::merging::Merger;
 use crate::pattern::runtime::Runtime;
 use crate::pattern::{PatternPredicate, builtin::*};
 
@@ -40,6 +41,10 @@ impl Program {
 
     pub fn run<'p, 's>(&'p self, subject: &'s NormExpr) -> Runtime<'p, 's> {
         Runtime::new(self, subject)
+    }
+
+    pub fn merge(self, other: Program) -> Program {
+        Merger::new().merge(self, other)
     }
 }
 

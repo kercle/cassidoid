@@ -3,7 +3,6 @@ use crate::{
     expr::{ExprKind, NormExpr, RawExpr},
     pattern::{
         environment::Environment,
-        merging::Merger,
         program::{Compiler, Program},
         runtime::Runtime,
     },
@@ -36,7 +35,7 @@ impl Rewriter {
             .compile(&pattern);
 
         let merged_program = if let Some(current_program) = self.program {
-            Merger::default().merge(current_program, next_program)
+            current_program.merge(next_program)
         } else {
             next_program
         };
