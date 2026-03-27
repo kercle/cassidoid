@@ -86,8 +86,6 @@ impl Rewriter {
             self = self.with_rule(rule);
         }
 
-        dbg!(&self.program);
-
         self
     }
 
