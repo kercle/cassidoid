@@ -2,7 +2,7 @@ use crate::{
     builtins::{
         BuiltInCategory,
         traits::{ApplicationError, BuiltIn, BuiltInDoc, PatternDoc},
-    }, ensure, expr::{Expr, NormExpr}, raw_expr
+    }, ensure, expr::{Expr, }, raw_expr
 };
 
 #[derive(Default)]

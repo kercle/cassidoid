@@ -61,7 +61,7 @@ impl Rewriter {
     }
 
     pub fn with_rule(self, rule: &NormExpr) -> Self {
-        if !rule.is_application_of(builtins::RuleDelayed::head(), 2) {
+        if !builtins::RuleDelayed::is_application(rule) {
             return self;
         }
 
@@ -141,7 +141,7 @@ impl NormExpr {
     pub fn release_all_holds(self) -> Self {
         self.into_raw()
             .map_bottom_up(&|expr| {
-                if expr.is_application_of(builtins::Hold::HEAD, 1) {
+                if builtins::Hold::is_application(&expr) {
                     let ExprKind::Node { mut args, .. } = expr.into_kind() else {
                         unreachable!()
                     };

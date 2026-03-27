@@ -29,63 +29,60 @@ fn needs_parens(expr: &RawExpr, pos: Position) -> bool {
 
         Position::SubRhs => {
             // a-(b+c),  a-(b-c),  a-(-c)
-            expr.is_head(builtins::Add::head())
-                || expr.is_application_of(builtins::Sub::head(), 2)
-                || expr.is_application_of(builtins::Neg::head(), 1)
+            builtins::Add::is_application(expr)
+                || builtins::Sub::is_application(expr)
+                || builtins::Neg::is_application(expr)
         }
 
         Position::NegOperand => {
             // -(a+b),  -(a-b)
-            expr.is_head(builtins::Add::head())
-                || expr.is_application_of(builtins::Sub::head(), 2)
+            builtins::Add::is_application(expr) || builtins::Sub::is_application(expr)
         }
 
         Position::MulOperand => {
             // (a+b)*c
-            expr.is_head(builtins::Add::head())
-                || expr.is_application_of(builtins::Sub::head(), 2)
+            builtins::Add::is_application(expr) || builtins::Sub::is_application(expr)
         }
 
         Position::DivLhs => {
             // (a+b)*c
-            expr.is_head(builtins::Add::head())
-                || expr.is_application_of(builtins::Sub::head(), 2)
+            builtins::Add::is_application(expr) || builtins::Sub::is_application(expr)
         }
 
         Position::DivRhs => {
             // a/(a+b), a/(a-b), a/(a*b), a/(a/b), a/(-a)
-            expr.is_head(builtins::Add::head())
-                || expr.is_application_of(builtins::Sub::head(), 2)
-                || expr.is_head(builtins::Mul::head())
-                || expr.is_head(builtins::Div::head())
-                || expr.is_head(builtins::Neg::head())
+            builtins::Add::is_application(expr)
+                || builtins::Sub::is_application(expr)
+                || builtins::Mul::is_application(expr)
+                || builtins::Div::is_application(expr)
+                || builtins::Neg::is_application(expr)
         }
 
         Position::PowBase => {
             // (a+b)^n,  (a*b)^n,  (a/b)^n,  (-a)^n
-            expr.is_head(builtins::Add::head())
-                || expr.is_application_of(builtins::Sub::head(), 2)
-                || expr.is_head(builtins::Mul::head())
-                || expr.is_application_of(builtins::Div::head(), 2)
-                || expr.is_application_of(builtins::Neg::head(), 1)
+            builtins::Add::is_application(expr)
+                || builtins::Sub::is_application(expr)
+                || builtins::Mul::is_application(expr)
+                || builtins::Div::is_application(expr)
+                || builtins::Neg::is_application(expr)
         }
 
         Position::PowExp => {
-            expr.is_head(builtins::Add::head())
-                || expr.is_application_of(builtins::Sub::head(), 2)
-                || expr.is_head(builtins::Mul::head())
-                || expr.is_application_of(builtins::Div::head(), 2)
-                || expr.is_application_of(builtins::Neg::head(), 1)
+            builtins::Add::is_application(expr)
+                || builtins::Sub::is_application(expr)
+                || builtins::Mul::is_application(expr)
+                || builtins::Div::is_application(expr)
+                || builtins::Neg::is_application(expr)
         }
 
         Position::FactArg => {
             // (a+b)!,  (a*b)!,  (a/b)!,  (-a)!
-            expr.is_head(builtins::Add::head())
-                || expr.is_application_of(builtins::Sub::head(), 2)
-                || expr.is_head(builtins::Mul::head())
-                || expr.is_application_of(builtins::Div::head(), 2)
-                || expr.is_application_of(builtins::Neg::head(), 1)
-                || expr.is_application_of(builtins::Pow::head(), 2)
+            builtins::Add::is_application(expr)
+                || builtins::Sub::is_application(expr)
+                || builtins::Mul::is_application(expr)
+                || builtins::Div::is_application(expr)
+                || builtins::Neg::is_application(expr)
+                || builtins::Pow::is_application(expr)
         }
     }
 }
@@ -148,7 +145,7 @@ fn expr_to_latex_inner(expr: &RawExpr) -> String {
             ..
         } => name.to_string(),
 
-        ExprKind::Node { args, .. } if expr.is_application_of(builtins::Neg::head(), 1) => {
+        ExprKind::Node { args, .. } if builtins::Neg::is_application(expr) => {
             format!(
                 "-{}",
                 expr_to_input_with_pos(&args[0], Position::NegOperand)
@@ -172,7 +169,7 @@ fn expr_to_latex_inner(expr: &RawExpr) -> String {
             }
         }
 
-        ExprKind::Node { args, .. } if expr.is_application_of(builtins::Sub::head(), 2) => {
+        ExprKind::Node { args, .. } if builtins::Sub::is_application(expr) => {
             let lhs = expr_to_input_with_pos(&args[0], Position::SubLhs);
             let rhs = expr_to_input_with_pos(&args[1], Position::SubRhs);
             format!("{lhs} - {rhs}")
@@ -195,19 +192,19 @@ fn expr_to_latex_inner(expr: &RawExpr) -> String {
             }
         }
 
-        ExprKind::Node { args, .. } if expr.is_application_of(builtins::Div::head(), 2) => format!(
+        ExprKind::Node { args, .. } if builtins::Div::is_application(expr) => format!(
             "{}/{}",
             expr_to_input_with_pos(&args[0], Position::DivLhs),
             expr_to_input_with_pos(&args[1], Position::DivRhs),
         ),
 
-        ExprKind::Node { args, .. } if expr.is_application_of(builtins::Pow::head(), 2) => {
+        ExprKind::Node { args, .. } if builtins::Pow::is_application(expr) => {
             let base = expr_to_input_with_pos(&args[0], Position::PowBase);
             let exp = expr_to_input_with_pos(&args[1], Position::PowExp);
             format!("{base}^{exp}")
         }
 
-        ExprKind::Node { args, .. } if expr.is_application_of(builtins::Factorial::HEAD, 1) => {
+        ExprKind::Node { args, .. } if builtins::Factorial::is_application(expr) => {
             format!("{}!", expr_to_input_with_pos(&args[0], Position::FactArg))
         }
 

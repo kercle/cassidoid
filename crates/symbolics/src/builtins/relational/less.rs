@@ -4,7 +4,7 @@ use crate::{
         traits::{ApplicationError, BuiltIn, BuiltInDoc},
     },
     ensure,
-    expr::{Expr, NormExpr},
+    expr::{Expr, },
 };
 
 #[derive(Default)]

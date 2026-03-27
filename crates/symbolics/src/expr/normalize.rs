@@ -318,7 +318,7 @@ fn normalize_raw_mul(args: Vec<RawExpr>) -> NormExpr {
             continue;
         }
 
-        let [base, exponent]: [NormExpr; 2] = if arg.is_application_of(builtins::Pow::head(), 2) {
+        let [base, exponent]: [NormExpr; 2] = if builtins::Pow::is_application(&arg) {
             let ExprKind::Node { args, .. } = arg.kind else {
                 // we've already made sure that we have a pow node.
                 unreachable!()
@@ -424,7 +424,7 @@ fn normalize_raw_pow(base: RawExpr, exponent: RawExpr) -> NormExpr {
                     vec![norm_base, norm_exponent],
                 )
             }
-        } else if norm_base.is_application_of(builtins::Pow::head(), 2) {
+        } else if builtins::Pow::is_application(&norm_base) {
             let ExprKind::Node { args, .. } = norm_base.kind else {
                 // we've already made sure that we have a pow node.
                 unreachable!()

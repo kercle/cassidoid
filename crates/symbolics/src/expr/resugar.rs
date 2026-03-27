@@ -33,7 +33,7 @@ impl FactorList {
             }
 
             self.factors.push(num.into());
-        } else if expr.is_application_of(builtins::Neg::head(), 1) {
+        } else if builtins::Neg::is_application(&expr) {
             let ExprKind::Node { mut args, .. } = expr.kind else {
                 unreachable!()
             };
@@ -186,7 +186,7 @@ impl NormExpr {
                 None => {}
             }
 
-            let [base, exp]: [NormExpr; 2] = if arg.is_application_of(builtins::Pow::head(), 2) {
+            let [base, exp]: [NormExpr; 2] = if builtins::Pow::is_application(&arg) {
                 // If it's a power, we take a closer look at arguments.
 
                 let ExprKind::Node { args, .. } = arg.kind else {

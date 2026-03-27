@@ -1,7 +1,7 @@
 use crate::{builtins::{
     BuiltInCategory,
     traits::{ApplicationError, BuiltIn, BuiltInDoc},
-}, ensure, expr::{Expr, NormExpr}};
+}, ensure, expr::{Expr, }};
 
 #[derive(Default)]
 pub struct Greater;

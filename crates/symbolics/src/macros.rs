@@ -58,5 +58,8 @@ macro_rules! timed_eprintln {
 macro_rules! ensure {
     ($cond:expr, $err:expr) => {
         if !$cond { return Err($err); }
-    }
+    };
+    ($cond:expr) => {
+        if !$cond { return None; }
+    };
 }

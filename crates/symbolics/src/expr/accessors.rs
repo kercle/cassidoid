@@ -128,10 +128,6 @@ impl<S> Expr<S> {
         }
     }
 
-    pub fn is_application_of(&self, head_sym: impl AsRef<str>, arity: usize) -> bool {
-        self.is_head(head_sym) && self.args_len() == arity
-    }
-
     pub fn is_head(&self, head_sym: impl AsRef<str>) -> bool {
         match self.kind() {
             ExprKind::Atom { .. } => false,

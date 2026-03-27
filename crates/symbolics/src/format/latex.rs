@@ -33,39 +33,37 @@ fn needs_parens(expr: &RawExpr, pos: Position) -> bool {
 
         Position::SubRhs => {
             // a-(b+c),  a-(b-c),  a-(-c)
-            expr.is_head(builtins::Add::head())
-                || expr.is_application_of(builtins::Sub::head(), 2)
-                || expr.is_application_of(builtins::Neg::head(), 1)
+            builtins::Add::is_application(expr)
+                || builtins::Sub::is_application(expr)
+                || builtins::Neg::is_application(expr)
         }
 
         Position::NegOperand => {
             // -(a+b),  -(a-b)
-            expr.is_head(builtins::Add::head())
-                || expr.is_application_of(builtins::Sub::head(), 2)
+            builtins::Add::is_application(expr) || builtins::Sub::is_application(expr)
         }
 
         Position::MulOperand => {
             // (a+b)*c
-            expr.is_head(builtins::Add::head())
-                || expr.is_application_of(builtins::Sub::head(), 2)
+            builtins::Add::is_application(expr) || builtins::Sub::is_application(expr)
         }
 
         Position::PowBase => {
             // (a+b)^n,  (a*b)^n,  (a/b)^n,  (-a)^n
-            expr.is_head(builtins::Add::head())
-                || expr.is_application_of(builtins::Sub::head(), 2)
-                || expr.is_head(builtins::Mul::head())
-                || expr.is_application_of(builtins::Div::head(), 2)
-                || expr.is_application_of(builtins::Neg::head(), 1)
+            builtins::Add::is_application(expr)
+                || builtins::Sub::is_application(expr)
+                || builtins::Mul::is_application(expr)
+                || builtins::Div::is_application(expr)
+                || builtins::Neg::is_application(expr)
         }
 
         Position::FactArg => {
             // (a+b)!,  (a*b)!,  (a/b)!,  (-a)!
-            expr.is_head(builtins::Add::head())
-                || expr.is_application_of(builtins::Sub::head(), 2)
-                || expr.is_head(builtins::Mul::head())
-                || expr.is_application_of(builtins::Div::head(), 2)
-                || expr.is_application_of(builtins::Neg::head(), 1)
+            builtins::Add::is_application(expr)
+                || builtins::Sub::is_application(expr)
+                || builtins::Mul::is_application(expr)
+                || builtins::Div::is_application(expr)
+                || builtins::Neg::is_application(expr)
         }
     }
 }
@@ -210,75 +208,75 @@ fn expr_to_latex_inner(expr: &RawExpr) -> String {
             ..
         } => unimplemented!(),
 
-        ExprKind::Node { args, .. } if expr.is_application_of(builtins::Neg::head(), 1) => {
+        ExprKind::Node { args, .. } if builtins::Neg::is_application(expr) => {
             format!(
                 "-{}",
                 expr_to_latex_with_pos(&args[0], Position::NegOperand)
             )
         }
 
-        ExprKind::Node { args, .. } if expr.is_head(builtins::Add::head()) => args
+        ExprKind::Node { args, .. } if builtins::Add::is_application(expr) => args
             .iter()
             .map(|arg| expr_to_latex_with_pos(arg, Position::AddOperand))
             .collect::<Vec<_>>()
             .join(" + "),
 
-        ExprKind::Node { args, .. } if expr.is_application_of(builtins::Sub::head(), 2) => {
+        ExprKind::Node { args, .. } if builtins::Sub::is_application(expr) => {
             let lhs = expr_to_latex_with_pos(&args[0], Position::SubLhs);
             let rhs = expr_to_latex_with_pos(&args[1], Position::SubRhs);
             format!("{lhs} - {rhs}")
         }
 
-        ExprKind::Node { args, .. } if expr.is_head(builtins::Mul::head()) => args
+        ExprKind::Node { args, .. } if builtins::Mul::is_application(expr) => args
             .iter()
             .map(|arg| expr_to_latex_with_pos(arg, Position::MulOperand))
             .collect::<Vec<_>>()
             .join(" \\cdot "),
 
-        ExprKind::Node { args, .. } if expr.is_application_of(builtins::Div::head(), 2) => format!(
+        ExprKind::Node { args, .. } if builtins::Div::is_application(expr) => format!(
             "\\frac{{{}}}{{{}}}",
             expr_to_latex_with_pos(&args[0], Position::DivChild),
             expr_to_latex_with_pos(&args[1], Position::DivChild),
         ),
 
-        ExprKind::Node { args, .. } if expr.is_application_of(builtins::Pow::head(), 2) => {
+        ExprKind::Node { args, .. } if builtins::Pow::is_application(expr) => {
             let base = expr_to_latex_with_pos(&args[0], Position::PowBase);
             let exp = expr_to_latex_with_pos(&args[1], Position::PowExp);
             format!("{{{base}}}^{{{exp}}}")
         }
 
-        ExprKind::Node { args, .. } if expr.is_application_of(builtins::Factorial::HEAD, 1) => {
+        ExprKind::Node { args, .. } if builtins::Factorial::is_application(expr) => {
             format!("{}!", expr_to_latex_with_pos(&args[0], Position::FactArg))
         }
 
-        ExprKind::Node { args, .. } if expr.is_application_of(builtins::Sqrt::head(), 1) => {
+        ExprKind::Node { args, .. } if builtins::Sqrt::is_application(expr) => {
             format!(
                 "\\sqrt{{{}}}",
                 expr_to_latex_with_pos(&args[0], Position::FnArg)
             )
         }
 
-        ExprKind::Node { args, .. } if expr.is_application_of(builtins::Exp::head(), 1) => {
+        ExprKind::Node { args, .. } if builtins::Exp::is_application(expr) => {
             render_one_arg("\\exp", &args[0])
         }
-        ExprKind::Node { args, .. } if expr.is_application_of(builtins::Log::head(), 1) => {
+        ExprKind::Node { args, .. } if builtins::Log::is_application(expr) => {
             render_one_arg("\\log", &args[0])
         }
-        ExprKind::Node { args, .. } if expr.is_application_of(builtins::Sin::head(), 1) => {
+        ExprKind::Node { args, .. } if builtins::Sin::is_application(expr) => {
             render_one_arg("\\sin", &args[0])
         }
-        ExprKind::Node { args, .. } if expr.is_application_of(builtins::Cos::head(), 1) => {
+        ExprKind::Node { args, .. } if builtins::Cos::is_application(expr) => {
             render_one_arg("\\cos", &args[0])
         }
-        ExprKind::Node { args, .. } if expr.is_application_of(builtins::Tan::head(), 1) => {
+        ExprKind::Node { args, .. } if builtins::Tan::is_application(expr) => {
             render_one_arg("\\tan", &args[0])
         }
 
-        ExprKind::Node { args, .. } if expr.is_application_of(builtins::Derivative::head(), 2) => {
+        ExprKind::Node { args, .. } if builtins::Derivative::is_application(expr) => {
             render_derivative(args)
         }
 
-        ExprKind::Node { args, .. } if expr.is_application_of(builtins::Integrate::head(), 2) => {
+        ExprKind::Node { args, .. } if builtins::Integrate::is_application(expr) => {
             render_integrate(args)
         }
 

@@ -52,7 +52,7 @@ pub trait BuiltIn {
     where
         Self: Sized;
 
-    fn is_application(expr: &NormExpr) -> bool
+    fn is_application<S>(expr: &Expr<S>) -> bool
     where
         Self: Sized,
     {

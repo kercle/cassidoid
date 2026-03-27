@@ -2,13 +2,13 @@ use std::collections::HashMap;
 use std::fmt::Debug;
 use std::str::FromStr;
 
-use crate::builtins;
 use crate::builtins::traits::BuiltIn;
 use crate::expr::walk::ExprTopDownWalker;
 use crate::expr::{ExprKind, NormExpr, RawExpr};
+use crate::pattern::PatternPredicate;
 use crate::pattern::merging::Merger;
 use crate::pattern::runtime::Runtime;
-use crate::pattern::{PatternPredicate, builtin::*};
+use crate::{builtins, ensure};
 
 pub type InstrId = usize;
 pub type VarId = u32;
@@ -47,7 +47,7 @@ impl Program {
     ///
     /// The resulting program shares the same instructions as long as the two programs coincide
     /// and branches into both programs successively once they diverge.
-    /// 
+    ///
     /// When the resulting program is run against a subject, first the branch from `self` is
     /// explored followed by `other` once the first branch is exhausted.
     ///
@@ -236,16 +236,9 @@ impl DefaultCallbacks {
     ) -> Option<(&'s str, NormExpr)> {
         // For now, optional defaults only support patterns like x_.
 
-        if !opt_pattern.is_application_of(builtins::Pattern::head(), 2) {
-            return None;
-        }
-
-        if !opt_pattern
-            .get_arg(1)?
-            .is_application_of(builtins::Blank::head(), 0)
-        {
-            return None;
-        }
+        ensure!(builtins::Pattern::is_application(opt_pattern));
+        ensure!(opt_pattern.get_arg(1)?.args_len() == 0);
+        ensure!(builtins::Blank::is_application(opt_pattern.get_arg(1)?));
 
         let bind_var = opt_pattern.get_arg(0)?.get_symbol()?;
 
@@ -307,14 +300,14 @@ impl Compiler {
                 inner: pat_expr.clone(),
                 bind,
             }),
-            Node { args, .. } if Self::is_blank(pat_expr) => {
+            Node { args, .. } if builtins::Blank::is_application(pat_expr) => {
                 self.compile_blank_with_head_constraint(Quantity::One, args.first(), bind)
             }
-            Node { args, .. } if Self::is_blank_seq(pat_expr) => self
+            Node { args, .. } if builtins::BlankSeq::is_application(pat_expr) => self
                 .compile_blank_with_head_constraint(Quantity::Many { min: 1 }, args.first(), bind),
-            Node { args, .. } if Self::is_blank_null_seq(pat_expr) => self
+            Node { args, .. } if builtins::BlankNullSeq::is_application(pat_expr) => self
                 .compile_blank_with_head_constraint(Quantity::Many { min: 0 }, args.first(), bind),
-            Node { args, .. } if Self::is_pattern(pat_expr) => {
+            Node { args, .. } if builtins::Pattern::is_application(pat_expr) => {
                 let [lhs, rhs] = args.as_slice() else {
                     unreachable!()
                 };
@@ -325,7 +318,7 @@ impl Compiler {
                 let var_id = self.build_context.bind_name_id(bind_var_name);
                 self.compile_pattern(rhs, Some(var_id))
             }
-            Node { head, args } if Self::is_pattern_test(pat_expr) => {
+            Node { head, args } if builtins::PatternTest::is_application(pat_expr) => {
                 let [lhs, rhs] = args.as_slice() else {
                     unreachable!()
                 };
@@ -347,11 +340,11 @@ impl Compiler {
                     bind,
                 })
             }
-            Node { args, .. } if pat_expr.is_application_of(builtins::Optional::HEAD, 1) => {
+            Node { args, .. } if builtins::Optional::is_application(pat_expr) => {
                 let inner = args.first().unwrap();
                 self.compile_pattern(inner, bind)
             }
-            Node { args, .. } if pat_expr.is_application_of(builtins::Condition::HEAD, 2) => {
+            Node { args, .. } if builtins::Condition::is_application(pat_expr) => {
                 let [pat_expr, test_expr] = args.as_slice() else {
                     unreachable!()
                 };
@@ -411,10 +404,7 @@ impl Compiler {
             return instr_id;
         }
 
-        if let Some(optional_pos) = children
-            .iter()
-            .position(|expr| expr.is_application_of(builtins::Optional::HEAD, 1))
-        {
+        if let Some(optional_pos) = children.iter().position(builtins::Optional::is_application) {
             return self.compile_node_with_optional_child(head, children, optional_pos, bind);
         }
 
@@ -515,46 +505,6 @@ impl Compiler {
         }
     }
 
-    fn is_blank(expr: &NormExpr) -> bool {
-        if let ExprKind::Node { head, args } = expr.kind() {
-            head.matches_symbol(HEAD_BLANK) && args.len() <= 1
-        } else {
-            false
-        }
-    }
-
-    fn is_blank_seq(expr: &NormExpr) -> bool {
-        if let ExprKind::Node { head, args } = expr.kind() {
-            head.matches_symbol(HEAD_BLANK_SEQUENCE) && args.len() <= 1
-        } else {
-            false
-        }
-    }
-
-    fn is_blank_null_seq(expr: &NormExpr) -> bool {
-        if let ExprKind::Node { head, args } = expr.kind() {
-            head.matches_symbol(HEAD_BLANK_NULL_SEQUENCE) && args.len() <= 1
-        } else {
-            false
-        }
-    }
-
-    fn is_pattern(expr: &NormExpr) -> bool {
-        if !expr.is_application_of(HEAD_PATTERN, 2) {
-            return false;
-        }
-
-        expr.get_arg(0).unwrap().is_symbol()
-    }
-
-    fn is_pattern_test(expr: &NormExpr) -> bool {
-        if !expr.is_application_of(HEAD_PATTERN_TEST, 2) {
-            return false;
-        }
-
-        expr.get_arg(1).unwrap().is_symbol()
-    }
-
     fn is_literal(&self, root: &NormExpr) -> bool {
         for expr in ExprTopDownWalker::new(root) {
             if matches!(self.arg_order(expr), ArgOrder::Multiset) {
@@ -565,11 +515,11 @@ impl Compiler {
                 return false;
             }
 
-            if Self::is_blank(expr)
-                || Self::is_blank_null_seq(expr)
-                || Self::is_blank_seq(expr)
-                || Self::is_pattern(expr)
-                || Self::is_pattern_test(expr)
+            if builtins::Blank::is_application(expr)
+                || builtins::BlankNullSeq::is_application(expr)
+                || builtins::BlankSeq::is_application(expr)
+                || builtins::Pattern::is_application(expr)
+                || builtins::PatternTest::is_application(expr)
             {
                 return false;
             }
