@@ -395,7 +395,7 @@ impl Compiler {
         children: &[NormExpr],
         bind: Option<VarId>,
     ) -> InstrId {
-        if head.matches_symbol(builtins::HoldPattern::HEAD) && children.len() == 1 {
+        if builtins::HoldPattern::is_application_of(head, children) {
             // HoldPattern is not compiled to an instruction.
             self.hold_pattern_counter += 1;
             let instr_id = self.compile_pattern(children.first().unwrap(), bind);

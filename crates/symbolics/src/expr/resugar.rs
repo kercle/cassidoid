@@ -77,15 +77,13 @@ impl NormExpr {
             ExprKind::Atom {
                 entry: Atom::Number(num),
             } => Self::resugar_number(num),
-            ExprKind::Node { head, args } if head.matches_symbol(builtins::Add::head()) => {
+            ExprKind::Node { head, args } if builtins::Add::is_application_of(&head, &args) => {
                 Self::resugar_add(args)
             }
-            ExprKind::Node { head, args } if head.matches_symbol(builtins::Mul::head()) => {
+            ExprKind::Node { head, args } if builtins::Mul::is_application_of(&head, &args) => {
                 Self::resugar_mul(args)
             }
-            ExprKind::Node { head, args }
-                if head.matches_symbol(builtins::Pow::head()) && args.len() == 2 =>
-            {
+            ExprKind::Node { head, args } if builtins::Pow::is_application_of(&head, &args) => {
                 let [lhs, rhs]: [NormExpr; 2] = args.try_into().unwrap();
                 Self::resugar_pow(lhs, rhs)
             }

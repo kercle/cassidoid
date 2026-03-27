@@ -100,7 +100,7 @@ impl<'a> Pattern<'a> {
     fn from_pattern_node(expr: &'a NormExpr) -> Option<Pattern<'a>> {
         match expr.kind() {
             ExprKind::Node { head, args }
-                if head.matches_symbol(builtins::PatternTest::head()) && args.len() == 2 =>
+                if builtins::PatternTest::is_application_of(head, args) =>
             {
                 let pat = args.first()?;
                 let pred = args
@@ -125,7 +125,7 @@ impl<'a> Pattern<'a> {
                 }
             }
             ExprKind::Node { head, args }
-                if head.matches_symbol(builtins::Pattern::head()) && args.len() == 2 =>
+                if builtins::Pattern::is_application_of(head, args) =>
             {
                 let e = args.last()?;
                 let h = e.head()?;
