@@ -141,6 +141,45 @@ impl ops::MulAssign for Number {
     }
 }
 
+impl ops::Div<&Number> for &Number {
+    type Output = Option<Number>;
+
+    fn div(self, other: &Number) -> Self::Output {
+        use Number::*;
+
+        let rets = match (self, other) {
+            (Integer(a), Integer(b)) => {
+                if let Some(r) = a / b {
+                    Integer(r)
+                } else {
+                    Rational(BigRational::new(a.clone(), b.clone()).ok()?)
+                }
+            }
+            (Rational(a), Rational(b)) => {
+                if let Some(r) = a / b {
+                    if r.is_integer() {
+                        Integer(r.take_numerator())
+                    } else {
+                        Rational(r)
+                    }
+                } else {
+                    return None;
+                }
+            }
+            (Integer(a), Rational(_)) => {
+                // TODO: Rework numbers API with less cloning
+                (&Rational(BigRational::from_big_integer(a.clone())) / other)?
+            }
+            (Rational(_), Integer(b)) => {
+                // TODO: Rework numbers API with less cloning
+                (self / &Rational(BigRational::from_big_integer(b.clone())))?
+            }
+        };
+
+        Some(rets)
+    }
+}
+
 impl ops::Neg for &Number {
     type Output = Number;
 
