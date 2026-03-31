@@ -17,7 +17,7 @@ static MONOMIAL_PROG: LazyLock<Program> = LazyLock::new(|| {
     ))
 });
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq)]
 pub struct UnivariatePolynomial {
     coeff: Vec<Number>,
     symbol: String,
@@ -39,7 +39,7 @@ impl UnivariatePolynomial {
             for t in expr.args()? {
                 let (c, n) = Self::monimial_from_expr(t, &sym)?;
 
-                while n < coeff.len() {
+                while n > coeff.len() {
                     coeff.push(ZERO.clone());
                 }
 
@@ -253,17 +253,42 @@ mod tests {
 
     #[test]
     fn test_poly_long_division() {
-        let a = UnivariatePolynomial::from_expr(&norm_expr!(x^2 - 2 x + 1), "x").unwrap();
-        let b = UnivariatePolynomial::from_expr(&norm_expr!(x + 1), "x").unwrap();
+        let a = UnivariatePolynomial::from_expr(
+            &norm_expr!(
+                4 x^7 - 2 x^5 + 9 x^2 + x - 17
+            ),
+            "x",
+        )
+        .unwrap();
+        let b = UnivariatePolynomial::from_expr(
+            &norm_expr!(
+                x^3 - 7 x + 2
+            ),
+            "x",
+        )
+        .unwrap();
 
-        dbg!(&a);
-        dbg!(&b);
+        let q_expected = UnivariatePolynomial::from_expr(
+            &norm_expr!(
+                182 - 8 x + 26 x^2 + 4 x^4
+            ),
+            "x",
+        )
+        .unwrap();
+
+        let r_expected = UnivariatePolynomial::from_expr(
+            &norm_expr!(
+                -381 + 1291 x - 99 x^2
+            ),
+            "x",
+        )
+        .unwrap();
 
         let (q, r) = a
             .long_division(&b)
             .expect("Ex1: Long division should succeed");
 
-        dbg!(&q);
-        dbg!(&r);
+        assert_eq!(q, q_expected);
+        assert_eq!(r, r_expected);
     }
 }
