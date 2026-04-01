@@ -50,7 +50,7 @@ impl UnivariatePolynomial {
             coeff = Vec::new();
 
             for t in expr.args()? {
-                let (c, n) = Self::monimial_from_expr(t, &sym)?;
+                let (c, n) = Self::monomial_from_expr(t, &sym)?;
 
                 while n > coeff.len() {
                     coeff.push(ZERO.clone());
@@ -63,7 +63,7 @@ impl UnivariatePolynomial {
                 }
             }
         } else {
-            let (c, n) = Self::monimial_from_expr(expr, &sym)?;
+            let (c, n) = Self::monomial_from_expr(expr, &sym)?;
 
             coeff = vec![ZERO.clone(); n + 1];
             coeff[n] = c.clone();
@@ -72,7 +72,7 @@ impl UnivariatePolynomial {
         Some(UnivariatePolynomial::new(coeff, sym))
     }
 
-    fn monimial_from_expr<'a>(
+    fn monomial_from_expr<'a>(
         expr: &'a NormExpr,
         sym: &impl AsRef<str>,
     ) -> Option<(&'a Number, usize)> {
