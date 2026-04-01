@@ -2,7 +2,7 @@
 	import * as echarts from 'echarts';
 	import { onMount } from 'svelte';
 
-	export let data: [];
+	export let data: Array<[number, number]>;
 
 	let elem: HTMLDivElement;
 

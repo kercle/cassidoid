@@ -1,4 +1,6 @@
-use crate::{builtins, kernel::Kernel};
+use symbolics::builtins;
+
+use crate::Kernel;
 
 impl Kernel {
     pub(super) fn register_initial_builtins(&mut self) {
@@ -55,10 +57,7 @@ impl Kernel {
         // --- Simplification -------------------------------------------------
 
         self.register_builtin_default::<builtins::Simplify>(true);
-        self.register_builtin(
-            Box::new(builtins::Expand::new(self.binomial_generator())),
-            true,
-        );
+        self.register_builtin(Box::new(builtins::Expand::new()), true);
 
         // --- System ---------------------------------------------------------
 

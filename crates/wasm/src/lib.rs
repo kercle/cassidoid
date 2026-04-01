@@ -1,26 +1,29 @@
-mod util;
-
-use kernel::hacks::process_message;
+use kernel::Kernel;
 use wasm_bindgen::prelude::*;
 
-use crate::util::escape_json;
+#[wasm_bindgen]
+pub struct CassidaKernel {
+    inner: Kernel,
+}
+
+#[wasm_bindgen]
+impl CassidaKernel {
+    #[wasm_bindgen(constructor)]
+    pub fn new() -> Self {
+        Self {
+            inner: Kernel::default(),
+        }
+    }
+
+    pub fn execute(&mut self, input: &str) -> String {
+        let res = self.inner.execute(input.to_string());
+        serde_json::to_string(&res).expect("Serde not expected to fail here.")
+    }
+}
 
 #[wasm_bindgen]
 pub fn eval_input(input: &str) -> String {
-    let res = process_message(input.to_string());
-
-    match res {
-        Ok(msg) => serde_json::to_string(&msg).unwrap_or_else(|e| {
-            format!(
-                r#"{{"type":"SerializeError","msg":"{}"}}"#,
-                escape_json(&e.to_string())
-            )
-        }),
-        Err(msg) => serde_json::to_string(&msg).unwrap_or_else(|e| {
-            format!(
-                r#"{{"type":"SerializeError","msg":"{}"}}"#,
-                escape_json(&e.to_string())
-            )
-        }),
-    }
+    let kernel = Kernel::default();
+    let res = kernel.execute(input.to_string());
+    serde_json::to_string(&res).expect("Serde not expected to fail here.")
 }

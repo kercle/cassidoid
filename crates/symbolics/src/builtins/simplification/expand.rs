@@ -8,7 +8,6 @@ use crate::{
     },
     ensure,
     expr::{Expr, ExprKind, NormExpr, RawExpr, constructors::EXPR_PLACEHOLDER},
-    kernel::Shared,
     norm_expr,
     pattern::environment::Environment,
     raw_expr,
@@ -21,13 +20,13 @@ pub struct Expand {
 }
 
 impl Expand {
-    pub fn new(binomial_generator: Shared<BinomialGenerator>) -> Self {
+    pub fn new() -> Self {
         Self {
             pattern_doc: vec![PatternDoc::new(
                 raw_expr!(Expand[t_]),
                 "Expands the given term $t$.",
             )],
-            rewriter: build_rewriter(binomial_generator),
+            rewriter: build_rewriter(),
         }
     }
 }
@@ -70,7 +69,7 @@ impl BuiltIn for Expand {
     }
 }
 
-pub(super) fn build_rewriter(_binomial_gen: Shared<BinomialGenerator>) -> Rewriter {
+pub(super) fn build_rewriter() -> Rewriter {
     let rw = Rewriter::new().with_native_rule(
         norm_expr!( Expand[a__. * HoldPattern[Pattern[sum, Add[__]]]^m_?IsPositiveInteger] ),
         move |ctx: &Environment<'_, '_>| {

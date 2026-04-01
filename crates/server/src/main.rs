@@ -5,7 +5,7 @@ use axum::{
     routing::get,
 };
 use futures_util::{sink::SinkExt, stream::StreamExt};
-use kernel::hacks::process_message;
+use kernel::Kernel;
 use tracing::Level;
 use tracing::{error, info};
 
@@ -33,13 +33,11 @@ async fn handle_socket(socket: WebSocket) {
     info!("Client connected to compute kernel!");
 
     let (mut sender, mut receiver) = socket.split();
+    let kernel = Kernel::default();
 
     while let Some(Ok(msg)) = receiver.next().await {
         if let Message::Text(text) = msg {
-            let response = match process_message(text.to_string()) {
-                Ok(ret) => serde_json::to_string(&ret),
-                Err(err) => serde_json::to_string(&err),
-            };
+            let response = serde_json::to_string(&kernel.execute(text.to_string()));
 
             if response.is_err() {
                 error!("Creating response message failed.");

@@ -1,10 +1,11 @@
 const USE_WASM = import.meta.env.VITE_USE_WASM === '1' || import.meta.env.VITE_USE_WASM === 'true';
 
 import { writable } from 'svelte/store';
-import { eval_input } from '$lib/wasm';
+import { CassidaKernel } from '$lib/cassida';
+import type { CassidaResult } from './cassida/types/CassidaResult';
 
 type AppState = {
-    history: Array<ServerMessage>,
+    history: Array<CassidaResult>,
 };
 
 function createGlobalState() {
@@ -17,11 +18,12 @@ function createGlobalState() {
     });
 
     let socket: WebSocket | undefined;
+    let kernel: CassidaKernel | undefined;
 
-    function push_message(state: AppState, msg: ServerMessage) {
+    function push_message(state: AppState, msg: CassidaResult) {
         let last = state.history.pop();
 
-        if (last !== undefined && !("parseError" in last)) {
+        if (last !== undefined && last.type != "err") {
             state.history.push(last);
         }
 
@@ -29,11 +31,12 @@ function createGlobalState() {
     }
 
     async function connectWasm() {
+        kernel = new CassidaKernel();
         update(s => ({ ...s, connected: true }));
 
         return {
             send: async (msg: string) => {
-                const result = await eval_input(msg);
+                const result = await kernel?.execute(msg);
                 const parsed = typeof result === 'string' ? JSON.parse(result) : result;
 
                 update(s => {
@@ -93,8 +96,5 @@ function createGlobalState() {
 export const appState = createGlobalState();
 
 export function submitExpression(expr: string) {
-    const msg = {
-        eval: expr
-    };
-    appState.send(JSON.stringify(msg));
+    appState.send(expr);
 }

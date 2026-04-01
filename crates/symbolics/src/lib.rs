@@ -3,15 +3,11 @@ pub mod builtins;
 pub mod eval;
 pub mod expr;
 pub mod format;
-pub mod kernel;
-pub mod kernel_helpers;
 pub mod macros;
 pub mod pattern;
 pub mod poly;
 pub mod rewrite;
-
-#[cfg(test)]
-mod tests;
+pub mod shared;
 
 // for proc macros: route numbers through parser crate
 #[doc(hidden)]

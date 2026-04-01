@@ -7,7 +7,6 @@
 		let result: Record<string, Array<[string, string]>> = {};
 
 		for (let [head, summary, cat] of builtins) {
-			console.log(head);
 			if (!(cat in result)) {
 				result[cat] = [];
 			}

@@ -1,6 +1,6 @@
 use clap::Parser;
+use kernel::Kernel;
 use symbolics::format::MathDisplay;
-use symbolics::kernel::Kernel;
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]

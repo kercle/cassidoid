@@ -1,4 +1,6 @@
-use crate::{format::MathDisplay, kernel::Kernel};
+use symbolics::format::MathDisplay;
+
+use crate::Kernel;
 
 #[test]
 fn test_full_processing_chain() {

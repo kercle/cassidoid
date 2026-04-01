@@ -3,8 +3,14 @@ name = "kernel"
 version = "0.1.0"
 edition = "2024"
 
+[features]
+default = []
+ts = ["dep:ts-rs"]
+
 [dependencies]
 serde = { version = "1", features = ["derive"] }
-serde_json = "1"
+ts-rs = { version = "12.0", optional = true }
+
 parser = { path = "../parser" }
 symbolics = { path = "../symbolics" }
+numbers = { path = "../numbers" }

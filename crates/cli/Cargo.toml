@@ -6,4 +6,5 @@ edition = "2024"
 [dependencies]
 parser = { path = "../parser" }
 symbolics = { path = "../symbolics" }
+kernel = { path = "../kernel" }
 clap = { version = "4.5.40", features = ["derive"] }

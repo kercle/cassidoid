@@ -44,8 +44,12 @@ jobs:
           wasm-pack build crates/wasm \
             --release \
             --target bundler \
-            --out-dir ../../web/frontend/src/lib/wasm \
+            --out-dir ../../web/frontend/src/lib/cassida \
             --out-name kernel
+
+      - name: Export Bindings
+        run: |
+          cargo test --features=ts export_bindings
 
       - name: Build frontend
         working-directory: web/frontend
