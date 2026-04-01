@@ -69,12 +69,11 @@ impl UnivariatePolynomial {
         let mut runtime = MONOMIAL_PROG.run(expr);
         let env = runtime.first_match()?;
 
-        let n = if let Some(expr_sym) = env.get_one("x").map(|e| e.get_symbol()).flatten() {
+        let n = if let Some(expr_sym) = env.get_one("x").and_then(|e| e.get_symbol()) {
             ensure!(expr_sym == sym.as_ref());
 
             env.get_one("n")
-                .map(|e| e.get_number())
-                .flatten()
+                .and_then(|e| e.get_number())
                 .unwrap_or(&ONE)
         } else {
             &ZERO
@@ -84,8 +83,7 @@ impl UnivariatePolynomial {
 
         let c = env
             .get_one("c")
-            .map(|e| e.get_number())
-            .flatten()
+            .and_then(|e| e.get_number())
             .unwrap_or(&ONE);
 
         Some((c, n))
@@ -96,6 +94,17 @@ impl UnivariatePolynomial {
             coeff: vec![Number::zero()],
             symbol: symbol.as_ref().to_string(),
         }
+    }
+
+    pub fn one(symbol: impl AsRef<str>) -> Self {
+        Self {
+            coeff: vec![Number::one()],
+            symbol: symbol.as_ref().to_string(),
+        }
+    }
+
+    pub fn is_zero(&self) -> bool {
+        self.degree() == 0 && self.coeff[0].is_zero()
     }
 
     pub fn degree(&self) -> usize {
@@ -110,12 +119,12 @@ impl UnivariatePolynomial {
         self.coeff.get(i).unwrap_or(&numbers::ZERO)
     }
 
-    pub fn coeff_higest_monomial(&self) -> &Number {
+    pub fn leading_coeff(&self) -> &Number {
         self.coeff(self.degree())
     }
 
     pub fn normalize(&mut self) {
-        while self.coeff_higest_monomial().is_zero() && self.coeff.len() > 1 {
+        while self.leading_coeff().is_zero() && self.coeff.len() > 1 {
             self.coeff.pop();
         }
     }
@@ -140,7 +149,7 @@ impl UnivariatePolynomial {
             return Ok((UnivariatePolynomial::zero(&self.symbol), self.clone()));
         } else if other.degree() == 0 {
             return Ok((
-                (self / other.coeff_higest_monomial())?,
+                (self / other.leading_coeff())?,
                 UnivariatePolynomial::zero(&self.symbol),
             ));
         }
@@ -151,7 +160,7 @@ impl UnivariatePolynomial {
         while current_step.degree() >= other.degree() {
             let exp_diff = current_step.degree() - other.degree();
 
-            let coeff = (current_step.coeff_higest_monomial() / other.coeff_higest_monomial())
+            let coeff = (current_step.leading_coeff() / other.leading_coeff())
                 .ok_or(PolynomialDivisionError::DivisionByZero)?;
 
             let q = (other * &coeff).shifted(exp_diff);
@@ -169,6 +178,80 @@ impl UnivariatePolynomial {
         q.normalize();
 
         Ok((q, r))
+    }
+}
+
+pub fn extended_gcd(
+    a: &UnivariatePolynomial,
+    b: &UnivariatePolynomial,
+) -> Result<
+    (
+        UnivariatePolynomial,
+        (UnivariatePolynomial, UnivariatePolynomial),
+    ),
+    PolynomialDivisionError,
+> {
+    ensure!(
+        a.symbol == b.symbol,
+        PolynomialDivisionError::SymbolMismatch
+    );
+
+    let sym = a.symbol.as_str();
+
+    let (mut old_r, mut r) = (a.clone(), b.clone());
+    let (mut old_s, mut s) = (
+        UnivariatePolynomial::one(sym),
+        UnivariatePolynomial::zero(sym),
+    );
+    let (mut old_t, mut t) = (
+        UnivariatePolynomial::zero(sym),
+        UnivariatePolynomial::one(sym),
+    );
+
+    while !r.is_zero() {
+        let (q, next_r) = old_r.long_division(&r)?;
+
+        (old_r, r) = (r, next_r);
+        let q_times_s = &q * &s;
+        (old_s, s) = (s, old_s - q_times_s);
+        let q_times_t = &q * &t;
+        (old_t, t) = (t, old_t - q_times_t);
+    }
+
+    let leading_coeff = old_r.leading_coeff();
+    if leading_coeff.is_zero() {
+        return Ok((old_r, (old_s, old_t)));
+    };
+
+    let ggt = (&old_r / leading_coeff)?;
+    let s = (&old_s / leading_coeff)?;
+    let t = (&old_t / leading_coeff)?;
+
+    Ok((ggt, (s, t)))
+}
+
+impl ops::Add<&UnivariatePolynomial> for &UnivariatePolynomial {
+    type Output = UnivariatePolynomial;
+
+    fn add(self, rhs: &UnivariatePolynomial) -> Self::Output {
+        // TODO: better solution for checking equality of symbol in
+        // polynomial operations.
+        assert_eq!(&self.symbol, &rhs.symbol);
+
+        let new_degree = self.degree().max(rhs.degree());
+        let mut coeff_new = Vec::with_capacity(new_degree + 1);
+
+        for i in 0..=new_degree {
+            coeff_new.push(self.coeff(i) + rhs.coeff(i));
+        }
+
+        let mut res = UnivariatePolynomial {
+            coeff: coeff_new,
+            symbol: self.symbol.clone(),
+        };
+
+        res.normalize();
+        res
     }
 }
 
@@ -197,6 +280,14 @@ impl ops::Sub<&UnivariatePolynomial> for &UnivariatePolynomial {
     }
 }
 
+impl ops::Sub for UnivariatePolynomial {
+    type Output = UnivariatePolynomial;
+
+    fn sub(self, rhs: UnivariatePolynomial) -> Self::Output {
+        &self - &rhs
+    }
+}
+
 impl ops::Mul<&Number> for &UnivariatePolynomial {
     type Output = UnivariatePolynomial;
 
@@ -206,6 +297,29 @@ impl ops::Mul<&Number> for &UnivariatePolynomial {
         }
 
         let new_coeffs = self.coeff.iter().map(|c| c * rhs).collect();
+
+        UnivariatePolynomial {
+            coeff: new_coeffs,
+            symbol: self.symbol.clone(),
+        }
+    }
+}
+
+impl ops::Mul<&UnivariatePolynomial> for &UnivariatePolynomial {
+    type Output = UnivariatePolynomial;
+
+    fn mul(self, rhs: &UnivariatePolynomial) -> Self::Output {
+        if self.is_zero() || rhs.is_zero() {
+            return UnivariatePolynomial::zero(&self.symbol);
+        }
+
+        let mut new_coeffs = vec![ZERO.clone(); self.degree() + rhs.degree() + 1];
+
+        for (k, item) in new_coeffs.iter_mut().enumerate() {
+            for l in 0..=k {
+                *item += self.coeff(l) * rhs.coeff(k - l);
+            }
+        }
 
         UnivariatePolynomial {
             coeff: new_coeffs,
@@ -270,7 +384,7 @@ mod tests {
     }
 
     #[test]
-    fn test_poly_long_division() {
+    fn test_poly_long_division_example_1() {
         let a = UnivariatePolynomial::from_expr(
             &norm_expr!(
                 4 x^7 - 2 x^5 + 9 x^2 + x - 17
@@ -301,6 +415,35 @@ mod tests {
             "x",
         )
         .unwrap();
+
+        let (q, r) = a
+            .long_division(&b)
+            .expect("Ex1: Long division should succeed");
+
+        assert_eq!(q, q_expected);
+        assert_eq!(r, r_expected);
+    }
+
+    #[test]
+    fn test_poly_long_division_example_2() {
+        let a = UnivariatePolynomial::from_expr(
+            &norm_expr!(
+                x^3 + 6 x^2 + 11 x + 6
+            ),
+            "x",
+        )
+        .unwrap();
+        let b = UnivariatePolynomial::from_expr(
+            &norm_expr!(
+                -2 x^2 - 6 x - 4
+            ),
+            "x",
+        )
+        .unwrap();
+
+        let q_expected = UnivariatePolynomial::from_expr(&norm_expr!(-x / 2 - 3 / 2), "x").unwrap();
+
+        let r_expected = UnivariatePolynomial::from_expr(&norm_expr!(0), "x").unwrap();
 
         let (q, r) = a
             .long_division(&b)
@@ -364,6 +507,76 @@ mod tests {
         assert!(
             a.long_division(&b).is_err(),
             "Should be division-by-zero error."
+        );
+    }
+
+    #[test]
+    fn test_xgcd_example_1() {
+        let a = UnivariatePolynomial::from_expr(&norm_expr!(x ^ 2 - 1), "x").unwrap();
+
+        let b = UnivariatePolynomial::from_expr(&norm_expr!(x - 1), "x").unwrap();
+
+        let (r, (s, t)) = extended_gcd(&a, &b).expect("Should succeed.");
+
+        assert_eq!(
+            r,
+            UnivariatePolynomial::from_expr(&norm_expr!(x - 1), "x",).unwrap()
+        );
+
+        assert_eq!(
+            s,
+            UnivariatePolynomial::from_expr(&norm_expr!(0), "x",).unwrap()
+        );
+
+        assert_eq!(
+            t,
+            UnivariatePolynomial::from_expr(&norm_expr!(1), "x",).unwrap()
+        );
+    }
+
+    #[test]
+    fn test_xgcd_example_2() {
+        let a = UnivariatePolynomial::from_expr(
+            &norm_expr!(
+                8 + 22 x + 21 x^2 + 8 x^3 + x^4
+            ),
+            "x",
+        )
+        .unwrap();
+
+        let b = UnivariatePolynomial::from_expr(
+            &norm_expr!(
+                6 + 11 x + 6 x^2 + x^3
+            ),
+            "x",
+        )
+        .unwrap();
+
+        let (r, (s, t)) = extended_gcd(&a, &b).expect("Should succeed.");
+
+        dbg!(&r);
+        dbg!(&s);
+        dbg!(&t);
+
+        assert_eq!(
+            r,
+            UnivariatePolynomial::from_expr(
+                &norm_expr!(
+                    2 + 3 x + x^2
+                ),
+                "x",
+            )
+            .unwrap()
+        );
+
+        assert_eq!(
+            s,
+            UnivariatePolynomial::from_expr(&norm_expr!(-1 / 2), "x",).unwrap()
+        );
+
+        assert_eq!(
+            t,
+            UnivariatePolynomial::from_expr(&norm_expr!(1 + x / 2), "x",).unwrap()
         );
     }
 }

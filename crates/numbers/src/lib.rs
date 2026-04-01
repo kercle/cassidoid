@@ -31,6 +31,14 @@ pub enum Number {
 }
 
 impl Number {
+    pub fn new_from_rational(r: rational::BigRational) -> Self {
+        if r.denominator().is_one() {
+            Self::Integer(r.take_numerator())
+        } else {
+            Self::Rational(r)
+        }
+    }
+
     pub fn new_integer_from_str(s: &str) -> Result<Self, String> {
         Ok(Self::Integer(BigInteger::from_str_radix(s, 10)?))
     }
@@ -44,6 +52,10 @@ impl Number {
 
     pub fn from_i64(value: i64) -> Self {
         Self::Integer(BigInteger::from_i64(value))
+    }
+
+    pub fn from_u64(value: u64) -> Self {
+        Self::Integer(BigInteger::from_u64(value))
     }
 
     pub fn from_f64(_value: f64) -> Self {
@@ -120,11 +132,11 @@ impl Number {
         }
     }
 
-    pub fn to_rational(self) -> Result<BigRational, String> {
+    pub fn to_rational(self) -> BigRational {
         use Number::*;
         match self {
-            Integer(v) => Ok(BigRational::from_big_integer(v)),
-            Rational(v) => Ok(v),
+            Integer(v) => BigRational::from_big_integer(v),
+            Rational(v) => v,
         }
     }
 
@@ -144,9 +156,31 @@ impl Number {
         }
     }
 
+    pub fn inner_add(&self, other: &Self) -> Self {
+        // TODO: very inefficient; lots of cloning
+        Self::new_from_rational(self.clone().to_rational() + other.clone().to_rational())
+    }
+
+    pub fn inner_sub(&self, other: &Self) -> Self {
+        // TODO: very inefficient; lots of cloning
+        Self::new_from_rational(self.clone().to_rational() - other.clone().to_rational())
+    }
+
+    pub fn inner_mul(&self, other: &Self) -> Self {
+        // TODO: very inefficient; lots of cloning
+        Self::new_from_rational(self.clone().to_rational() * other.clone().to_rational())
+    }
+
+    pub fn inner_div(&self, other: &Self) -> Option<Self> {
+        // TODO: very inefficient; lots of cloning
+        Some(Self::new_from_rational(
+            (self.clone().to_rational() / other.clone().to_rational())?,
+        ))
+    }
+
     pub fn pow(&self, exp: &Number) -> Result<Self, String> {
-        let base = self.clone().to_rational()?;
-        let exp = exp.clone().to_rational()?;
+        let base = self.clone().to_rational();
+        let exp = exp.clone().to_rational();
 
         let res = base.pow(&exp)?;
         if res.denominator().is_one() {

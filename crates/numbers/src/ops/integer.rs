@@ -84,7 +84,7 @@ impl ops::Div for &BigInteger {
     type Output = Option<BigInteger>;
 
     fn div(self, other: &BigInteger) -> Self::Output {
-        if let Some((quotient, _)) = BigInteger::div(self, other) {
+        if let Some((quotient, _)) = BigInteger::euclidean_div(self, other) {
             Some(quotient)
         } else {
             None
@@ -104,7 +104,7 @@ impl ops::Rem for &BigInteger {
     type Output = Option<BigInteger>;
 
     fn rem(self, other: &BigInteger) -> Self::Output {
-        if let Some((_, remainder)) = BigInteger::div(self, other) {
+        if let Some((_, remainder)) = BigInteger::euclidean_div(self, other) {
             Some(remainder)
         } else {
             None

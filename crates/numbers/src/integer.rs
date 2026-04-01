@@ -514,7 +514,7 @@ impl BigInteger {
         BigInteger::from_vec(sign, digits)
     }
 
-    pub fn div(lhs: &Self, rhs: &Self) -> Option<(Self, Self)> {
+    pub fn euclidean_div(lhs: &Self, rhs: &Self) -> Option<(Self, Self)> {
         if rhs.is_one() {
             return Some((lhs.clone(), Self::zero()));
         } else if lhs.is_zero() {
@@ -750,7 +750,7 @@ impl fmt::Display for BigInteger {
                 break;
             }
 
-            let (quotient, remainder) = Self::div(&num, &BigInteger::from_u64(10)).unwrap();
+            let (quotient, remainder) = Self::euclidean_div(&num, &BigInteger::from_u64(10)).unwrap();
 
             num = quotient;
             digits_str.insert(0, char::from_digit(remainder.digit(0) as u32, 10).unwrap());
@@ -912,7 +912,7 @@ mod tests {
         let a = BigInteger::from_slice(Sign::Positive, &[1, 2, 3, 4, 5]);
         let b = BigInteger::from_slice(Sign::Positive, &[1, 2]);
 
-        let (quotient, remainder) = BigInteger::div(&a, &b).unwrap();
+        let (quotient, remainder) = BigInteger::euclidean_div(&a, &b).unwrap();
 
         assert_eq!(
             quotient.digits,
@@ -1008,16 +1008,16 @@ mod tests {
         let n7 = BigInteger::from_i64(7);
         let mn7 = BigInteger::from_i64(-7);
 
-        let (q, r) = BigInteger::div(&z, &n7).expect("0/7 should succeed");
+        let (q, r) = BigInteger::euclidean_div(&z, &n7).expect("0/7 should succeed");
         assert!(q.eq_inner(&z));
         assert!(r.eq_inner(&z));
 
-        let (q, r) = BigInteger::div(&z, &mn7).expect("0/-7 should succeed");
+        let (q, r) = BigInteger::euclidean_div(&z, &mn7).expect("0/-7 should succeed");
         assert!(q.eq_inner(&z));
         assert!(r.eq_inner(&z));
 
-        assert!(BigInteger::div(&n7, &z).is_none());
-        assert!(BigInteger::div(&z, &z).is_none());
+        assert!(BigInteger::euclidean_div(&n7, &z).is_none());
+        assert!(BigInteger::euclidean_div(&z, &z).is_none());
     }
 
     #[test]
@@ -1039,7 +1039,7 @@ mod tests {
 
             assert_ne!(b, BigInteger::from_i64(0));
 
-            let (q, r) = BigInteger::div(&a, &b).expect("division failed unexpectedly");
+            let (q, r) = BigInteger::euclidean_div(&a, &b).expect("division failed unexpectedly");
 
             let qb = BigInteger::mul(&q, &b);
             let rhs = BigInteger::add(&qb, &r);
@@ -1072,14 +1072,14 @@ mod tests {
     fn test_division_multi_limb_known_results() {
         let a = BigInteger::from_str_radix("18446744073709551616", 10).unwrap();
         let b = BigInteger::from_u64(3);
-        let (q, r) = BigInteger::div(&a, &b).unwrap();
+        let (q, r) = BigInteger::euclidean_div(&a, &b).unwrap();
 
         assert!(q.eq_inner(&BigInteger::from_str_radix("6148914691236517205", 10).unwrap()));
         assert!(r.eq_inner(&BigInteger::from_u64(1)));
 
         let a = BigInteger::from_str_radix("340282366920938463463374607431768211456", 10).unwrap();
         let b = BigInteger::from_str_radix("18446744073709551616", 10).unwrap();
-        let (q, r) = BigInteger::div(&a, &b).unwrap();
+        let (q, r) = BigInteger::euclidean_div(&a, &b).unwrap();
 
         assert!(q.eq_inner(&b));
         assert!(r.eq_inner(&BigInteger::from_u64(0)));
@@ -1157,7 +1157,7 @@ mod tests {
             vec![70327, 463338, 227530, 519575, 637288, 58611, 314888],
         );
 
-        let (q, r) = BigInteger::div(&a, &b).unwrap();
+        let (q, r) = BigInteger::euclidean_div(&a, &b).unwrap();
 
         // q = BASE^4 => digits [0,0,0,0,1] (5 digits)
         let expected_q = BigInteger::from_str_radix(

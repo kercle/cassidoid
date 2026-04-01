@@ -181,8 +181,8 @@ impl BigRational {
 
         Some(
             BigRational::new(
-                self.denominator() * other.denominator(),
-                self.numerator() * other.numerator(),
+                self.numerator() * other.denominator(),
+                self.denominator() * other.numerator(),
             )
             .unwrap(),
         )
