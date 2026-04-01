@@ -24,7 +24,7 @@ pub struct UnivariatePolynomial {
 }
 
 #[derive(Debug, Clone)]
-pub enum LongDivisionError {
+pub enum PolynomialDivisionError {
     SymbolMismatch,
     DivisionByZero,
 }
@@ -111,10 +111,6 @@ impl UnivariatePolynomial {
     }
 
     pub fn coeff_higest_monomial(&self) -> &Number {
-        if self.degree() == 0 {
-            return &ZERO;
-        }
-
         self.coeff(self.degree())
     }
 
@@ -134,14 +130,19 @@ impl UnivariatePolynomial {
         }
     }
 
-    pub fn long_division(&self, other: &Self) -> Result<(Self, Self), LongDivisionError> {
+    pub fn long_division(&self, other: &Self) -> Result<(Self, Self), PolynomialDivisionError> {
         ensure!(
             self.symbol == other.symbol,
-            LongDivisionError::SymbolMismatch
+            PolynomialDivisionError::SymbolMismatch
         );
 
         if other.degree() > self.degree() {
-            return Ok((UnivariatePolynomial::zero(&self.symbol), other.clone()));
+            return Ok((UnivariatePolynomial::zero(&self.symbol), self.clone()));
+        } else if other.degree() == 0 {
+            return Ok((
+                (self / other.coeff_higest_monomial())?,
+                UnivariatePolynomial::zero(&self.symbol),
+            ));
         }
 
         let mut quotient_coeffs = vec![ZERO.clone(); (self.degree() - other.degree()) + 1];
@@ -151,7 +152,7 @@ impl UnivariatePolynomial {
             let exp_diff = current_step.degree() - other.degree();
 
             let coeff = (current_step.coeff_higest_monomial() / other.coeff_higest_monomial())
-                .ok_or(LongDivisionError::DivisionByZero)?;
+                .ok_or(PolynomialDivisionError::DivisionByZero)?;
 
             let q = (other * &coeff).shifted(exp_diff);
 
@@ -210,6 +211,23 @@ impl ops::Mul<&Number> for &UnivariatePolynomial {
             coeff: new_coeffs,
             symbol: self.symbol.clone(),
         }
+    }
+}
+
+impl ops::Div<&Number> for &UnivariatePolynomial {
+    type Output = Result<UnivariatePolynomial, PolynomialDivisionError>;
+
+    fn div(self, rhs: &Number) -> Self::Output {
+        if rhs.is_zero() {
+            return Err(PolynomialDivisionError::DivisionByZero);
+        }
+
+        let new_coeffs: Option<Vec<_>> = self.coeff.iter().map(|c| c / rhs).collect();
+
+        Ok(UnivariatePolynomial {
+            coeff: new_coeffs.ok_or(PolynomialDivisionError::DivisionByZero)?,
+            symbol: self.symbol.clone(),
+        })
     }
 }
 
@@ -290,5 +308,62 @@ mod tests {
 
         assert_eq!(q, q_expected);
         assert_eq!(r, r_expected);
+    }
+
+    #[test]
+    fn test_division_by_higher_order() {
+        let a = UnivariatePolynomial::from_expr(&norm_expr!(x + 1), "x").unwrap();
+        let b = UnivariatePolynomial::from_expr(&norm_expr!(x ^ 5), "x").unwrap();
+
+        let (q, r) = a.long_division(&b).expect("should succeed");
+
+        let zero = UnivariatePolynomial::zero("x");
+        let expected = UnivariatePolynomial::from_expr(&norm_expr!(x + 1), "x").unwrap();
+
+        assert_eq!(q, zero);
+        assert_eq!(r, expected);
+    }
+
+    #[test]
+    fn test_long_division_constant_divisor() {
+        let a = UnivariatePolynomial::from_expr(&norm_expr!(6 x^2 + 3 x + 9), "x").unwrap();
+        let b = UnivariatePolynomial::from_expr(&norm_expr!(3), "x").unwrap();
+
+        let (q, r) = a
+            .long_division(&b)
+            .expect("dividing by a nonzero constant must not fail");
+
+        let q_expected = UnivariatePolynomial::from_expr(&norm_expr!(2 x^2 + x + 3), "x").unwrap();
+        let r_expected = UnivariatePolynomial::zero("x");
+
+        assert_eq!(q, q_expected);
+        assert_eq!(r, r_expected);
+    }
+
+    #[test]
+    fn test_long_division_leading_term_cancellation() {
+        let a = UnivariatePolynomial::from_expr(&norm_expr!(x ^ 4 + x ^ 3 + x ^ 2 + x + 1), "x")
+            .unwrap();
+        let b = UnivariatePolynomial::from_expr(&norm_expr!(x ^ 4 + 1), "x").unwrap();
+
+        let (q, r) = a.long_division(&b).expect("should terminate and succeed");
+
+        let q_expected = UnivariatePolynomial::from_expr(&norm_expr!(1), "x").unwrap();
+        let r_expected =
+            UnivariatePolynomial::from_expr(&norm_expr!(x ^ 3 + x ^ 2 + x), "x").unwrap();
+
+        assert_eq!(q, q_expected);
+        assert_eq!(r, r_expected);
+    }
+
+    #[test]
+    fn test_long_division_by_zero_for_degree_zero_polys() {
+        let a = UnivariatePolynomial::from_expr(&norm_expr!(0), "x").expect("should succeed");
+        let b = UnivariatePolynomial::from_expr(&norm_expr!(0), "x").expect("should succeed");
+
+        assert!(
+            a.long_division(&b).is_err(),
+            "Should be division-by-zero error."
+        );
     }
 }

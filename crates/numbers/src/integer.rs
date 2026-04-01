@@ -478,6 +478,10 @@ impl BigInteger {
             };
         }
 
+        if res.is_zero() {
+            res.sign = Sign::Positive;
+        }
+
         res
     }
 
