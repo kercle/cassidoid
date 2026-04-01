@@ -30,6 +30,19 @@ pub enum PolynomialDivisionError {
 }
 
 impl UnivariatePolynomial {
+    fn new(mut coeff: Vec<Number>, symbol: impl AsRef<str>) -> Self {
+        while coeff.len() > 1 && coeff.last().is_some_and(|c| c.is_zero()) {
+            coeff.pop();
+        }
+        if coeff.is_empty() {
+            coeff.push(Number::zero());
+        }
+        Self {
+            coeff,
+            symbol: symbol.as_ref().to_string(),
+        }
+    }
+
     pub fn from_expr(expr: &NormExpr, sym: impl AsRef<str>) -> Option<Self> {
         let mut coeff;
 
@@ -56,10 +69,7 @@ impl UnivariatePolynomial {
             coeff[n] = c.clone();
         }
 
-        Some(UnivariatePolynomial {
-            coeff,
-            symbol: sym.as_ref().to_string(),
-        })
+        Some(UnivariatePolynomial::new(coeff, sym))
     }
 
     fn monimial_from_expr<'a>(
@@ -133,10 +143,7 @@ impl UnivariatePolynomial {
         let mut coeff = vec![ZERO.clone(); n];
         coeff.extend(self.coeff);
 
-        UnivariatePolynomial {
-            coeff,
-            symbol: self.symbol,
-        }
+        UnivariatePolynomial::new(coeff, self.symbol)
     }
 
     pub fn long_division(&self, other: &Self) -> Result<(Self, Self), PolynomialDivisionError> {
@@ -170,10 +177,7 @@ impl UnivariatePolynomial {
         }
 
         let r = current_step;
-        let mut q = UnivariatePolynomial {
-            coeff: quotient_coeffs,
-            symbol: self.symbol.clone(),
-        };
+        let mut q = UnivariatePolynomial::new(quotient_coeffs, &self.symbol);
 
         q.normalize();
 
@@ -245,13 +249,7 @@ impl ops::Add<&UnivariatePolynomial> for &UnivariatePolynomial {
             coeff_new.push(self.coeff(i) + rhs.coeff(i));
         }
 
-        let mut res = UnivariatePolynomial {
-            coeff: coeff_new,
-            symbol: self.symbol.clone(),
-        };
-
-        res.normalize();
-        res
+        UnivariatePolynomial::new(coeff_new, &self.symbol)
     }
 }
 
@@ -270,10 +268,7 @@ impl ops::Sub<&UnivariatePolynomial> for &UnivariatePolynomial {
             coeff_new.push(self.coeff(i) - rhs.coeff(i));
         }
 
-        let mut res = UnivariatePolynomial {
-            coeff: coeff_new,
-            symbol: self.symbol.clone(),
-        };
+        let mut res = UnivariatePolynomial::new(coeff_new, self.symbol.clone());
 
         res.normalize();
         res
@@ -298,10 +293,7 @@ impl ops::Mul<&Number> for &UnivariatePolynomial {
 
         let new_coeffs = self.coeff.iter().map(|c| c * rhs).collect();
 
-        UnivariatePolynomial {
-            coeff: new_coeffs,
-            symbol: self.symbol.clone(),
-        }
+        UnivariatePolynomial::new(new_coeffs, self.symbol.clone())
     }
 }
 
@@ -321,10 +313,7 @@ impl ops::Mul<&UnivariatePolynomial> for &UnivariatePolynomial {
             }
         }
 
-        UnivariatePolynomial {
-            coeff: new_coeffs,
-            symbol: self.symbol.clone(),
-        }
+        UnivariatePolynomial::new(new_coeffs, self.symbol.clone())
     }
 }
 
@@ -338,10 +327,10 @@ impl ops::Div<&Number> for &UnivariatePolynomial {
 
         let new_coeffs: Option<Vec<_>> = self.coeff.iter().map(|c| c / rhs).collect();
 
-        Ok(UnivariatePolynomial {
-            coeff: new_coeffs.ok_or(PolynomialDivisionError::DivisionByZero)?,
-            symbol: self.symbol.clone(),
-        })
+        Ok(UnivariatePolynomial::new(
+            new_coeffs.ok_or(PolynomialDivisionError::DivisionByZero)?,
+            self.symbol.clone(),
+        ))
     }
 }
 
