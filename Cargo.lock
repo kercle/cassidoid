@@ -199,16 +199,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b05b61dc5112cbb17e4b6cd61790d9845d13888356391624cbe7e41efeac1e75"
 
 [[package]]
-name = "common"
-version = "0.1.0"
-dependencies = [
- "parser",
- "serde",
- "serde_json",
- "symbolics",
-]
-
-[[package]]
 name = "cpufeatures"
 version = "0.2.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -258,8 +248,8 @@ name = "eval-server"
 version = "0.1.0"
 dependencies = [
  "axum",
- "common",
  "futures-util",
+ "kernel",
  "serde",
  "serde_json",
  "tokio",
@@ -448,6 +438,16 @@ name = "itoa"
 version = "1.0.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "92ecc6618181def0457392ccd0ee51198e065e016d1d527a7ac1b6dc7c1f09d2"
+
+[[package]]
+name = "kernel"
+version = "0.1.0"
+dependencies = [
+ "parser",
+ "serde",
+ "serde_json",
+ "symbolics",
+]
 
 [[package]]
 name = "lazy_static"
@@ -1079,7 +1079,7 @@ dependencies = [
 name = "wasm"
 version = "0.1.0"
 dependencies = [
- "common",
+ "kernel",
  "serde",
  "serde_json",
  "wasm-bindgen",

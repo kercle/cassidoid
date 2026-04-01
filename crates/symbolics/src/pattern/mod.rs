@@ -124,9 +124,7 @@ impl<'a> Pattern<'a> {
                     }
                 }
             }
-            ExprKind::Node { head, args }
-                if builtins::Pattern::is_application_of(head, args) =>
-            {
+            ExprKind::Node { head, args } if builtins::Pattern::is_application_of(head, args) => {
                 let e = args.last()?;
                 let h = e.head()?;
 

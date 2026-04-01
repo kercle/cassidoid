@@ -4,8 +4,8 @@ use axum::{
     response::Response,
     routing::get,
 };
-use common::hacks::process_message;
 use futures_util::{sink::SinkExt, stream::StreamExt};
+use kernel::hacks::process_message;
 use tracing::Level;
 use tracing::{error, info};
 

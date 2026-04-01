@@ -750,7 +750,8 @@ impl fmt::Display for BigInteger {
                 break;
             }
 
-            let (quotient, remainder) = Self::euclidean_div(&num, &BigInteger::from_u64(10)).unwrap();
+            let (quotient, remainder) =
+                Self::euclidean_div(&num, &BigInteger::from_u64(10)).unwrap();
 
             num = quotient;
             digits_str.insert(0, char::from_digit(remainder.digit(0) as u32, 10).unwrap());

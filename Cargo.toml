@@ -6,7 +6,7 @@ members = [
     "crates/symbolics",
     "crates/cli",
     "crates/wasm",
-    "crates/common",
+    "crates/kernel",
     "crates/parser",
     "crates/parser-macros",
     "debug-utils/visualize-pattern-program",

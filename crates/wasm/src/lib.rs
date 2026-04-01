@@ -1,6 +1,6 @@
 mod util;
 
-use common::hacks::process_message;
+use kernel::hacks::process_message;
 use wasm_bindgen::prelude::*;
 
 use crate::util::escape_json;
