@@ -11,7 +11,7 @@ use crate::{
 fn parse_identifier_or_call(stream: &mut TokenStream) -> Result<ParserAst, ParseError> {
     // <identifier_or_function_call> ::= <identifier>
     //    | <identifier> "[" "]"
-    //    | <identifier> "[" <parse_expression> { "," <expression_or_enclosed_block> }* ")"
+    //    | <identifier> "[" <parse_expression> { "," <expression_or_enclosed_block> }* "]"
 
     let Some(symbol_or_pattern) = stream.next_if_identifier_or_pattern().cloned() else {
         return Err(ParseError {
@@ -167,6 +167,18 @@ fn parse_product(stream: &mut TokenStream) -> Result<ParserAst, ParseError> {
     let mut result = parse_signed_power(stream)?;
 
     loop {
+        if matches!(
+            stream.peek_token(),
+            Some(Token::Identifier(_))
+                | Some(Token::Number(_))
+                | Some(Token::LeftParen)
+                | Some(Token::Pattern { .. })
+        ) {
+            // no explicit operator is interpreted as multiplication: 2 x = 2*x
+            result = ParserAst::new_mul(result, parse_signed_power(stream)?);
+            continue;
+        }
+
         let t = stream.next_if_matches(|token| matches!(token, Token::Asterisk | Token::Slash));
 
         result = match t {
@@ -175,14 +187,6 @@ fn parse_product(stream: &mut TokenStream) -> Result<ParserAst, ParseError> {
             None => break,
             _ => unreachable!(),
         };
-    }
-
-    if matches!(
-        stream.peek_token(),
-        Some(Token::Identifier(_)) | Some(Token::Number(_)) | Some(Token::LeftParen)
-    ) {
-        // no explicit operator is interpreted as multiplication: 2 x = 2*x
-        return Ok(ParserAst::new_mul(result, parse_signed_power(stream)?));
     }
 
     Ok(result)
@@ -240,7 +244,7 @@ fn parse_cmp(stream: &mut TokenStream) -> Result<ParserAst, ParseError> {
 }
 
 fn parse_condition(stream: &mut TokenStream) -> Result<ParserAst, ParseError> {
-    // <cond> ::= <cmp> [ "/;" <cmd> ]
+    // <cond> ::= <cmp> { "/;" <cmd> }
 
     let mut result = parse_cmp(stream)?;
 
@@ -255,7 +259,7 @@ fn parse_condition(stream: &mut TokenStream) -> Result<ParserAst, ParseError> {
 }
 
 fn parse_rule_delayed(stream: &mut TokenStream) -> Result<ParserAst, ParseError> {
-    // <rule_delayed> ::= <cond> { "^" <cond> }
+    // <rule_delayed> ::= <cond> { ":>" <cond> }
 
     let mut result = parse_condition(stream)?;
 
