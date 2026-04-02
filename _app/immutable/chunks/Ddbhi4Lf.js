@@ -1,7 +1,7 @@
-import { h as v, aR as x, aS as E, N as M, aT as L, aU as W, aV as C, aW as U, aX as I } from "./BfX1JZpI.js";
+import { h as v, aR as x, aS as E, N as M, aT as L, aU as C, aV as N, aW as U, aX as W } from "./BfX1JZpI.js";
 let ie, se, ae, m;
 let __tla = (async () => {
-  const N = /* @__PURE__ */ Symbol("is custom element"), R = /* @__PURE__ */ Symbol("is html"), B = E ? "link" : "LINK";
+  const I = /* @__PURE__ */ Symbol("is custom element"), O = /* @__PURE__ */ Symbol("is html"), R = E ? "link" : "LINK";
   ae = function(e) {
     if (v) {
       var t = false, n = () => {
@@ -20,13 +20,13 @@ let __tla = (async () => {
     }
   };
   m = function(e, t, n, o) {
-    var r = O(e);
-    v && (r[t] = e.getAttribute(t), t === "src" || t === "srcset" || t === "href" && e.nodeName === B) || r[t] !== (r[t] = n) && (t === "loading" && (e[W] = n), n == null ? e.removeAttribute(t) : typeof n != "string" && D(e).includes(t) ? e[t] = n : e.setAttribute(t, n));
+    var r = B(e);
+    v && (r[t] = e.getAttribute(t), t === "src" || t === "srcset" || t === "href" && e.nodeName === R) || r[t] !== (r[t] = n) && (t === "loading" && (e[C] = n), n == null ? e.removeAttribute(t) : typeof n != "string" && D(e).includes(t) ? e[t] = n : e.setAttribute(t, n));
   };
-  function O(e) {
+  function B(e) {
     return e.__attributes ?? (e.__attributes = {
-      [N]: e.nodeName.includes("-"),
-      [R]: e.namespaceURI === x
+      [I]: e.nodeName.includes("-"),
+      [O]: e.namespaceURI === x
     });
   }
   var A = /* @__PURE__ */ new Map();
@@ -37,11 +37,11 @@ let __tla = (async () => {
     for (var o, r = e, i = Element.prototype; i !== r; ) {
       o = U(r);
       for (var s in o) o[s].set && n.push(s);
-      r = C(r);
+      r = N(r);
     }
     return n;
   }
-  const F = "" + new URL("../assets/kernel_bg.BWGE1ppC.wasm", import.meta.url).href, z = async (e = {}, t) => {
+  const F = "" + new URL("../assets/kernel_bg.BAO4Cg9N.wasm", import.meta.url).href, z = async (e = {}, t) => {
     let n;
     if (t.startsWith("data:")) {
       const o = t.replace(/^data:.*?base64,/, "");
@@ -75,7 +75,7 @@ let __tla = (async () => {
     execute(t) {
       let n, o;
       try {
-        const r = j(t, c.__wbindgen_malloc, c.__wbindgen_realloc), i = y, s = c.cassidakernel_execute(this.__wbg_ptr, r, i);
+        const r = G(t, c.__wbindgen_malloc, c.__wbindgen_realloc), i = y, s = c.cassidakernel_execute(this.__wbg_ptr, r, i);
         return n = s[0], o = s[1], T(s[0], s[1]);
       } finally {
         c.__wbindgen_free(n, o, 1);
@@ -87,10 +87,10 @@ let __tla = (async () => {
     }
   }
   Symbol.dispose && (h.prototype[Symbol.dispose] = h.prototype.free);
-  function G(e, t) {
+  function K(e, t) {
     throw new Error(T(e, t));
   }
-  function K() {
+  function j() {
     const e = c.__wbindgen_externrefs, t = e.grow(4);
     e.set(0, void 0), e.set(t + 0, void 0), e.set(t + 1, null), e.set(t + 2, true), e.set(t + 3, false);
   }
@@ -107,7 +107,7 @@ let __tla = (async () => {
   function b() {
     return (u === null || u.byteLength === 0) && (u = new Uint8Array(c.memory.buffer)), u;
   }
-  function j(e, t, n) {
+  function G(e, t, n) {
     if (n === void 0) {
       const a = l.encode(e), _ = t(a.length, 1) >>> 0;
       return b().subarray(_, _ + a.length).set(a), y = a.length, _;
@@ -155,8 +155,8 @@ let __tla = (async () => {
   URL = globalThis.URL;
   const d = await z({
     "./kernel_bg.js": {
-      __wbg___wbindgen_throw_df03e93053e0f4bc: G,
-      __wbindgen_init_externref_table: K
+      __wbg___wbindgen_throw_df03e93053e0f4bc: K,
+      __wbindgen_init_externref_table: j
     }
   }, F), V = d.memory, Y = d.__wbg_cassidakernel_free, q = d.cassidakernel_execute, J = d.cassidakernel_new, $ = d.eval_input, Q = d.__wbindgen_externrefs, Z = d.__wbindgen_malloc, ee = d.__wbindgen_realloc, te = d.__wbindgen_free, k = d.__wbindgen_start, ne = Object.freeze(Object.defineProperty({
     __proto__: null,
@@ -176,7 +176,7 @@ let __tla = (async () => {
   P(ne);
   k();
   function re() {
-    const { subscribe: e, set: t, update: n } = I({
+    const { subscribe: e, set: t, update: n } = W({
       data: {
         history: []
       },
