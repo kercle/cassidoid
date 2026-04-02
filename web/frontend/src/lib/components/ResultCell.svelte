@@ -1,20 +1,20 @@
 <script lang="ts">
-	import type { CassidaResult } from '$lib/cassida/types/CassidaResult';
+	import type { ExecutionResult } from '$lib/cassida/types/ExecutionResult';
 	import HelpBuiltin from './help/HelpBuiltin.svelte';
 	import HelpTableOfContents from './help/HelpTableOfContents.svelte';
 	import Math from './Math.svelte';
 	import Plot from './Plot.svelte';
 
 	export let index: number = 1;
-	export let entry: CassidaResult | undefined = undefined;
+	export let entry: ExecutionResult | undefined = undefined;
 
-	const getRawInput = (entry: CassidaResult | undefined) => {
+	const getRawInput = (entry: ExecutionResult | undefined) => {
 		if (!entry) {
 			return null;
 		}
 
-		if ('input' in entry?.content) {
-			return entry?.content.input;
+		if ('input' in entry) {
+			return entry.input;
 		} else {
 			return null;
 		}
@@ -23,52 +23,42 @@
 
 <div class="group w-full">
 	<div class="bg-base-200 relative">
-		{#if entry?.type == 'err' && getRawInput(entry)}
-			<div class="overflow-x-auto bg-red-200 py-2 pl-6">
-				<p>{getRawInput(entry)}</p>
+		<div class="flex flex-row">
+			<div class="bg-base-200 text-info-content flex w-20 items-center justify-center">
+				(%i{index})
 			</div>
-		{:else}
-			<div class="flex flex-row">
-				<div class="bg-base-200 text-info-content flex w-20 items-center justify-center">
-					(%i{index})
-				</div>
-				<div class="bg-base-200 overflow-x-auto pt-3 pb-2 pl-6">
-					{getRawInput(entry)}
-				</div>
+			<div class="bg-base-200 overflow-x-auto pt-3 pb-2 pl-6">
+				{getRawInput(entry)}
 			</div>
-		{/if}
+		</div>
 	</div>
 
-	{#if entry?.type == 'err' && entry.content.type == 'parseError'}
-		<div class=" overflow-x-auto border border-red-200 bg-white py-2 pl-6">
-			<b class="mr-2">Error:</b>{entry.content.msg}
-		</div>
-	{:else if entry?.type == 'ok' && entry.content.type == 'expression'}
+	{#if entry?.type == 'expression'}
 		<div class="flex flex-row">
 			<div class="bg-base-200 text-success-content flex w-20 items-center justify-center">
 				(%o{index})
 			</div>
 			<div class="border-base-200 w-full overflow-x-auto border pl-6">
-				<Math expr={entry.content.output.latex} />
+				<Math expr={entry.output.latex} />
 			</div>
 		</div>
-	{:else if entry?.type == 'ok' && entry.content.type == 'plot'}
+	{:else if entry?.type == 'plot'}
 		<div class="flex flex-row">
 			<div class="bg-base-200 text-success-content flex w-20 items-center justify-center">
 				(%o{index})
 			</div>
 			<div class="border-base-200 w-full overflow-x-auto border pl-6">
-				<Plot data={entry.content.data} />
+				<Plot data={entry.data} />
 			</div>
 		</div>
-	{:else if entry?.type == 'ok' && entry.content.type == 'helpTableOfContents'}
-		<HelpTableOfContents builtins={entry.content.builtins} />
-	{:else if entry?.type == 'ok' && entry.content.type == 'helpBuiltin'}
+	{:else if entry?.type == 'helpTableOfContents'}
+		<HelpTableOfContents builtins={entry.builtins} />
+	{:else if entry?.type == 'helpBuiltin'}
 		<HelpBuiltin
-			title={entry.content.title}
-			patterns={entry.content.patterns}
-			examples={entry.content.examples}
-			related={entry.content.related}
+			title={entry.title}
+			patterns={entry.patterns}
+			examples={entry.examples}
+			related={entry.related}
 		/>
 	{:else}
 		<p>Unknown server message.</p>

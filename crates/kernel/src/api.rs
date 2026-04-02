@@ -32,7 +32,7 @@ pub enum ExecutionResult {
 #[serde(tag = "type", rename_all = "camelCase")]
 pub enum ExecutionError {
     ParseError { input: String, msg: String },
-    EvaluationError(String),
+    EvaluationError { msg: String },
     UnknownBuiltIn,
 }
 

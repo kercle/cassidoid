@@ -7,7 +7,7 @@
 
 	let scrollContainer: HTMLElement;
 
-	$: if ($appState.data?.history && scrollContainer) {
+	$: if ($appState.data?.ouput_history && scrollContainer) {
 		scrollToBottom();
 	}
 
@@ -23,7 +23,7 @@
 <div bind:this={scrollContainer} class="h-screen overflow-y-auto p-6">
 	<Greet />
 	<div class="flex flex-col gap-4">
-		{#each $appState.data?.history as entry, index}
+		{#each $appState.data?.ouput_history as entry, index}
 			<ResultCell {entry} index={index + 1} />
 		{/each}
 		<InputCell />

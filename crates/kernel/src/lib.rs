@@ -94,8 +94,8 @@ impl Kernel {
     }
 
     pub fn eval(&self, input: impl AsRef<str>) -> Result<NormExpr, ExecutionError> {
-        let ast_in = parse(input.as_ref()).map_err(|err| {
-            ExecutionError::EvaluationError(format!("Error parsing input: {}", err))
+        let ast_in = parse(input.as_ref()).map_err(|err| ExecutionError::EvaluationError {
+            msg: err.to_string(),
         })?;
 
         let input_expr = RawExpr::from(ast_in);

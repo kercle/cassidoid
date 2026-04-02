@@ -39,8 +39,8 @@ async fn handle_socket(socket: WebSocket) {
         if let Message::Text(text) = msg {
             let response = serde_json::to_string(&kernel.execute(text.to_string()));
 
-            if response.is_err() {
-                error!("Creating response message failed.");
+            if let Err(err) = response {
+                error!("Creating response message failed: {err:?}");
                 break;
             }
 

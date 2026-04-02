@@ -13,15 +13,7 @@ use crate::{
 
 impl Kernel {
     fn execute_inner(&self, input: String) -> Result<ExecutionResult, ExecutionError> {
-        let expr = match self.eval(input.clone()) {
-            Ok(expr) => expr,
-            Err(err) => {
-                return Err(ExecutionError::ParseError {
-                    input,
-                    msg: format!("{err:?}"),
-                });
-            }
-        };
+        let expr = self.eval(input.clone())?;
 
         if let Some(data) = generate_data_if_plot(&expr) {
             Ok(ExecutionResult::Plot {

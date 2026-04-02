@@ -1,5 +1,13 @@
+build-wasm-kernel:
+    @wasm-pack build crates/wasm \
+        --release \
+        --target bundler \
+        --out-dir ../../web/frontend/src/lib/cassida \
+        --out-name kernel
+    @cargo test --features=ts export_bindings
+
 [working-directory('web/frontend')]
-serve-frontend-dev:
+serve-frontend-dev: build-wasm-kernel
     npm install
     npm run dev
 
@@ -8,14 +16,6 @@ server:
 
 [parallel]
 serve-dev: server serve-frontend-dev
-
-build-wasm-kernel:
-    @wasm-pack build crates/wasm \
-        --release \
-        --target bundler \
-        --out-dir ../../web/frontend/src/lib/cassida \
-        --out-name kernel
-    @cargo test --features=ts export_bindings
 
 [working-directory('web/frontend')]
 build-frontend:

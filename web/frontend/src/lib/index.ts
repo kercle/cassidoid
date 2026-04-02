@@ -3,9 +3,13 @@ const USE_WASM = import.meta.env.VITE_USE_WASM === '1' || import.meta.env.VITE_U
 import { writable } from 'svelte/store';
 import { CassidaKernel } from '$lib/cassida';
 import type { CassidaResult } from './cassida/types/CassidaResult';
+import type { ExecutionError } from './cassida/types/ExecutionError';
+import type { ExecutionResult } from './cassida/types/ExecutionResult';
 
 type AppState = {
-    history: Array<CassidaResult>,
+    input_history: Array<string>,
+    ouput_history: Array<ExecutionResult>,
+    last_error: ExecutionError | null,
 };
 
 function createGlobalState() {
@@ -13,7 +17,11 @@ function createGlobalState() {
         data: AppState;
         connected: boolean;
     }>({
-        data: { history: [] } as AppState,
+        data: {
+            input_history: [],
+            ouput_history: [],
+            last_error: null
+        } as AppState,
         connected: false,
     });
 
@@ -21,13 +29,12 @@ function createGlobalState() {
     let kernel: CassidaKernel | undefined;
 
     function push_message(state: AppState, msg: CassidaResult) {
-        let last = state.history.pop();
-
-        if (last !== undefined && last.type != "err") {
-            state.history.push(last);
+        if (msg.type == "err") {
+            state.last_error = msg.content;
+        } else if (msg.type == "ok") {
+            state.last_error = null;
+            state.ouput_history.push(msg.content);
         }
-
-        state.history.push(msg);
     }
 
     async function connectWasm() {
@@ -35,11 +42,12 @@ function createGlobalState() {
         update(s => ({ ...s, connected: true }));
 
         return {
-            send: async (msg: string) => {
-                const result = await kernel?.execute(msg);
+            send: async (input: string) => {
+                const result = await kernel?.execute(input);
                 const parsed = typeof result === 'string' ? JSON.parse(result) : result;
 
                 update(s => {
+                    s.data.input_history.push(input);
                     push_message(s.data, parsed);
                     return { ...s, connected: true };
                 });
@@ -73,7 +81,13 @@ function createGlobalState() {
         };
 
         return {
-            send: (msg: string) => socket?.send(msg),
+            send: (msg: string) => {
+                update(s => {
+                    s.data.input_history.push(msg);
+                    return { ...s, connected: true };
+                });
+                socket?.send(msg)
+            },
         };
     }
 
