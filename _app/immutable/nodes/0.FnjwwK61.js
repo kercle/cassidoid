@@ -1,7 +1,7 @@
-import { c as u, a as o, f as c } from "../chunks/DkjPntfO.js";
-import { D as p, E, a as _, aQ as v, ay as y, h as i, aD as h, aE as l, K as f, J as m, e as g, a8 as T, w as F, x as w } from "../chunks/BfX1JZpI.js";
-import { B as C } from "../chunks/67kIHg_j.js";
-import { s as D, __tla as __tla_0 } from "../chunks/Ddbhi4Lf.js";
+import { c as u, a as o, f as c } from "../chunks/DY3I6B5O.js";
+import { C as p, E, a as _, aQ as v, ay as y, h as i, aD as h, aE as l, K as f, J as m, e as g, a8 as T, w as C, x as F } from "../chunks/D3xIz7z5.js";
+import { B as w } from "../chunks/BDkrSsJV.js";
+import { s as R, __tla as __tla_0 } from "../chunks/DvNrX-oi.js";
 let O;
 let __tla = Promise.all([
   (() => {
@@ -11,14 +11,14 @@ let __tla = Promise.all([
     }
   })()
 ]).then(async () => {
-  function R(s, n, ...t) {
-    var r = new C(s);
+  function b(s, n, ...t) {
+    var r = new w(s);
     p(() => {
       const a = n() ?? null;
       r.ensure(a, a && ((e) => a(e, ...t)));
     }, E);
   }
-  function b(s, n) {
+  function x(s, n) {
     let t = null, r = i;
     var a;
     if (i) {
@@ -37,16 +37,16 @@ let __tla = Promise.all([
       r && (f(true), m(t));
     }
   }
-  const x = "" + new URL("../assets/favicon.dfyh6Zu5.svg", import.meta.url).href;
+  const D = "" + new URL("../assets/favicon.dfyh6Zu5.svg", import.meta.url).href;
   var N = c('<link rel="icon"/>');
   O = function(s, n) {
     var t = u();
-    b("12qhfyh", (a) => {
+    x("12qhfyh", (a) => {
       var e = N();
-      w(() => D(e, "href", x)), o(a, e);
+      F(() => R(e, "href", D)), o(a, e);
     });
-    var r = F(t);
-    R(r, () => n.children), o(s, t);
+    var r = C(t);
+    b(r, () => n.children), o(s, t);
   };
 });
 export {
