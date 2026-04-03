@@ -19,8 +19,8 @@ pub struct Expand {
     rewriter: Rewriter,
 }
 
-impl Expand {
-    pub fn new() -> Self {
+impl Default for Expand {
+    fn default() -> Self {
         Self {
             pattern_doc: vec![PatternDoc::new(
                 raw_expr!(Expand[t_]),
@@ -28,6 +28,12 @@ impl Expand {
             )],
             rewriter: build_rewriter(),
         }
+    }
+}
+
+impl Expand {
+    pub fn new() -> Self {
+        Self::default()
     }
 }
 

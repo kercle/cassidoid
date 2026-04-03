@@ -112,7 +112,7 @@ fn parse_pattern_test(stream: &mut TokenStream) -> Result<ParserAst, ParseError>
 }
 
 fn parse_factorial(stream: &mut TokenStream) -> Result<ParserAst, ParseError> {
-    // <power> ::= <pattern_test> [ "!" ]
+    // <factorial> ::= <pattern_test> [ "!" ]
 
     let result = parse_pattern_test(stream)?;
 

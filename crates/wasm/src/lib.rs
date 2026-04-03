@@ -2,6 +2,7 @@ use kernel::Kernel;
 use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen]
+#[derive(Default)]
 pub struct CassidaKernel {
     inner: Kernel,
 }
@@ -10,9 +11,7 @@ pub struct CassidaKernel {
 impl CassidaKernel {
     #[wasm_bindgen(constructor)]
     pub fn new() -> Self {
-        Self {
-            inner: Kernel::default(),
-        }
+        Self::default()
     }
 
     pub fn execute(&mut self, input: &str) -> String {

@@ -130,7 +130,7 @@ impl MathMlWriter {
             let _ = write!(buf, r#" {k}="{v}""#);
         }
 
-        buf.push_str(">");
+        buf.push('>');
 
         self.lines.push((self.indent, buf));
         self.indent += 1;
