@@ -12,6 +12,7 @@ pub mod simplification;
 pub mod structure;
 pub mod system;
 pub mod traits;
+pub mod boolean;
 
 pub mod symbols;
 

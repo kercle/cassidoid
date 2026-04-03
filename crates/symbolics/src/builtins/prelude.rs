@@ -1,5 +1,9 @@
 use super::*;
 
+// --- Boolean ----------------------------------------------------------------
+
+pub use boolean::and::And;
+
 // --- Calculus ---------------------------------------------------------------
 
 pub use calculus::derivative::Derivative;

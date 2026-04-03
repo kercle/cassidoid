@@ -109,13 +109,17 @@ fn normalize_raw_node(head_expr: RawExpr, args: Vec<RawExpr>) -> NormExpr {
             args: args.into_iter().map(|a| a.into_normexpr_unsafe()).collect(),
         })
     }
+    // ---------- Boolean ----------
+    else if builtins::And::is_application_of(&head_expr, &args) {
+        normalize_raw_and(args)
+    }
     // ---------- Relational ----------
     else if builtins::Equal::is_application_of(&head_expr, &args) {
         let mut deduplicated_children = HashSet::new();
         deduplicated_children.extend(args.into_iter().map(|a| a.normalize()));
 
         if deduplicated_children.len() <= 1 {
-            RawExpr::new_symbol(builtins::symbols::TRUE).into_normexpr_unsafe()
+            RawExpr::new_boolean(true).into_normexpr_unsafe()
         } else {
             let mut args: Vec<RawExpr> = deduplicated_children
                 .into_iter()
@@ -166,6 +170,30 @@ fn flatten(head_symbol: &str, args: Vec<RawExpr>) -> Vec<NormExpr> {
     }
 
     flattened_args
+}
+
+fn normalize_raw_and(args: Vec<RawExpr>) -> NormExpr {
+    let mut terms = HashSet::new();
+
+    for arg in flatten(builtins::And::head(), args) {
+        if arg.is_false() {
+            return arg;
+        } else if arg.is_true() {
+            continue;
+        }
+
+        terms.insert(arg);
+    }
+
+    if terms.is_empty() {
+        RawExpr::new_boolean(true).into_normexpr_unsafe()
+    } else if terms.len() == 1 {
+        terms.into_iter().next().unwrap()
+    } else {
+        let mut args: Vec<RawExpr> = terms.into_iter().map(|a| a.into_raw()).collect();
+        args.sort();
+        RawExpr::new_node(builtins::And::head(), args).into_normexpr_unsafe()
+    }
 }
 
 fn normalize_raw_sub(args: Vec<RawExpr>) -> NormExpr {
