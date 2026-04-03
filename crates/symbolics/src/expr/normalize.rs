@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use numbers::Number;
 
@@ -51,6 +51,7 @@ fn normalize_raw_node(head_expr: RawExpr, args: Vec<RawExpr>) -> NormExpr {
         filter_absent(args)
     };
 
+    // ---------- Arithmetic ----------
     if builtins::Add::is_application_of(&head_expr, &args) {
         normalize_raw_add(args)
     } else if builtins::Sub::is_application_of(&head_expr, &args) {
@@ -71,7 +72,9 @@ fn normalize_raw_node(head_expr: RawExpr, args: Vec<RawExpr>) -> NormExpr {
         let [arg]: [RawExpr; 1] = args.try_into().unwrap();
         let one_half = Number::new_rational_from_i64(1, 2).unwrap();
         RawExpr::new_binary_node(builtins::Pow::head(), arg, one_half.into()).normalize()
-    } else if builtins::RuleDelayed::is_application_of(&head_expr, &args) {
+    }
+    // ---------- Patterns and Rules ----------
+    else if builtins::RuleDelayed::is_application_of(&head_expr, &args) {
         let [pat, repl]: [RawExpr; 2] = args.try_into().unwrap();
 
         RawExpr::new_binary_node(
@@ -105,7 +108,25 @@ fn normalize_raw_node(head_expr: RawExpr, args: Vec<RawExpr>) -> NormExpr {
             head: Box::new(head_expr.into_normexpr_unsafe()),
             args: args.into_iter().map(|a| a.into_normexpr_unsafe()).collect(),
         })
-    } else {
+    }
+    // ---------- Relational ----------
+    else if builtins::Equal::is_application_of(&head_expr, &args) {
+        let mut deduplicated_children = HashSet::new();
+        deduplicated_children.extend(args.into_iter().map(|a| a.normalize()));
+
+        if deduplicated_children.len() <= 1 {
+            RawExpr::new_symbol(builtins::symbols::TRUE).into_normexpr_unsafe()
+        } else {
+            let mut args: Vec<RawExpr> = deduplicated_children
+                .into_iter()
+                .map(|a| a.into_raw())
+                .collect();
+            args.sort();
+            RawExpr::new_node(head_expr, args).into_normexpr_unsafe()
+        }
+    }
+    // ---------- Nothing to do for this node ----------
+    else {
         // Note: Propagate
         NormExpr::new_unchecked(ExprKind::Node {
             head: Box::new(head_expr.normalize()),
