@@ -39,7 +39,8 @@
 				(%o{index})
 			</div>
 			<div class="border-base-200 w-full overflow-x-auto border pl-6">
-				<Math expr={entry.output.latex} />
+				<Math expr={entry.output} />
+				<!-- {@html entry.output.mathml} -->
 			</div>
 		</div>
 	{:else if entry?.type == 'plot'}

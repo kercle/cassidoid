@@ -1,12 +1,13 @@
 @import 'tailwindcss';
 
 @plugin "daisyui" {
-    themes: all;
+  themes: all;
 }
 
 @import "@fortawesome/fontawesome-free/css/all.css";
 
-html, body {
+html,
+body {
   overflow: hidden;
   height: 100%;
   margin: 0;

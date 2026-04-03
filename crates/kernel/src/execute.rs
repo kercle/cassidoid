@@ -30,6 +30,7 @@ impl Kernel {
                 output: ExpressionForms {
                     raw: expr.to_input_form(),
                     latex: expr.to_latex_form(),
+                    mathml: expr.to_mathml_form(),
                 },
             })
         }

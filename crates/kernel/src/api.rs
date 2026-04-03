@@ -43,6 +43,7 @@ pub enum ExecutionError {
 pub struct ExpressionForms {
     pub raw: String,
     pub latex: String,
+    pub mathml: String,
 }
 
 #[cfg_attr(feature = "ts", derive(ts_rs::TS))]
