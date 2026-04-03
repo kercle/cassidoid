@@ -1,7 +1,7 @@
-import { h as S, aR as x, aS as E, N as M, aT as L, aU as R, aV as U, aW as W, aX as C } from "./D3xIz7z5.js";
+import { h as S, aR as x, aS as E, N as M, aT as L, aU as U, aV as I, aW as N, aX as W } from "./D3xIz7z5.js";
 let ie, se, ae, p;
 let __tla = (async () => {
-  const I = /* @__PURE__ */ Symbol("is custom element"), N = /* @__PURE__ */ Symbol("is html"), B = E ? "link" : "LINK";
+  const C = /* @__PURE__ */ Symbol("is custom element"), R = /* @__PURE__ */ Symbol("is html"), O = E ? "link" : "LINK";
   ae = function(e) {
     if (S) {
       var t = false, n = () => {
@@ -20,13 +20,13 @@ let __tla = (async () => {
     }
   };
   p = function(e, t, n, o) {
-    var r = O(e);
-    S && (r[t] = e.getAttribute(t), t === "src" || t === "srcset" || t === "href" && e.nodeName === B) || r[t] !== (r[t] = n) && (t === "loading" && (e[R] = n), n == null ? e.removeAttribute(t) : typeof n != "string" && D(e).includes(t) ? e[t] = n : e.setAttribute(t, n));
+    var r = B(e);
+    S && (r[t] = e.getAttribute(t), t === "src" || t === "srcset" || t === "href" && e.nodeName === O) || r[t] !== (r[t] = n) && (t === "loading" && (e[U] = n), n == null ? e.removeAttribute(t) : typeof n != "string" && D(e).includes(t) ? e[t] = n : e.setAttribute(t, n));
   };
-  function O(e) {
+  function B(e) {
     return e.__attributes ?? (e.__attributes = {
-      [I]: e.nodeName.includes("-"),
-      [N]: e.namespaceURI === x
+      [C]: e.nodeName.includes("-"),
+      [R]: e.namespaceURI === x
     });
   }
   var m = /* @__PURE__ */ new Map();
@@ -35,13 +35,13 @@ let __tla = (async () => {
     if (n) return n;
     m.set(t, n = []);
     for (var o, r = e, _ = Element.prototype; _ !== r; ) {
-      o = W(r);
+      o = N(r);
       for (var s in o) o[s].set && n.push(s);
-      r = U(r);
+      r = I(r);
     }
     return n;
   }
-  const F = "" + new URL("../assets/kernel_bg.BZsVdR_b.wasm", import.meta.url).href, z = async (e = {}, t) => {
+  const F = "" + new URL("../assets/kernel_bg.DUXNSqIL.wasm", import.meta.url).href, z = async (e = {}, t) => {
     let n;
     if (t.startsWith("data:")) {
       const o = t.replace(/^data:.*?base64,/, "");
@@ -75,7 +75,7 @@ let __tla = (async () => {
     execute(t) {
       let n, o;
       try {
-        const r = G(t, c.__wbindgen_malloc, c.__wbindgen_realloc), _ = y, s = c.cassidakernel_execute(this.__wbg_ptr, r, _);
+        const r = j(t, c.__wbindgen_malloc, c.__wbindgen_realloc), _ = y, s = c.cassidakernel_execute(this.__wbg_ptr, r, _);
         return n = s[0], o = s[1], k(s[0], s[1]);
       } finally {
         c.__wbindgen_free(n, o, 1);
@@ -90,7 +90,7 @@ let __tla = (async () => {
   function K(e, t) {
     throw new Error(k(e, t));
   }
-  function j() {
+  function X() {
     const e = c.__wbindgen_externrefs, t = e.grow(4);
     e.set(0, void 0), e.set(t + 0, void 0), e.set(t + 1, null), e.set(t + 2, true), e.set(t + 3, false);
   }
@@ -101,13 +101,13 @@ let __tla = (async () => {
     }
   } : new FinalizationRegistry((e) => c.__wbg_cassidakernel_free(e >>> 0, 1));
   function k(e, t) {
-    return e = e >>> 0, V(e, t);
+    return e = e >>> 0, H(e, t);
   }
   let l = null;
   function u() {
     return (l === null || l.byteLength === 0) && (l = new Uint8Array(c.memory.buffer)), l;
   }
-  function G(e, t, n) {
+  function j(e, t, n) {
     if (n === void 0) {
       const a = f.encode(e), i = t(a.length, 1) >>> 0;
       return u().subarray(i, i + a.length).set(a), y = a.length, i;
@@ -132,10 +132,10 @@ let __tla = (async () => {
     fatal: true
   });
   b.decode();
-  const H = 2146435072;
+  const G = 2146435072;
   let g = 0;
-  function V(e, t) {
-    return g += t, g >= H && (b = new TextDecoder("utf-8", {
+  function H(e, t) {
+    return g += t, g >= G && (b = new TextDecoder("utf-8", {
       ignoreBOM: true,
       fatal: true
     }), b.decode(), g = t), b.decode(u().subarray(e, e + t));
@@ -149,34 +149,34 @@ let __tla = (async () => {
     };
   });
   let y = 0, c;
-  function X(e) {
+  function q(e) {
     c = e;
   }
   URL = globalThis.URL;
   const d = await z({
     "./kernel_bg.js": {
       __wbg___wbindgen_throw_df03e93053e0f4bc: K,
-      __wbindgen_init_externref_table: j
+      __wbindgen_init_externref_table: X
     }
-  }, F), P = d.memory, Y = d.__wbg_cassidakernel_free, q = d.cassidakernel_execute, J = d.cassidakernel_new, Z = d.eval_input, $ = d.__wbindgen_externrefs, Q = d.__wbindgen_malloc, ee = d.__wbindgen_realloc, te = d.__wbindgen_free, v = d.__wbindgen_start, ne = Object.freeze(Object.defineProperty({
+  }, F), P = d.memory, V = d.__wbg_cassidakernel_free, Y = d.cassidakernel_execute, J = d.cassidakernel_new, $ = d.eval_input, Q = d.__wbindgen_externrefs, Z = d.__wbindgen_malloc, ee = d.__wbindgen_realloc, te = d.__wbindgen_free, v = d.__wbindgen_start, ne = Object.freeze(Object.defineProperty({
     __proto__: null,
-    __wbg_cassidakernel_free: Y,
-    __wbindgen_externrefs: $,
+    __wbg_cassidakernel_free: V,
+    __wbindgen_externrefs: Q,
     __wbindgen_free: te,
-    __wbindgen_malloc: Q,
+    __wbindgen_malloc: Z,
     __wbindgen_realloc: ee,
     __wbindgen_start: v,
-    cassidakernel_execute: q,
+    cassidakernel_execute: Y,
     cassidakernel_new: J,
-    eval_input: Z,
+    eval_input: $,
     memory: P
   }, Symbol.toStringTag, {
     value: "Module"
   }));
-  X(ne);
+  q(ne);
   v();
   function re() {
-    const { subscribe: e, set: t, update: n } = C({
+    const { subscribe: e, set: t, update: n } = W({
       data: {
         input_history: [],
         ouput_history: [],
