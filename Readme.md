@@ -67,13 +67,19 @@ Tuples are also used as vector objects.
    | <signed_power> { <signed_power> }*
 <sum> ::= <product> { ("+"|"-") <product> }*
 <cmp> ::= <sum> { ("<" | "<=" | "==" | ">=" | ">") <sum> }*
-<cond> ::= <cmp> { "/;" <cmd> }
+<and> ::= <cmp> { "&&" <cmp> }
+<or> ::= <and> { "||" <and> }
+<cond> ::= <or> { "/;" <or> }
 <rule_delayed> ::= <cond> { ":>" <cond> }
 <expression_or_enclosed_block> ::= <cond> | "{" <block> "}"
 <expression_or_tuple> ::= <cond> { "," <cmd> }*
 <block> ::= <expression_or_tuple> { ";" <expression_or_tuple> }*
    | "{" <block> "}"
 ```
+
+### Language support for VS-Code
+
+Cassida language support for VS-Code is provided by an extension in the `tools` directory.
 
 ## Builtin functionality
 
@@ -84,6 +90,16 @@ executing `Help[<HeadSymbol>]`, e.g. `Head[Integrate]`.
 
 Note that Cassida also differs from Mathematica in the name of its builtins, e.g. instead of `Plus`,
 it used `Add` and instead of `D` it uses `Diff`.
+
+### Integration
+
+Eventually I would like to implement parts of the Risch algorithm. Until I am ready to ready to
+dive into this rabbit hole, the plan is to implement most of the rules included in the RUBI
+dataset [1].
+
+Some rules are already implemented, however since Cassida's syntax is not identical to Mathematica
+and not all predicates are supported for the helpers RUBI builds upon, the rules need to be
+adapted accordingly.
 
 ## Goals
 
@@ -113,3 +129,7 @@ it used `Add` and instead of `D` it uses `Diff`.
 ## Logo
 
 The logo features a [tortoise beetle](https://en.wikipedia.org/wiki/Cassidinae). The name is taken from the genus Cassida.
+
+# References
+
+1. Rich, A., Scheibe, P., Abbasi, N. (2018). *Rule-based integration: An extensive system of symbolic integration rules*. Journal of Open Source Software, 3(32), 1073. https://doi.org/10.21105/joss.01073

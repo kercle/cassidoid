@@ -5,7 +5,7 @@ use crate::{
     },
     ensure,
     expr::{Expr, NormExpr},
-    norm_expr, raw_expr,
+    norm_expr, norm_expr_include, raw_expr,
     rewrite::Rewriter,
 };
 
@@ -110,4 +110,10 @@ fn build_rewriter() -> Rewriter {
         Integrate[Sin[a_. + b_. * x_], x_?IsSymbol] /; FreeOf[(a, b), x] :> -Cos[a + b * x] / b;
         Integrate[Cos[a_. + b_. * x_], x_?IsSymbol] /; FreeOf[(a, b), x] :> Sin[a + b * x] / b;
     }))
+    .with_rules(&norm_expr_include!(
+        "src/builtins/calculus/rubi/0 Helpers/0.1 Linearity.csda"))
+    .with_rules(&norm_expr_include!(
+        "src/builtins/calculus/rubi/1 Algebraic functions/1.1 Binomial products/1.1.1 Linear/1.1.1.1 (a+b x)^m.csda"))
+    .with_rules(&norm_expr_include!(
+        "src/builtins/calculus/rubi/8 Special functions/8.1 Error functions.csda"))
 }

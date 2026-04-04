@@ -1,0 +1,6 @@
+Int[f_ + r__, x_?IsSymbol]
+    :> Int[f, x] + Int[Add[r],x];
+
+Int[c_ * r__, x_?IsSymbol]
+    /; FreeOf[c, x]
+    :> c * Int[Mul[r],x];

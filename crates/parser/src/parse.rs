@@ -276,7 +276,7 @@ fn parse_or(stream: &mut TokenStream) -> Result<ParserAst, ParseError> {
 }
 
 fn parse_condition(stream: &mut TokenStream) -> Result<ParserAst, ParseError> {
-    // <cond> ::= <cmp> { "/;" <cmp> }
+    // <cond> ::= <or> { "/;" <or> }
 
     let mut result = parse_or(stream)?;
 
@@ -348,7 +348,7 @@ fn parse_expression_or_tuple(stream: &mut TokenStream) -> Result<ParserAst, Pars
 }
 
 fn parse_expression_tuple_or_block(stream: &mut TokenStream) -> Result<ParserAst, ParseError> {
-    // <block> ::= <expression_or_tuple> { ";" <expression_or_tuple> }*
+    // <block> ::= <expression_or_tuple> { ";" <expression_or_tuple> }* ";"?
     //    | "{" <block> "}"
 
     let mut nodes = Vec::new();
@@ -367,6 +367,9 @@ fn parse_expression_tuple_or_block(stream: &mut TokenStream) -> Result<ParserAst
         loop {
             if let Some(Token::RightBrace) = stream.peek_token() {
                 // this happens when there is a semicolon before closing }
+                break;
+            } else if stream.end_of_stream() {
+                // Nothing left to consume
                 break;
             }
 
