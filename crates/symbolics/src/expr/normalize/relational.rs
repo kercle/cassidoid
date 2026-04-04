@@ -2,6 +2,13 @@ use std::collections::HashSet;
 
 use crate::expr::{NormExpr, RawExpr};
 
+pub(super) enum Inequality {
+    Lesser,
+    LesserEq,
+    GreaterEq,
+    Greater,
+}
+
 pub(super) fn normalize_raw_eq(head: RawExpr, args: Vec<RawExpr>) -> NormExpr {
     let mut deduplicated_children = HashSet::new();
     deduplicated_children.extend(args.into_iter().map(|a| a.normalize()));
@@ -29,6 +36,25 @@ pub(super) fn normalize_raw_not_eq(head: RawExpr, args: Vec<RawExpr>) -> NormExp
         RawExpr::new_boolean(lhs != rhs).into_normexpr_unsafe()
     } else {
         // Could be undecidable yet (e.g. x != y)
+        RawExpr::new_binary_node(head, lhs.into_raw(), rhs.into_raw()).into_normexpr_unsafe()
+    }
+}
+
+pub(super) fn normalize_raw_ineq(ineq: Inequality, head: RawExpr, args: Vec<RawExpr>) -> NormExpr {
+    let [lhs, rhs]: [RawExpr; 2] = args.try_into().unwrap();
+    let lhs = lhs.normalize();
+    let rhs = rhs.normalize();
+
+    if let (Some(lhs), Some(rhs)) = (lhs.get_number(), rhs.get_number()) {
+        match ineq {
+            Inequality::Lesser => RawExpr::new_boolean(lhs < rhs).into_normexpr_unsafe(),
+            Inequality::LesserEq => RawExpr::new_boolean(lhs <= rhs).into_normexpr_unsafe(),
+            Inequality::GreaterEq => RawExpr::new_boolean(lhs >= rhs).into_normexpr_unsafe(),
+            Inequality::Greater => RawExpr::new_boolean(lhs > rhs).into_normexpr_unsafe(),
+        }
+    } else if matches!(ineq, Inequality::GreaterEq | Inequality::LesserEq) && rhs == lhs {
+        RawExpr::new_boolean(true).into_normexpr_unsafe()
+    } else {
         RawExpr::new_binary_node(head, lhs.into_raw(), rhs.into_raw()).into_normexpr_unsafe()
     }
 }

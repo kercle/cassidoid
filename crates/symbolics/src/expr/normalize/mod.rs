@@ -122,6 +122,14 @@ fn normalize_raw_node(head_expr: RawExpr, args: Vec<RawExpr>) -> NormExpr {
         relational::normalize_raw_eq(head_expr, args)
     } else if builtins::NotEqual::is_application_of(&head_expr, &args) {
         relational::normalize_raw_not_eq(head_expr, args)
+    } else if builtins::Less::is_application_of(&head_expr, &args) {
+        relational::normalize_raw_ineq(relational::Inequality::Lesser, head_expr, args)
+    } else if builtins::LessEqual::is_application_of(&head_expr, &args) {
+        relational::normalize_raw_ineq(relational::Inequality::LesserEq, head_expr, args)
+    } else if builtins::GreaterEqual::is_application_of(&head_expr, &args) {
+        relational::normalize_raw_ineq(relational::Inequality::GreaterEq, head_expr, args)
+    } else if builtins::Greater::is_application_of(&head_expr, &args) {
+        relational::normalize_raw_ineq(relational::Inequality::Greater, head_expr, args)
     }
     // ---------- Nothing to do for this node ----------
     else {
