@@ -1,0 +1,25 @@
+{
+  "name": "cassida",
+  "displayName": "cassida",
+  "description": "Language support for the Cassida language.",
+  "version": "0.0.1",
+  "engines": {
+    "vscode": "^1.110.0"
+  },
+  "categories": [
+    "Programming Languages"
+  ],
+  "contributes": {
+    "languages": [{
+      "id": "cassida",
+      "aliases": ["Cassida", "cassida"],
+      "extensions": [".csda"],
+      "configuration": "./language-configuration.json"
+    }],
+    "grammars": [{
+      "language": "cassida",
+      "scopeName": "source.cassida",
+      "path": "./syntaxes/cassida.tmLanguage.json"
+    }]
+  }
+}
