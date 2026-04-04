@@ -4,6 +4,24 @@ use proc_macro::TokenStream;
 use quote::quote;
 
 #[proc_macro]
+pub fn parse_file(input: TokenStream) -> TokenStream {
+    let path_lit = syn::parse_macro_input!(input as syn::LitStr);
+    let path_str = path_lit.value();
+
+    let manifest_dir = std::env::var("CARGO_MANIFEST_DIR").unwrap();
+    let full_path = std::path::Path::new(&manifest_dir).join(&path_str);
+    let contents = std::fs::read_to_string(&full_path).unwrap();
+
+    match parser::parse(&contents) {
+        Ok(ast) => ast_to_token_stream(ast).into(),
+        Err(e) => {
+            let msg = e.to_string();
+            quote! { compile_error!(#msg) }.into()
+        }
+    }
+}
+
+#[proc_macro]
 pub fn parse(input: TokenStream) -> TokenStream {
     let input_string = token_stream_to_string(input.into());
 
