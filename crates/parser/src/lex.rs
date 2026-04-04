@@ -18,7 +18,7 @@ pub enum Quantity {
 pub enum Token {
     // Double-character operators
     EqEq,            // '=='
-    NotEq,           // '!='
+    ExclMarkEq,      // '!='
     LesserEq,        // '<='
     GreaterEq,       // '>='
     ColonEq,         // ':='
@@ -347,7 +347,7 @@ impl TokenStream {
 
             if matches!(iter.peek(), Some('=')) {
                 iter.next(); // Consume '='
-                tokens.push((Token::NotEq, pos));
+                tokens.push((Token::ExclMarkEq, pos));
             } else if matches!(iter.peek(), Some('!')) {
                 iter.next(); // Consume '!'
                 tokens.push((Token::DoubleExcl, pos));
