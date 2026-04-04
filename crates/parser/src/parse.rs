@@ -212,7 +212,7 @@ fn parse_sum(stream: &mut TokenStream) -> Result<ParserAst, ParseError> {
 }
 
 fn parse_cmp(stream: &mut TokenStream) -> Result<ParserAst, ParseError> {
-    // <cmp> ::= <sum> { ("<" | "<=" | "==" | ">=" | ">") <sum> }*
+    // <cmp> ::= <sum> { ("<" | "<=" | "!=" | "==" | ">=" | ">") <sum> }*
 
     let mut result = parse_sum(stream)?;
 
@@ -223,6 +223,7 @@ fn parse_cmp(stream: &mut TokenStream) -> Result<ParserAst, ParseError> {
                 Token::LessThan
                     | Token::LesserEq
                     | Token::EqEq
+                    | Token::ExclMarkEq
                     | Token::GreaterEq
                     | Token::GreaterThan
             )
@@ -234,6 +235,7 @@ fn parse_cmp(stream: &mut TokenStream) -> Result<ParserAst, ParseError> {
             Token::LessThan => ParserAst::new_lt(result, parse_sum(stream)?),
             Token::LesserEq => ParserAst::new_le(result, parse_sum(stream)?),
             Token::EqEq => ParserAst::new_eq(result, parse_sum(stream)?),
+            Token::ExclMarkEq => ParserAst::new_neq(result, parse_sum(stream)?),
             Token::GreaterEq => ParserAst::new_ge(result, parse_sum(stream)?),
             Token::GreaterThan => ParserAst::new_gt(result, parse_sum(stream)?),
             _ => unreachable!(),
@@ -244,7 +246,7 @@ fn parse_cmp(stream: &mut TokenStream) -> Result<ParserAst, ParseError> {
 }
 
 fn parse_condition(stream: &mut TokenStream) -> Result<ParserAst, ParseError> {
-    // <cond> ::= <cmp> { "/;" <cmd> }
+    // <cond> ::= <cmp> { "/;" <cmp> }
 
     let mut result = parse_cmp(stream)?;
 

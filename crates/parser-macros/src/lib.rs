@@ -72,6 +72,11 @@ fn ast_to_token_stream(ast: ParserAst) -> proc_macro2::TokenStream {
             let rhs = ast_to_token_stream(*rhs);
             quote! { #ast_path::new_eq(#lhs, #rhs) }
         }
+        NotEq { lhs, rhs } => {
+            let lhs = ast_to_token_stream(*lhs);
+            let rhs = ast_to_token_stream(*rhs);
+            quote! { #ast_path::new_neq(#lhs, #rhs) }
+        }
         GreaterEq { lhs, rhs } => {
             let lhs = ast_to_token_stream(*lhs);
             let rhs = ast_to_token_stream(*rhs);

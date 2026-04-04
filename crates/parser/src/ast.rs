@@ -22,6 +22,10 @@ pub enum ParserAst {
         lhs: Box<ParserAst>,
         rhs: Box<ParserAst>,
     },
+    NotEq {
+        lhs: Box<ParserAst>,
+        rhs: Box<ParserAst>,
+    },
     GreaterEq {
         lhs: Box<ParserAst>,
         rhs: Box<ParserAst>,
@@ -188,6 +192,13 @@ impl ParserAst {
 
     pub fn new_eq(lhs: ParserAst, rhs: ParserAst) -> Self {
         ParserAst::Equals {
+            lhs: Box::new(lhs),
+            rhs: Box::new(rhs),
+        }
+    }
+
+    pub fn new_neq(lhs: ParserAst, rhs: ParserAst) -> Self {
+        ParserAst::NotEq {
             lhs: Box::new(lhs),
             rhs: Box::new(rhs),
         }

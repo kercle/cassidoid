@@ -60,6 +60,7 @@ pub use relational::greater::Greater;
 pub use relational::greater_equal::GreaterEqual;
 pub use relational::less::Less;
 pub use relational::less_equal::LessEqual;
+pub use relational::not_equal::NotEqual;
 
 // --- Scoping ----------------------------------------------------------------
 

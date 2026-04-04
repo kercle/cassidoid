@@ -62,6 +62,11 @@ impl From<ParserAst> for RawExpr {
             Equals { lhs, rhs } => {
                 Self::new_binary_node(builtins::Equal::head(), Self::from(*lhs), Self::from(*rhs))
             }
+            NotEq { lhs, rhs } => Self::new_binary_node(
+                builtins::NotEqual::head(),
+                Self::from(*lhs),
+                Self::from(*rhs),
+            ),
             GreaterEq { lhs, rhs } => Self::new_binary_node(
                 builtins::GreaterEqual::head(),
                 Self::from(*lhs),
