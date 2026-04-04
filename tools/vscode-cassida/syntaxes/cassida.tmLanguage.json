@@ -1,32 +1,100 @@
 {
-	"$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
-	"name": "Cassida",
-	"patterns": [
-		{
-			"include": "#keywords"
-		},
-		{
-			"include": "#strings"
-		}
-	],
-	"repository": {
-		"keywords": {
-			"patterns": [{
-				"name": "keyword.control.cassida",
-				"match": "\\b(if|while|for|return)\\b"
-			}]
-		},
-		"strings": {
-			"name": "string.quoted.double.cassida",
-			"begin": "\"",
-			"end": "\"",
-			"patterns": [
-				{
-					"name": "constant.character.escape.cassida",
-					"match": "\\\\."
-				}
-			]
-		}
-	},
-	"scopeName": "source.cassida"
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "Cassida",
+  "scopeName": "source.cassida",
+  "patterns": [
+    {
+      "include": "#comments"
+    },
+    {
+      "include": "#strings"
+    },
+    {
+      "include": "#numbers"
+    },
+    {
+      "include": "#builtins"
+    },
+    {
+      "include": "#functions"
+    },
+    {
+      "include": "#patterns"
+    },
+    {
+      "include": "#operators"
+    },
+    {
+      "include": "#variables"
+    }
+  ],
+  "repository": {
+    "comments": {
+      "patterns": [
+        {
+          "name": "comment.line.double-slash.cassida",
+          "match": "//.*$"
+        }
+      ]
+    },
+    "strings": {
+      "name": "string.quoted.double.cassida",
+      "begin": "\"",
+      "end": "\"",
+      "patterns": [
+        {
+          "name": "constant.character.escape.cassida",
+          "match": "\\\\."
+        }
+      ]
+    },
+    "numbers": {
+      "name": "constant.numeric.cassida",
+      "match": "\\b[0-9]+(\\.[0-9]+)?\\b"
+    },
+    "builtins": {
+      "name": "support.function.builtin.cassida",
+      "match": "\\b(Add|Sub|Mul|Div|Pow|Diff|Integrate|Simplify|Expand|Factor|Solve|Tuple|Head|Help|Plot|Sin|Cos|Tan|Exp|Log|Sqrt|Abs)\\b"
+    },
+    "functions": {
+      "patterns": [
+        {
+          "name": "entity.name.function.cassida",
+          "match": "\\b([A-Z][A-Za-z0-9]*)(?=\\[)"
+        }
+      ]
+    },
+    "patterns": {
+      "patterns": [
+        {
+          "name": "variable.parameter.cassida",
+          "match": "\\b[a-zA-Z][a-zA-Z0-9]*_[a-zA-Z0-9]*\\b"
+        },
+        {
+          "name": "variable.parameter.cassida",
+          "match": "\\b[a-zA-Z][a-zA-Z0-9]*__[a-zA-Z0-9]*\\b"
+        }
+      ]
+    },
+    "operators": {
+      "patterns": [
+        {
+          "name": "keyword.operator.rule.cassida",
+          "match": "(:>|:=|->|/;)"
+        },
+        {
+          "name": "keyword.operator.cassida",
+          "match": "[+\\-*/^=<>!@~]"
+        },
+        {
+          "name": "keyword.operator.cassida",
+          "match": "\\b(\\.|\\!)"
+        }
+      ]
+    },
+    "variables": {
+      "name": "variable.other.cassida",
+      "match": "\\b[a-z][A-Za-z0-9]*\\b"
+    }
+  }
 }

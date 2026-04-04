@@ -4,5 +4,8 @@
     },
     "rust-analyzer.procMacro.ignored": {
         "parser-macros": ["parse"]
-    }
+    },
+  "files.associations": {
+    "*.csda": "cassida"
+  }
 }
