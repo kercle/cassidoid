@@ -480,7 +480,7 @@ mod tests {
         let expr = RawExpr::from(parse("2 + 3").unwrap());
         let expected = clean(
             r#"
-            <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <math xmlns="http://www.w3.org/1998/Math/MathML" displaystyle="true">
                 <mn>2</mn>
                 <mo>+</mo>
                 <mn>3</mn>
@@ -495,7 +495,7 @@ mod tests {
         let expr = RawExpr::from(parse("(2 + 3) * 6").unwrap());
         let expected = clean(
             r#"
-            <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <math xmlns="http://www.w3.org/1998/Math/MathML" displaystyle="true">
                 <mrow>
                     <mo>(</mo>
                     <mn>2</mn>
@@ -516,7 +516,7 @@ mod tests {
         let expr = RawExpr::from(parse("1+2+3+4").unwrap());
         let expected = clean(
             r#"
-            <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <math xmlns="http://www.w3.org/1998/Math/MathML" displaystyle="true">
                 <mn>1</mn>
                 <mo>+</mo>
                 <mn>2</mn>
@@ -535,7 +535,7 @@ mod tests {
         let expr = RawExpr::from(parse("-2 + 3").unwrap());
         let expected = clean(
             r#"
-            <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <math xmlns="http://www.w3.org/1998/Math/MathML" displaystyle="true">
                 <mo>-</mo>
                 <mn>2</mn>
                 <mo>+</mo>
@@ -551,7 +551,7 @@ mod tests {
         let expr = RawExpr::from(parse("pi^2").unwrap());
         let expected = clean(
             r#"
-            <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <math xmlns="http://www.w3.org/1998/Math/MathML" displaystyle="true">
                 <msup>
                     <mrow>
                         <mi>&pi;</mi>
@@ -571,7 +571,7 @@ mod tests {
         let expr = RawExpr::from(parse("5*pi^2/4*Cos[pi*x/2]*Sin[π*y/2]").unwrap());
         let expected = clean(
             r#"
-            <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <math xmlns="http://www.w3.org/1998/Math/MathML" displaystyle="true">
                 <mfrac>
                     <mrow>
                         <mn>5</mn>
@@ -643,7 +643,7 @@ mod tests {
         let expr = RawExpr::from(parse("a - (b + c)").unwrap());
         let expected = clean(
             r#"
-            <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <math xmlns="http://www.w3.org/1998/Math/MathML" displaystyle="true">
                 <mi>a</mi>
                 <mo>-</mo>
                 <mrow>
@@ -664,7 +664,7 @@ mod tests {
         let expr = RawExpr::from(parse("a - (b - c)").unwrap());
         let expected = clean(
             r#"
-            <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <math xmlns="http://www.w3.org/1998/Math/MathML" displaystyle="true">
                 <mi>a</mi>
                 <mo>-</mo>
                 <mrow>
@@ -685,7 +685,7 @@ mod tests {
         let expr = RawExpr::from(parse("(a + b)^2").unwrap());
         let expected = clean(
             r#"
-            <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <math xmlns="http://www.w3.org/1998/Math/MathML" displaystyle="true">
                 <msup>
                     <mrow>
                         <mrow>
@@ -711,7 +711,7 @@ mod tests {
         let expr = RawExpr::from(parse("-(a + b)").unwrap());
         let expected = clean(
             r#"
-            <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <math xmlns="http://www.w3.org/1998/Math/MathML" displaystyle="true">
                 <mo>-</mo>
                 <mrow>
                     <mo>(</mo>
