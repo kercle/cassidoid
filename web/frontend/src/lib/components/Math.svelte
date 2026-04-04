@@ -19,10 +19,4 @@
 		width: 100%;
 		overflow-x: auto;
 	}
-
-	:global(math) {
-		font-size: 1.2rem;
-		font-family: 'STIX Two Math', 'Latin Modern Math', serif;
-		letter-spacing: 0.02ch;
-	}
 </style>
