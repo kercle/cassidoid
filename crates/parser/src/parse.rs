@@ -245,16 +245,46 @@ fn parse_cmp(stream: &mut TokenStream) -> Result<ParserAst, ParseError> {
     Ok(result)
 }
 
+fn parse_and(stream: &mut TokenStream) -> Result<ParserAst, ParseError> {
+    // <and> ::= <cmp> { "&&" <cmp> }
+
+    let mut result = parse_cmp(stream)?;
+
+    while stream
+        .next_if_matches(|token| matches!(token, Token::DoubleAmpersand))
+        .is_some()
+    {
+        result = ParserAst::new_and(result, parse_cmp(stream)?);
+    }
+
+    Ok(result)
+}
+
+fn parse_or(stream: &mut TokenStream) -> Result<ParserAst, ParseError> {
+    // <or> ::= <and> { "||" <and> }
+
+    let mut result = parse_and(stream)?;
+
+    while stream
+        .next_if_matches(|token| matches!(token, Token::DoubleVertLine))
+        .is_some()
+    {
+        result = ParserAst::new_or(result, parse_and(stream)?);
+    }
+
+    Ok(result)
+}
+
 fn parse_condition(stream: &mut TokenStream) -> Result<ParserAst, ParseError> {
     // <cond> ::= <cmp> { "/;" <cmp> }
 
-    let mut result = parse_cmp(stream)?;
+    let mut result = parse_or(stream)?;
 
     while stream
         .next_if_matches(|token| matches!(token, Token::SlashSemicolon))
         .is_some()
     {
-        result = ParserAst::new_condition(result, parse_cmp(stream)?);
+        result = ParserAst::new_condition(result, parse_or(stream)?);
     }
 
     Ok(result)

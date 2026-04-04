@@ -10,6 +10,14 @@ pub enum ParserAst {
     Symbol {
         name: String,
     },
+    And {
+        lhs: Box<ParserAst>,
+        rhs: Box<ParserAst>,
+    },
+    Or {
+        lhs: Box<ParserAst>,
+        rhs: Box<ParserAst>,
+    },
     LesserThan {
         lhs: Box<ParserAst>,
         rhs: Box<ParserAst>,
@@ -173,6 +181,20 @@ impl ParserAst {
         ParserAst::Condition {
             pattern: Box::new(pattern),
             predicate: Box::new(predicate),
+        }
+    }
+
+    pub fn new_and(lhs: ParserAst, rhs: ParserAst) -> Self {
+        ParserAst::And {
+            lhs: Box::new(lhs),
+            rhs: Box::new(rhs),
+        }
+    }
+
+    pub fn new_or(lhs: ParserAst, rhs: ParserAst) -> Self {
+        ParserAst::Or {
+            lhs: Box::new(lhs),
+            rhs: Box::new(rhs),
         }
     }
 

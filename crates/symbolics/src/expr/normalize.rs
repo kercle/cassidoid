@@ -112,6 +112,8 @@ fn normalize_raw_node(head_expr: RawExpr, args: Vec<RawExpr>) -> NormExpr {
     // ---------- Boolean ----------
     else if builtins::And::is_application_of(&head_expr, &args) {
         normalize_raw_and(args)
+    } else if builtins::Or::is_application_of(&head_expr, &args) {
+        normalize_raw_or(args)
     }
     // ---------- Relational ----------
     else if builtins::Equal::is_application_of(&head_expr, &args) {
@@ -207,6 +209,30 @@ fn normalize_raw_and(args: Vec<RawExpr>) -> NormExpr {
         let mut args: Vec<RawExpr> = terms.into_iter().map(|a| a.into_raw()).collect();
         args.sort();
         RawExpr::new_node(builtins::And::head(), args).into_normexpr_unsafe()
+    }
+}
+
+fn normalize_raw_or(args: Vec<RawExpr>) -> NormExpr {
+    let mut terms = HashSet::new();
+
+    for arg in flatten(builtins::Or::head(), args) {
+        if arg.is_true() {
+            return arg;
+        } else if arg.is_false() {
+            continue;
+        }
+
+        terms.insert(arg);
+    }
+
+    if terms.is_empty() {
+        RawExpr::new_boolean(false).into_normexpr_unsafe()
+    } else if terms.len() == 1 {
+        terms.into_iter().next().unwrap()
+    } else {
+        let mut args: Vec<RawExpr> = terms.into_iter().map(|a| a.into_raw()).collect();
+        args.sort();
+        RawExpr::new_node(builtins::Or::head(), args).into_normexpr_unsafe()
     }
 }
 

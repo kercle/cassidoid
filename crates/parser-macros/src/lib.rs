@@ -57,6 +57,16 @@ fn ast_to_token_stream(ast: ParserAst) -> proc_macro2::TokenStream {
             value: Number::Rational(_),
         } => unimplemented!(),
         Symbol { name } => quote! { #ast_path::new_symbol(#name) },
+        And { lhs, rhs } => {
+            let lhs = ast_to_token_stream(*lhs);
+            let rhs = ast_to_token_stream(*rhs);
+            quote! { #ast_path::new_and(#lhs, #rhs) }
+        }
+        Or { lhs, rhs } => {
+            let lhs = ast_to_token_stream(*lhs);
+            let rhs = ast_to_token_stream(*rhs);
+            quote! { #ast_path::new_or(#lhs, #rhs) }
+        }
         LesserThan { lhs, rhs } => {
             let lhs = ast_to_token_stream(*lhs);
             let rhs = ast_to_token_stream(*rhs);

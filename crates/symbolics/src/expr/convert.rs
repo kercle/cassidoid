@@ -51,6 +51,12 @@ impl From<ParserAst> for RawExpr {
             Symbol { name } if name == builtins::symbols::TRUE => Self::new_boolean(true),
             Symbol { name } if name == builtins::symbols::FALSE => Self::new_boolean(false),
             Symbol { name } => Self::new_symbol(name),
+            And { lhs, rhs } => {
+                Self::new_binary_node(builtins::And::head(), Self::from(*lhs), Self::from(*rhs))
+            }
+            Or { lhs, rhs } => {
+                Self::new_binary_node(builtins::Or::head(), Self::from(*lhs), Self::from(*rhs))
+            }
             LesserThan { lhs, rhs } => {
                 Self::new_binary_node(builtins::Less::head(), Self::from(*lhs), Self::from(*rhs))
             }
