@@ -10,6 +10,14 @@ pub enum ParserAst {
     Symbol {
         name: String,
     },
+    And {
+        lhs: Box<ParserAst>,
+        rhs: Box<ParserAst>,
+    },
+    Or {
+        lhs: Box<ParserAst>,
+        rhs: Box<ParserAst>,
+    },
     LesserThan {
         lhs: Box<ParserAst>,
         rhs: Box<ParserAst>,
@@ -19,6 +27,10 @@ pub enum ParserAst {
         rhs: Box<ParserAst>,
     },
     Equals {
+        lhs: Box<ParserAst>,
+        rhs: Box<ParserAst>,
+    },
+    NotEq {
         lhs: Box<ParserAst>,
         rhs: Box<ParserAst>,
     },
@@ -172,6 +184,20 @@ impl ParserAst {
         }
     }
 
+    pub fn new_and(lhs: ParserAst, rhs: ParserAst) -> Self {
+        ParserAst::And {
+            lhs: Box::new(lhs),
+            rhs: Box::new(rhs),
+        }
+    }
+
+    pub fn new_or(lhs: ParserAst, rhs: ParserAst) -> Self {
+        ParserAst::Or {
+            lhs: Box::new(lhs),
+            rhs: Box::new(rhs),
+        }
+    }
+
     pub fn new_lt(lhs: ParserAst, rhs: ParserAst) -> Self {
         ParserAst::LesserThan {
             lhs: Box::new(lhs),
@@ -188,6 +214,13 @@ impl ParserAst {
 
     pub fn new_eq(lhs: ParserAst, rhs: ParserAst) -> Self {
         ParserAst::Equals {
+            lhs: Box::new(lhs),
+            rhs: Box::new(rhs),
+        }
+    }
+
+    pub fn new_neq(lhs: ParserAst, rhs: ParserAst) -> Self {
+        ParserAst::NotEq {
             lhs: Box::new(lhs),
             rhs: Box::new(rhs),
         }

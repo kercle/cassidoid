@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use numbers::Number;
 
@@ -51,6 +51,7 @@ fn normalize_raw_node(head_expr: RawExpr, args: Vec<RawExpr>) -> NormExpr {
         filter_absent(args)
     };
 
+    // ---------- Arithmetic ----------
     if builtins::Add::is_application_of(&head_expr, &args) {
         normalize_raw_add(args)
     } else if builtins::Sub::is_application_of(&head_expr, &args) {
@@ -71,7 +72,9 @@ fn normalize_raw_node(head_expr: RawExpr, args: Vec<RawExpr>) -> NormExpr {
         let [arg]: [RawExpr; 1] = args.try_into().unwrap();
         let one_half = Number::new_rational_from_i64(1, 2).unwrap();
         RawExpr::new_binary_node(builtins::Pow::head(), arg, one_half.into()).normalize()
-    } else if builtins::RuleDelayed::is_application_of(&head_expr, &args) {
+    }
+    // ---------- Patterns and Rules ----------
+    else if builtins::RuleDelayed::is_application_of(&head_expr, &args) {
         let [pat, repl]: [RawExpr; 2] = args.try_into().unwrap();
 
         RawExpr::new_binary_node(
@@ -105,7 +108,45 @@ fn normalize_raw_node(head_expr: RawExpr, args: Vec<RawExpr>) -> NormExpr {
             head: Box::new(head_expr.into_normexpr_unsafe()),
             args: args.into_iter().map(|a| a.into_normexpr_unsafe()).collect(),
         })
-    } else {
+    }
+    // ---------- Boolean ----------
+    else if builtins::And::is_application_of(&head_expr, &args) {
+        normalize_raw_and(args)
+    } else if builtins::Or::is_application_of(&head_expr, &args) {
+        normalize_raw_or(args)
+    }
+    // ---------- Relational ----------
+    else if builtins::Equal::is_application_of(&head_expr, &args) {
+        let mut deduplicated_children = HashSet::new();
+        deduplicated_children.extend(args.into_iter().map(|a| a.normalize()));
+
+        if deduplicated_children.len() <= 1 {
+            RawExpr::new_boolean(true).into_normexpr_unsafe()
+        } else {
+            let mut args: Vec<RawExpr> = deduplicated_children
+                .into_iter()
+                .map(|a| a.into_raw())
+                .collect();
+            args.sort();
+            RawExpr::new_node(head_expr, args).into_normexpr_unsafe()
+        }
+    } else if builtins::NotEqual::is_application_of(&head_expr, &args) {
+        let [lhs, rhs]: [RawExpr; 2] = args.try_into().unwrap();
+        let lhs = lhs.normalize();
+        let rhs = rhs.normalize();
+
+        if lhs == rhs {
+            RawExpr::new_boolean(false).into_normexpr_unsafe()
+        } else if let (Some(lhs), Some(rhs)) = (lhs.get_number(), rhs.get_number()) {
+            RawExpr::new_boolean(lhs != rhs).into_normexpr_unsafe()
+        } else {
+            // Could be undecidable yet (e.g. x != y)
+            RawExpr::new_binary_node(head_expr, lhs.into_raw(), rhs.into_raw())
+                .into_normexpr_unsafe()
+        }
+    }
+    // ---------- Nothing to do for this node ----------
+    else {
         // Note: Propagate
         NormExpr::new_unchecked(ExprKind::Node {
             head: Box::new(head_expr.normalize()),
@@ -145,6 +186,54 @@ fn flatten(head_symbol: &str, args: Vec<RawExpr>) -> Vec<NormExpr> {
     }
 
     flattened_args
+}
+
+fn normalize_raw_and(args: Vec<RawExpr>) -> NormExpr {
+    let mut terms = HashSet::new();
+
+    for arg in flatten(builtins::And::head(), args) {
+        if arg.is_false() {
+            return arg;
+        } else if arg.is_true() {
+            continue;
+        }
+
+        terms.insert(arg);
+    }
+
+    if terms.is_empty() {
+        RawExpr::new_boolean(true).into_normexpr_unsafe()
+    } else if terms.len() == 1 {
+        terms.into_iter().next().unwrap()
+    } else {
+        let mut args: Vec<RawExpr> = terms.into_iter().map(|a| a.into_raw()).collect();
+        args.sort();
+        RawExpr::new_node(builtins::And::head(), args).into_normexpr_unsafe()
+    }
+}
+
+fn normalize_raw_or(args: Vec<RawExpr>) -> NormExpr {
+    let mut terms = HashSet::new();
+
+    for arg in flatten(builtins::Or::head(), args) {
+        if arg.is_true() {
+            return arg;
+        } else if arg.is_false() {
+            continue;
+        }
+
+        terms.insert(arg);
+    }
+
+    if terms.is_empty() {
+        RawExpr::new_boolean(false).into_normexpr_unsafe()
+    } else if terms.len() == 1 {
+        terms.into_iter().next().unwrap()
+    } else {
+        let mut args: Vec<RawExpr> = terms.into_iter().map(|a| a.into_raw()).collect();
+        args.sort();
+        RawExpr::new_node(builtins::Or::head(), args).into_normexpr_unsafe()
+    }
 }
 
 fn normalize_raw_sub(args: Vec<RawExpr>) -> NormExpr {

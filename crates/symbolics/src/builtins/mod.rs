@@ -1,5 +1,6 @@
 use std::fmt::{Debug, Display, Formatter};
 
+pub mod boolean;
 pub mod calculus;
 pub mod elementary;
 pub mod evaluation_control;

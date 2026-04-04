@@ -17,14 +17,16 @@ pub enum Quantity {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Token {
     // Double-character operators
-    EqEq,           // '=='
-    NotEq,          // '!='
-    LesserEq,       // '<='
-    GreaterEq,      // '>='
-    ColonEq,        // ':='
-    ColonGt,        // ':>'
-    DoubleExcl,     // '!!'
-    SlashSemicolon, // '/;'
+    EqEq,            // '=='
+    ExclMarkEq,      // '!='
+    LesserEq,        // '<='
+    GreaterEq,       // '>='
+    ColonEq,         // ':='
+    ColonGt,         // ':>'
+    DoubleExcl,      // '!!'
+    SlashSemicolon,  // '/;'
+    DoubleAmpersand, // '&&'
+    DoubleVertLine,  // '||'
 
     // Single-character operators
     LeftBrace,       // '{'
@@ -43,7 +45,7 @@ pub enum Token {
     Slash,           // '/'
     Percent,         // '%'
     Ampersand,       // '&'
-    Pipe,            // '|'
+    VertLine,        // '|'
     Caret,           // '^'
     Tilde,           // '~'
     ExclamationMark, // '!'
@@ -345,7 +347,7 @@ impl TokenStream {
 
             if matches!(iter.peek(), Some('=')) {
                 iter.next(); // Consume '='
-                tokens.push((Token::NotEq, pos));
+                tokens.push((Token::ExclMarkEq, pos));
             } else if matches!(iter.peek(), Some('!')) {
                 iter.next(); // Consume '!'
                 tokens.push((Token::DoubleExcl, pos));
@@ -396,6 +398,24 @@ impl TokenStream {
             } else {
                 tokens.push((Token::Slash, pos));
             }
+        } else if c == '&' {
+            iter.next(); // Consume '&'
+
+            if matches!(iter.peek(), Some('&')) {
+                iter.next(); // Consume '&'
+                tokens.push((Token::DoubleAmpersand, pos));
+            } else {
+                tokens.push((Token::Ampersand, pos));
+            }
+        } else if c == '|' {
+            iter.next(); // Consume '|'
+
+            if matches!(iter.peek(), Some('|')) {
+                iter.next(); // Consume '|'
+                tokens.push((Token::DoubleVertLine, pos));
+            } else {
+                tokens.push((Token::VertLine, pos));
+            }
         } else {
             let token = match c {
                 '{' => Token::LeftBrace,
@@ -410,8 +430,6 @@ impl TokenStream {
                 '-' => Token::Minus,
                 '*' => Token::Asterisk,
                 '%' => Token::Percent,
-                '&' => Token::Ampersand,
-                '|' => Token::Pipe,
                 '^' => Token::Caret,
                 '~' => Token::Tilde,
                 '?' => Token::QuestionMark,

@@ -47,6 +47,7 @@ impl Atom {
         match (self, other) {
             (Atom::Number(a), Atom::Number(b)) => a.cmp(b),
             (Atom::Symbol(a), Atom::Symbol(b)) => a.cmp(b),
+            (Atom::Boolean(a), Atom::Boolean(b)) => a.cmp(b),
             _ => {
                 let r = self.rank().cmp(&other.rank());
                 if r.is_eq() {

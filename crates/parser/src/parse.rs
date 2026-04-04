@@ -212,7 +212,7 @@ fn parse_sum(stream: &mut TokenStream) -> Result<ParserAst, ParseError> {
 }
 
 fn parse_cmp(stream: &mut TokenStream) -> Result<ParserAst, ParseError> {
-    // <cmp> ::= <sum> { ("<" | "<=" | "==" | ">=" | ">") <sum> }*
+    // <cmp> ::= <sum> { ("<" | "<=" | "!=" | "==" | ">=" | ">") <sum> }*
 
     let mut result = parse_sum(stream)?;
 
@@ -223,6 +223,7 @@ fn parse_cmp(stream: &mut TokenStream) -> Result<ParserAst, ParseError> {
                 Token::LessThan
                     | Token::LesserEq
                     | Token::EqEq
+                    | Token::ExclMarkEq
                     | Token::GreaterEq
                     | Token::GreaterThan
             )
@@ -234,6 +235,7 @@ fn parse_cmp(stream: &mut TokenStream) -> Result<ParserAst, ParseError> {
             Token::LessThan => ParserAst::new_lt(result, parse_sum(stream)?),
             Token::LesserEq => ParserAst::new_le(result, parse_sum(stream)?),
             Token::EqEq => ParserAst::new_eq(result, parse_sum(stream)?),
+            Token::ExclMarkEq => ParserAst::new_neq(result, parse_sum(stream)?),
             Token::GreaterEq => ParserAst::new_ge(result, parse_sum(stream)?),
             Token::GreaterThan => ParserAst::new_gt(result, parse_sum(stream)?),
             _ => unreachable!(),
@@ -243,16 +245,46 @@ fn parse_cmp(stream: &mut TokenStream) -> Result<ParserAst, ParseError> {
     Ok(result)
 }
 
-fn parse_condition(stream: &mut TokenStream) -> Result<ParserAst, ParseError> {
-    // <cond> ::= <cmp> { "/;" <cmd> }
+fn parse_and(stream: &mut TokenStream) -> Result<ParserAst, ParseError> {
+    // <and> ::= <cmp> { "&&" <cmp> }
 
     let mut result = parse_cmp(stream)?;
+
+    while stream
+        .next_if_matches(|token| matches!(token, Token::DoubleAmpersand))
+        .is_some()
+    {
+        result = ParserAst::new_and(result, parse_cmp(stream)?);
+    }
+
+    Ok(result)
+}
+
+fn parse_or(stream: &mut TokenStream) -> Result<ParserAst, ParseError> {
+    // <or> ::= <and> { "||" <and> }
+
+    let mut result = parse_and(stream)?;
+
+    while stream
+        .next_if_matches(|token| matches!(token, Token::DoubleVertLine))
+        .is_some()
+    {
+        result = ParserAst::new_or(result, parse_and(stream)?);
+    }
+
+    Ok(result)
+}
+
+fn parse_condition(stream: &mut TokenStream) -> Result<ParserAst, ParseError> {
+    // <cond> ::= <cmp> { "/;" <cmp> }
+
+    let mut result = parse_or(stream)?;
 
     while stream
         .next_if_matches(|token| matches!(token, Token::SlashSemicolon))
         .is_some()
     {
-        result = ParserAst::new_condition(result, parse_cmp(stream)?);
+        result = ParserAst::new_condition(result, parse_or(stream)?);
     }
 
     Ok(result)
