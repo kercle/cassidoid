@@ -13,6 +13,20 @@ macro_rules! norm_expr {
 }
 
 #[macro_export]
+macro_rules! raw_expr_include {
+    ($s:literal) => {
+        $crate::expr::RawExpr::from($crate::_parser_macros::parse_file!($s))
+    };
+}
+
+#[macro_export]
+macro_rules! norm_expr_include {
+    ($s:literal) => {
+        $crate::raw_expr_include!($s).normalize()
+    };
+}
+
+#[macro_export]
 macro_rules! chain_replace_quick_and_dirty {
     // allow trailing comma
     ($expr:expr, $({ $($pat:tt)* } => { $($rep:tt)* }),+ $(,)?) => {{
