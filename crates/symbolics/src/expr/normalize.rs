@@ -128,6 +128,20 @@ fn normalize_raw_node(head_expr: RawExpr, args: Vec<RawExpr>) -> NormExpr {
             args.sort();
             RawExpr::new_node(head_expr, args).into_normexpr_unsafe()
         }
+    } else if builtins::NotEqual::is_application_of(&head_expr, &args) {
+        let [lhs, rhs]: [RawExpr; 2] = args.try_into().unwrap();
+        let lhs = lhs.normalize();
+        let rhs = rhs.normalize();
+
+        if lhs == rhs {
+            RawExpr::new_boolean(false).into_normexpr_unsafe()
+        } else if let (Some(lhs), Some(rhs)) = (lhs.get_number(), rhs.get_number()) {
+            RawExpr::new_boolean(lhs != rhs).into_normexpr_unsafe()
+        } else {
+            // Could be undecidable yet (e.g. x != y)
+            RawExpr::new_binary_node(head_expr, lhs.into_raw(), rhs.into_raw())
+                .into_normexpr_unsafe()
+        }
     }
     // ---------- Nothing to do for this node ----------
     else {
