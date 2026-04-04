@@ -217,9 +217,13 @@ impl MathMlWriter {
 
         if let Some(x) = x.get_symbol() {
             self.tag("mfrac", |w| {
-                w.mo("&dd;");
+                w.start_tag_with_attrs("mi", &[("mathvariant", "normal")]);
+                w.text("d");
+                w.end_tag("mi");
                 w.tag("mrow", |w| {
-                    w.mo("&dd;");
+                    w.start_tag_with_attrs("mi", &[("mathvariant", "normal")]);
+                    w.text("d");
+                    w.end_tag("mi");
                     w.mi(x);
                 });
             });
@@ -244,9 +248,11 @@ impl MathMlWriter {
 
                 w.expr_to_mathml_with_pos(f, Position::FnArg);
 
-                w.start_tag_with_attrs("mo", &[("mathvariant", "normal")]);
+                w.start_tag_with_attrs("mspace", &[("width", "0.167em")]);
+                w.end_tag("mspace");
+                w.start_tag_with_attrs("mi", &[("mathvariant", "normal")]);
                 w.text("d");
-                w.end_tag("mo");
+                w.end_tag("mi");
                 w.mi(x);
             });
         } else {
