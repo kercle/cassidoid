@@ -115,5 +115,7 @@ fn build_rewriter() -> Rewriter {
     .with_rules(&norm_expr_include!(
         "src/builtins/calculus/rubi/1 Algebraic functions/1.1 Binomial products/1.1.1 Linear/1.1.1.1 (a+b x)^m.csda"))
     .with_rules(&norm_expr_include!(
+        "src/builtins/calculus/rubi/2 Exponentials/2.3 Miscellaneous exponentials.csda"))
+    .with_rules(&norm_expr_include!(
         "src/builtins/calculus/rubi/8 Special functions/8.1 Error functions.csda"))
 }
