@@ -1,7 +1,7 @@
-import { h as S, aR as x, aS as E, N as M, aT as L, aU as U, aV as I, aW as R, aX as W } from "./D3xIz7z5.js";
+import { h as S, aR as x, aS as E, N as M, aT as L, aU as W, aV as R, aW as U, aX as C } from "./D3xIz7z5.js";
 let ie, se, ae, p;
 let __tla = (async () => {
-  const C = /* @__PURE__ */ Symbol("is custom element"), N = /* @__PURE__ */ Symbol("is html"), B = E ? "link" : "LINK";
+  const I = /* @__PURE__ */ Symbol("is custom element"), N = /* @__PURE__ */ Symbol("is html"), O = E ? "link" : "LINK";
   ae = function(e) {
     if (S) {
       var t = false, n = () => {
@@ -20,12 +20,12 @@ let __tla = (async () => {
     }
   };
   p = function(e, t, n, o) {
-    var r = O(e);
-    S && (r[t] = e.getAttribute(t), t === "src" || t === "srcset" || t === "href" && e.nodeName === B) || r[t] !== (r[t] = n) && (t === "loading" && (e[U] = n), n == null ? e.removeAttribute(t) : typeof n != "string" && D(e).includes(t) ? e[t] = n : e.setAttribute(t, n));
+    var r = B(e);
+    S && (r[t] = e.getAttribute(t), t === "src" || t === "srcset" || t === "href" && e.nodeName === O) || r[t] !== (r[t] = n) && (t === "loading" && (e[W] = n), n == null ? e.removeAttribute(t) : typeof n != "string" && D(e).includes(t) ? e[t] = n : e.setAttribute(t, n));
   };
-  function O(e) {
+  function B(e) {
     return e.__attributes ?? (e.__attributes = {
-      [C]: e.nodeName.includes("-"),
+      [I]: e.nodeName.includes("-"),
       [N]: e.namespaceURI === x
     });
   }
@@ -35,13 +35,13 @@ let __tla = (async () => {
     if (n) return n;
     m.set(t, n = []);
     for (var o, r = e, _ = Element.prototype; _ !== r; ) {
-      o = R(r);
+      o = U(r);
       for (var s in o) o[s].set && n.push(s);
-      r = I(r);
+      r = R(r);
     }
     return n;
   }
-  const F = "" + new URL("../assets/kernel_bg.B1mRUIo6.wasm", import.meta.url).href, z = async (e = {}, t) => {
+  const F = "" + new URL("../assets/kernel_bg.sTFRW98c.wasm", import.meta.url).href, z = async (e = {}, t) => {
     let n;
     if (t.startsWith("data:")) {
       const o = t.replace(/^data:.*?base64,/, "");
@@ -76,7 +76,7 @@ let __tla = (async () => {
       let n, o;
       try {
         const r = G(t, c.__wbindgen_malloc, c.__wbindgen_realloc), _ = y, s = c.cassidakernel_execute(this.__wbg_ptr, r, _);
-        return n = s[0], o = s[1], k(s[0], s[1]);
+        return n = s[0], o = s[1], T(s[0], s[1]);
       } finally {
         c.__wbindgen_free(n, o, 1);
       }
@@ -88,7 +88,7 @@ let __tla = (async () => {
   }
   Symbol.dispose && (h.prototype[Symbol.dispose] = h.prototype.free);
   function K(e, t) {
-    throw new Error(k(e, t));
+    throw new Error(T(e, t));
   }
   function j() {
     const e = c.__wbindgen_externrefs, t = e.grow(4);
@@ -100,7 +100,7 @@ let __tla = (async () => {
     unregister: () => {
     }
   } : new FinalizationRegistry((e) => c.__wbg_cassidakernel_free(e >>> 0, 1));
-  function k(e, t) {
+  function T(e, t) {
     return e = e >>> 0, X(e, t);
   }
   let l = null;
@@ -158,14 +158,14 @@ let __tla = (async () => {
       __wbg___wbindgen_throw_df03e93053e0f4bc: K,
       __wbindgen_init_externref_table: j
     }
-  }, F), V = d.memory, Y = d.__wbg_cassidakernel_free, q = d.cassidakernel_execute, J = d.cassidakernel_new, $ = d.eval_input, Q = d.__wbindgen_externrefs, Z = d.__wbindgen_malloc, ee = d.__wbindgen_realloc, te = d.__wbindgen_free, v = d.__wbindgen_start, ne = Object.freeze(Object.defineProperty({
+  }, F), V = d.memory, Y = d.__wbg_cassidakernel_free, q = d.cassidakernel_execute, J = d.cassidakernel_new, $ = d.eval_input, Q = d.__wbindgen_externrefs, Z = d.__wbindgen_malloc, ee = d.__wbindgen_realloc, te = d.__wbindgen_free, k = d.__wbindgen_start, ne = Object.freeze(Object.defineProperty({
     __proto__: null,
     __wbg_cassidakernel_free: Y,
     __wbindgen_externrefs: Q,
     __wbindgen_free: te,
     __wbindgen_malloc: Z,
     __wbindgen_realloc: ee,
-    __wbindgen_start: v,
+    __wbindgen_start: k,
     cassidakernel_execute: q,
     cassidakernel_new: J,
     eval_input: $,
@@ -174,9 +174,9 @@ let __tla = (async () => {
     value: "Module"
   }));
   P(ne);
-  v();
+  k();
   function re() {
-    const { subscribe: e, set: t, update: n } = W({
+    const { subscribe: e, set: t, update: n } = C({
       data: {
         input_history: [],
         ouput_history: [],
@@ -194,8 +194,8 @@ let __tla = (async () => {
         connected: true
       })), {
         send: async (a) => {
-          const i = await (o == null ? void 0 : o.execute(a)), T = typeof i == "string" ? JSON.parse(i) : i;
-          n((w) => (w.data.input_history.push(a), r(w.data, T), {
+          const i = await (o == null ? void 0 : o.execute(a)), v = typeof i == "string" ? JSON.parse(i) : i;
+          n((w) => (w.data.input_history.push(a), r(w.data, v), {
             ...w,
             connected: true
           }));
