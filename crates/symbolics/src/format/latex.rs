@@ -187,12 +187,12 @@ fn expr_to_latex_inner(expr: &RawExpr) -> String {
         ExprKind::Atom {
             entry: Atom::Symbol(name),
             ..
-        } if name == builtins::symbols::PI => r#"\mathbf{\pi}"#.to_string(),
+        } if name == builtins::symbols::PI => r#"\boldsymbol{\pi}"#.to_string(),
 
         ExprKind::Atom {
             entry: Atom::Symbol(name),
             ..
-        } if name == builtins::symbols::E => r#"\mathbf{e}"#.to_string(),
+        } if name == builtins::symbols::E => r#"\boldsymbol{e}"#.to_string(),
 
         ExprKind::Atom {
             entry: Atom::Symbol(name),
