@@ -216,7 +216,7 @@ impl BuildContext {
 pub struct Compiler {
     build_context: BuildContext,
     is_multiset: fn(&NormExpr) -> bool,
-    optional_default: for<'s> fn(&NormExpr, &'s NormExpr) -> Option<(&'s str, NormExpr)>,
+    optional_default: for<'s> fn(&NormExpr, usize, &'s NormExpr) -> Option<(&'s str, NormExpr)>,
     pattern_id: PatternId,
 
     // used to keep track of nested hold patterns
@@ -232,6 +232,7 @@ impl DefaultCallbacks {
 
     fn optional_default<'s>(
         parent_head: &NormExpr,
+        opt_pattern_position: usize,
         opt_pattern: &'s NormExpr,
     ) -> Option<(&'s str, NormExpr)> {
         // For now, optional defaults only support patterns like x_.
@@ -245,6 +246,10 @@ impl DefaultCallbacks {
         if parent_head.matches_symbol(builtins::Add::head()) {
             Some((bind_var, RawExpr::from_i64(0).normalize()))
         } else if parent_head.matches_symbol(builtins::Mul::head()) {
+            Some((bind_var, RawExpr::from_i64(1).normalize()))
+        } else if parent_head.matches_symbol(builtins::Pow::head()) && opt_pattern_position == 1 {
+            // applies to patterns like a^n_. (i.e. Pow[a, n_.])
+            // If n is missing, n defaults to the value 1.
             Some((bind_var, RawExpr::from_i64(1).normalize()))
         } else {
             None
@@ -439,9 +444,11 @@ impl Compiler {
         let mut branch_absent =
             self.reduce_node_in_optional_branch(head, &children_raw, optional_child_pos, bind);
 
-        if let Some((var_name, default_value)) =
-            (self.optional_default)(head, children[optional_child_pos].get_arg(0).unwrap())
-        {
+        if let Some((var_name, default_value)) = (self.optional_default)(
+            head,
+            optional_child_pos,
+            children[optional_child_pos].get_arg(0).unwrap(),
+        ) {
             let bind = self.build_context.bind_name_id(var_name);
 
             branch_absent = self.build_context.emit(Instruction::With {
