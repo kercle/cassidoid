@@ -1,3 +1,15 @@
+// TODO: Can be removed
+Int[Exp[g_], x_?IsSymbol]
+    :> Int[E^g, x];
+
+Int[f__ * Exp[g_], x_?IsSymbol]
+    :> Int[Mul[f] * E^g, x];
+
+// TODO: Support optionals on variadics
+//       This replaces the two rules above.
+// Int[f__. * Exp[g_], x_?IsSymbol]
+//     :> Int[Mul[f] * E^g, x];
+
 Int[(F_^(c_.*(a_. + b_.*x_)))^n_, x_?IsSymbol]
     /; FreeOf[(F, a, b, c, n), x]
     :> (F^(c*(a + b*x)))^n/(b*c*n*Log[F]);
