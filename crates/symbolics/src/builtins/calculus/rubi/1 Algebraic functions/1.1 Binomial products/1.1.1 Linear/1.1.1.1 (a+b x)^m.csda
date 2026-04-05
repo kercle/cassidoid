@@ -1,7 +1,7 @@
 Int[1/x_, x_?IsSymbol]
     :> Log[Abs[x]];
 
-Int[x_^m_, x_?IsSymbol]
+Int[x_^m_., x_?IsSymbol]
     /; FreeOf[m, x] && m != -1
     :> x^(m + 1)/(m + 1);
 
