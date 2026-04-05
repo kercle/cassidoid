@@ -117,5 +117,11 @@ fn build_rewriter() -> Rewriter {
     .with_rules(&norm_expr_include!(
         "src/builtins/calculus/rubi/2 Exponentials/2.3 Miscellaneous exponentials.csda"))
     .with_rules(&norm_expr_include!(
+        "src/builtins/calculus/rubi/4 Trig functions/4.1 Sine/4.1.11 (e x)^m (a+b x^n)^p sin.csda"))
+    .with_rules(&norm_expr_include!(
+        "src/builtins/calculus/rubi/4 Trig functions/4.1 Sine/4.1.10 (c+d x)^m (a+b sin)^n.csda"))
+    // .with_rules(&norm_expr_include!(
+    //     "src/builtins/calculus/rubi/4 Trig functions/4.7 Miscellaneous/4.7.6 (c+d x)^m trig(a+b x)^n trig(a+b x)^p.csda"))
+    .with_rules(&norm_expr_include!(
         "src/builtins/calculus/rubi/8 Special functions/8.1 Error functions.csda"))
 }

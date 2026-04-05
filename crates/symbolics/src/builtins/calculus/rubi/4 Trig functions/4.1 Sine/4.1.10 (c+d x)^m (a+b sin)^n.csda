@@ -1,0 +1,155 @@
+Int[(c_. + d_.*x_)^m_.*Sin[e_. + f_.*x_], x_?IsSymbol]
+    /; FreeOf[(c, d, e, f), x] && m > 0 
+    :> -(c + d*x)^m*Cos[e + f*x]/f + d*m/f*Int[(c + d*x)^(m - 1)*Cos[e + f*x], x];
+
+Int[(c_. + d_.*x_)^m_*Sin[e_. + f_.*x_], x_?IsSymbol]
+    /; FreeOf[(c, d, e, f), x] && m < -1 
+    :> (c + d*x)^(m + 1)*Sin[e + f*x]/(d*(m + 1)) - f/(d*(m + 1))*Int[(c + d*x)^(m + 1)*Cos[e + f*x], x];
+
+// REMARK: Missing rule in RUBI or covered by other rule?
+Int[(c_. + d_.*x_)^m_.*Cos[e_. + f_.*x_], x_?IsSymbol]
+    /; FreeOf[(c, d, e, f), x] && m > 0
+    :> (c + d*x)^m*Sin[e + f*x]/f - d*m/f*Int[(c + d*x)^(m - 1)*Sin[e + f*x], x];
+
+// REMARK: Missing rule in RUBI or covered by other rule?
+Int[(c_. + d_.*x_)^m_*Cos[e_. + f_.*x_], x_?IsSymbol]
+    /; FreeOf[(c, d, e, f), x] && m < -1
+    :> (c + d*x)^(m + 1)*Cos[e + f*x]/(d*(m + 1)) + f/(d*(m + 1))*Int[(c + d*x)^(m + 1)*Sin[e + f*x], x];
+
+// Int[Sin[e_. + f_.*Complex[0, fz_]*x_]/(c_. + d_.*x_), x_?IsSymbol]
+//     /; FreeOf[(c, d, e, f, fz), x] && d*e - c*f*fz*I == 0 
+//     :> I*SinhIntegral[c*f*fz/d + f*fz*x]/d;
+
+// Int[Sin[e_. + f_.*x_]/(c_. + d_.*x_), x_?IsSymbol]
+//     /; FreeOf[(c, d, e, f), x] && d*e - c*f == 0 
+//     :> SinIntegral[e + f*x]/d;
+
+// Int[Sin[e_. + f_.*Complex[0, fz_]*x_]/(c_. + d_.*x_), x_?IsSymbol]
+//     /; FreeOf[(c, d, e, f, fz), x] && d*(e - Pi/2) - c*f*fz*I == 0  && NegQ[c*f*fz/d, 0]
+//     :> CoshIntegral[-c*f*fz/d - f*fz*x]/d;
+
+// Int[Sin[e_. + f_.*Complex[0, fz_]*x_]/(c_. + d_.*x_), x_?IsSymbol]
+//     /; FreeOf[(c, d, e, f, fz), x] && d*(e - Pi/2) - c*f*fz*I == 0 
+//     :> CoshIntegral[c*f*fz/d + f*fz*x]/d;
+
+// Int[Sin[e_. + f_.*x_]/(c_. + d_.*x_), x_?IsSymbol]
+//     /; FreeOf[(c, d, e, f), x] && d*(e - Pi/2) - c*f == 0 
+//     :> CosIntegral[e - Pi/2 + f*x]/d;
+
+// Int[Sin[e_. + f_.*x_]/(c_. + d_.*x_), x_?IsSymbol]
+//     /; FreeOf[(c, d, e, f), x] && NeQ[d*e - c*f, 0]
+//     :> Cos[(d*e - c*f)/d]*Int[Sin[c*f/d + f*x]/(c + d*x), x] + Sin[(d*e - c*f)/d]*Int[Cos[c*f/d + f*x]/(c + d*x), x];
+
+// Int[Sin[e_. + Pi/2 + f_.*x_]/Sqrt[c_. + d_.*x_], x_?IsSymbol]
+//     /; FreeOf[(c, d, e, f), x] && ComplexFreeOf[f] && d*e - c*f == 0 
+//     :> 2/d*Subst[Int[Cos[f*x^2/d], x], x, Sqrt[c + d*x]];
+
+// Int[Sin[e_. + f_.*x_]/Sqrt[c_. + d_.*x_], x_?IsSymbol]
+//     /; FreeOf[(c, d, e, f), x] && ComplexFreeOf[f] && d*e - c*f == 0 
+//     :> 2/d*Subst[Int[Sin[f*x^2/d], x], x, Sqrt[c + d*x]];
+
+// Int[Sin[e_. + f_.*x_]/Sqrt[c_. + d_.*x_], x_?IsSymbol]
+//     /; FreeOf[(c, d, e, f), x] && ComplexFreeOf[f] && NeQ[d*e - c*f, 0]
+//     :> Cos[(d*e - c*f)/d]*Int[Sin[c*f/d + f*x]/Sqrt[c + d*x], x] + Sin[(d*e - c*f)/d]*Int[Cos[c*f/d + f*x]/Sqrt[c + d*x], x];
+
+// Int[(c_. + d_.*x_)^m_.*Sin[e_. + k_.*Pi + f_.*x_], x_?IsSymbol]
+//     /; FreeOf[(c, d, e, f, m), x] && IsInteger[2*k]
+//     :> I/2*Int[(c + d*x)^m*E^(-I*k*Pi)*E^(-I*(e + f*x)), x] - I/2*Int[(c + d*x)^m*E^(I*k*Pi)*E^(I*(e + f*x)), x];
+
+// Int[(c_. + d_.*x_)^m_.*Sin[e_. + f_.*x_], x_?IsSymbol]
+//     /; FreeOf[(c, d, e, f, m), x]
+//     :> I/2*Int[(c + d*x)^m*E^(-I*(e + f*x)), x] - I/2*Int[(c + d*x)^m*E^(I*(e + f*x)), x];
+
+Int[(c_. + d_.*x_)^m_.*Sin[e_. + f_.*x_/2]^2, x_?IsSymbol]
+    /; FreeOf[(c, d, e, f, m), x]
+    :> 1/2*Int[(c + d*x)^m, x] - 1/2*Int[(c + d*x)^m*Cos[2*e + f*x], x];
+
+Int[(c_. + d_.*x_)*(b_.*Sin[e_. + f_.*x_])^n_, x_?IsSymbol]
+    /; FreeOf[(b, c, d, e, f), x] && n > 1 
+    :> d*(b*Sin[e + f*x])^n/(f^2*n^2)
+        - b*(c + d*x)*Cos[e + f*x]*(b*Sin[e + f*x])^(n - 1)/(f*n)
+        + b^2*(n - 1)/n*Int[(c + d*x)*(b*Sin[e + f*x])^(n - 2), x];
+
+// Int[(c_. + d_.*x_)^m_*(b_.*Sin[e_. + f_.*x_])^n_, x_?IsSymbol]
+//     /; FreeOf[(b, c, d, e, f), x] && n > 1  && m > 1 
+//     :> d*m*(c + d*x)^(m - 1)*(b*Sin[e + f*x])^n/(f^2*n^2) - b*(c + d*x)^m*Cos[e + f*x]*(b*Sin[e + f*x])^(n - 1)/(f*n) + b^2*(n - 1)/n*Int[(c + d*x)^m*(b*Sin[e + f*x])^(n - 2), x] - d^2*m*(m - 1)/(f^2*n^2)* Int[(c + d*x)^(m - 2)*(b*Sin[e + f*x])^n, x];
+
+// Int[(c_. + d_.*x_)^m_*Sin[e_. + f_.*x_]^n_, x_?IsSymbol]
+//     /; FreeOf[(c, d, e, f, m), x] && IGtQ[n, 1] && (Not[IsRational[m]] || GeQ[m, -1] && m < 1 )
+//     :> Int[ExpandTrigReduce[(c + d*x)^m, Sin[e + f*x]^n, x], x];
+
+// Int[(c_. + d_.*x_)^m_*Sin[e_. + f_.*x_]^n_, x_?IsSymbol]
+//     /; FreeOf[(c, d, e, f, m), x] && IGtQ[n, 1] && GeQ[m, -2] && m < -1 
+//     :> (c + d*x)^(m + 1)*Sin[e + f*x]^n/(d*(m + 1)) - f*n/(d*(m + 1))* Int[ExpandTrigReduce[(c + d*x)^(m + 1), Cos[e + f*x]*Sin[e + f*x]^(n - 1), x], x];
+
+// Int[(c_. + d_.*x_)^m_*(b_.*Sin[e_. + f_.*x_])^n_, x_?IsSymbol]
+//     /; FreeOf[(b, c, d, e, f), x] && n > 1  && m < -2 
+//     :> (c + d*x)^(m + 1)*(b*Sin[e + f*x])^n/(d*(m + 1)) - b*f*n*(c + d*x)^(m + 2)* Cos[e + f*x]*(b*Sin[e + f*x])^(n - 1)/(d^2*(m + 1)*(m + 2)) - f^2*n^2/(d^2*(m + 1)*(m + 2))* Int[(c + d*x)^(m + 2)*(b*Sin[e + f*x])^n, x] + b^2*f^2*n*(n - 1)/(d^2*(m + 1)*(m + 2))* Int[(c + d*x)^(m + 2)*(b*Sin[e + f*x])^(n - 2), x];
+
+// Int[(c_. + d_.*x_)*(b_.*Sin[e_. + f_.*x_])^n_, x_?IsSymbol]
+//     /; FreeOf[(b, c, d, e, f), x] && n < -1  && NeQ[n, -2]
+//     :> (c + d*x)*Cos[e + f*x]*(b*Sin[e + f*x])^(n + 1)/(b*f*(n + 1)) - d*(b*Sin[e + f*x])^(n + 2)/(b^2*f^2*(n + 1)*(n + 2)) + (n + 2)/(b^2*(n + 1))* Int[(c + d*x)*(b*Sin[e + f*x])^(n + 2), x];
+
+// Int[(c_. + d_.*x_)^m_.*(b_.*Sin[e_. + f_.*x_])^n_, x_?IsSymbol]
+//     /; FreeOf[(b, c, d, e, f), x] && n < -1  && NeQ[n, -2] && m > 1 
+//     :> (c + d*x)^m*Cos[e + f*x]*(b*Sin[e + f*x])^(n + 1)/(b*f*(n + 1)) - d*m*(c + d*x)^(m - 1)*(b*Sin[e + f*x])^(n + 2)/(b^2* f^2*(n + 1)*(n + 2)) + (n + 2)/(b^2*(n + 1))* Int[(c + d*x)^m*(b*Sin[e + f*x])^(n + 2), x] + d^2*m*(m - 1)/(b^2*f^2*(n + 1)*(n + 2))* Int[(c + d*x)^(m - 2)*(b*Sin[e + f*x])^(n + 2), x];
+
+// Int[(c_. + d_.*x_)^m_.*(a_ + b_.*Sin[e_. + f_.*x_])^n_., x_?IsSymbol]
+//     /; FreeOf[(a, b, c, d, e, f, m), x] && IGtQ[n, 0] && (n == 1  || IGtQ[m, 0] || NeQ[a^2 - b^2, 0])
+//     :> Int[ExpandIntegrand[(c + d*x)^m, (a + b*Sin[e + f*x])^n, x], x];
+
+// Int[(c_. + d_.*x_)^m_.*(a_ + b_.*Sin[e_. + f_.*x_])^n_., x_?IsSymbol]
+//     /; FreeOf[(a, b, c, d, e, f, m), x] && a^2 - b^2 == 0  && IsInteger[n] && (n > 0  || IGtQ[m, 0])
+//     :> (2*a)^n* Int[(c + d*x)^m*Sin[1/2*(e + Pi*a/(2*b)) + f*x/2]^(2*n), x];
+
+// Int[(c_. + d_.*x_)^m_.*(a_ + b_.*Sin[e_. + f_.*x_])^n_, x_?IsSymbol]
+//     /; FreeOf[(a, b, c, d, e, f, m), x] && a^2 - b^2 == 0  && IsInteger[n + 1/2] && (n > 0  || IGtQ[m, 0])
+//     :> (2*a)^IntPart[n]*(a + b*Sin[e + f*x])^FracPart[n]/ Sin[e/2 + a*Pi/(4*b) + f*x/2]^(2*FracPart[n])* Int[(c + d*x)^m*Sin[e/2 + a*Pi/(4*b) + f*x/2]^(2*n), x];
+// (* Int[(c_.+d_.*x_)^m_.*(a_+b_.*Sin[e_.+f_.*x_])^n_.,x_?IsSymbol]
+//     /; FreeOf[(a,b,c,d,e,f,m),x] && a^2-b^2 == 0  && IsInteger[n] &&  (n > 0  || IGtQ[m,0]) *)
+//     :> (2*a)^n*Int[(c+d*x)^m*Cos[1/2*(e-Pi*a/(2*b))+f*x/2]^(2*n),x];
+// (* Int[(c_.+d_.*x_)^m_.*(a_+b_.*Sin[e_.+f_.*x_])^n_,x_?IsSymbol]
+//     /; FreeOf[(a,b,c,d,e,f,m),x] && a^2-b^2 == 0  && IsInteger[n+1/2] &&  (n > 0  || IGtQ[m,0]) *)
+//     :> (2*a)^IntPart[n]*(a+b*Sin[e+f*x])^FracPart[n]/Cos[1/2*(e-Pi*a/(2*b)) +f*x/2]^(2*FracPart[n])* Int[(c+d*x)^m*Cos[1/2*(e-Pi*a/(2*b))+f*x/2]^(2*n),x];
+
+// Int[(c_. + d_.*x_)^ m_./(a_ + b_.*Sin[e_. + k_.*Pi + f_.*Complex[0, fz_]*x_]), x_?IsSymbol]
+//     /; FreeOf[(a, b, c, d, e, f, fz), x] && IsInteger[2*k] && NeQ[a^2 - b^2, 0] && IGtQ[m, 0]
+//     :> 2*Int[(c + d*x)^m*E^(-I*Pi*(k - 1/2))* E^(-I*e + f*fz*x)/(b + 2*a*E^(-I*Pi*(k - 1/2))*E^(-I*e + f*fz*x) - b*E^(-2*I*k*Pi)*E^(2*(-I*e + f*fz*x))), x];
+
+// Int[(c_. + d_.*x_)^m_./(a_ + b_.*Sin[e_. + k_.*Pi + f_.*x_]), x_?IsSymbol]
+//     /; FreeOf[(a, b, c, d, e, f), x] && IsInteger[2*k] && NeQ[a^2 - b^2, 0] && IGtQ[m, 0]
+//     :> 2*Int[(c + d*x)^m*E^(I*Pi*(k - 1/2))* E^(I*(e + f*x))/(b + 2*a*E^(I*Pi*(k - 1/2))*E^(I*(e + f*x)) - b*E^(2*I*k*Pi)*E^(2*I*(e + f*x))), x];
+// (* Int[(c_.+d_.*x_)^m_./(a_+b_.*Sin[e_.+f_.*Complex[0,fz_]*x_]),x_ Symbol]
+//     /; FreeOf[(a,b,c,d,e,f,fz),x] && NeQ[a^2-b^2,0] && IGtQ[m,0] *)
+//     :> 2*I*Int[(c+d*x)^m*E^(-I*e+f*fz*x)/(b+2*I*a*E^(-I*e+f*fz*x)-b*E^(2*(- I*e+f*fz*x))),x];
+// (* Int[(c_.+d_.*x_)^m_./(a_+b_.*Sin[e_.+f_.*x_]),x_?IsSymbol]
+//     /; FreeOf[(a,b,c,d,e,f),x] && NeQ[a^2-b^2,0] && IGtQ[m,0] *)
+//     :> -2*I*Int[(c+d*x)^m*E^(I*(e+f*x))/(b-2*I*a*E^(I*(e+f*x))-b*E^(2*I*(e+ f*x))),x];
+
+// Int[(c_. + d_.*x_)^m_./(a_ + b_.*Sin[e_. + f_.*Complex[0, fz_]*x_]), x_?IsSymbol]
+//     /; FreeOf[(a, b, c, d, e, f, fz), x] && NeQ[a^2 - b^2, 0] && IGtQ[m, 0]
+//     :> 2*Int[(c + d*x)^m* E^(-I*e + f*fz*x)/(-I*b + 2*a*E^(-I*e + f*fz*x) + I*b*E^(2*(-I*e + f*fz*x))), x];
+
+// Int[(c_. + d_.*x_)^m_./(a_ + b_.*Sin[e_. + f_.*x_]), x_?IsSymbol]
+//     /; FreeOf[(a, b, c, d, e, f), x] && NeQ[a^2 - b^2, 0] && IGtQ[m, 0]
+//     :> 2*Int[(c + d*x)^m* E^(I*(e + f*x))/(I*b + 2*a*E^(I*(e + f*x)) - I*b*E^(2*I*(e + f*x))), x];
+
+// Int[(c_. + d_.*x_)^m_./(a_ + b_.*Sin[e_. + f_.*x_])^2, x_?IsSymbol]
+//     /; FreeOf[(a, b, c, d, e, f), x] && NeQ[a^2 - b^2, 0] && IGtQ[m, 0]
+//     :> b*(c + d*x)^m*Cos[e + f*x]/(f*(a^2 - b^2)*(a + b*Sin[e + f*x])) + a/(a^2 - b^2)*Int[(c + d*x)^m/(a + b*Sin[e + f*x]), x] - b*d*m/(f*(a^2 - b^2))* Int[(c + d*x)^(m - 1)*Cos[e + f*x]/(a + b*Sin[e + f*x]), x];
+
+// Int[(c_. + d_.*x_)^m_.*(a_ + b_.*Sin[e_. + f_.*x_])^n_, x_?IsSymbol]
+//     /; FreeOf[(a, b, c, d, e, f), x] && NeQ[a^2 - b^2, 0] && ILtQ[n, -2] && IGtQ[m, 0]
+//     :> -b*(c + d*x)^m* Cos[e + f* x]*(a + b*Sin[e + f*x])^(n + 1)/(f*(n + 1)*(a^2 - b^2)) + a/(a^2 - b^2)* Int[(c + d*x)^m*(a + b*Sin[e + f*x])^(n + 1), x] + b*d*m/(f*(n + 1)*(a^2 - b^2))* Int[(c + d*x)^(m - 1)*Cos[e + f*x]*(a + b*Sin[e + f*x])^(n + 1), x] - b*(n + 2)/((n + 1)*(a^2 - b^2))* Int[(c + d*x)^m*Sin[e + f*x]*(a + b*Sin[e + f*x])^(n + 1), x];
+
+// Int[(c_. + d_.*x_)^m_.*(a_. + b_.*Sin[e_. + f_.*x_])^n_., x_?IsSymbol]
+//     /; FreeOf[(a, b, c, d, e, f, m, n), x]
+//     :> Unintegrable[(c + d*x)^m*(a + b*Sin[e + f*x])^n, x];
+
+// Int[u_^m_.*(a_. + b_.*Sin[v_])^n_., x_?IsSymbol]
+//     /; FreeOf[(a, b, m, n), x] && LinearQ[(u, v), x] && Not[LinearMatchQ[(u, v), x]]
+//     :> Int[ExpandToSum[u, x]^m*(a + b*Sin[ExpandToSum[v, x]])^n, x];
+
+// Int[u_^m_.*(a_. + b_.*Cos[v_])^n_., x_?IsSymbol]
+//     /; FreeOf[(a, b, m, n), x] && LinearQ[(u, v), x] && Not[LinearMatchQ[(u, v), x]]
+//     :> Int[ExpandToSum[u, x]^m*(a + b*Cos[ExpandToSum[v, x]])^n, x];

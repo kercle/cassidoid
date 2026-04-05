@@ -1,0 +1,87 @@
+// Int[(a_ + b_.*x_^n_)^p_.*Sin[c_. + d_.*x_], x_?IsSymbol]
+//     /; FreeOf[(a, b, c, d, n), x] && IGtQ[p, 0]
+//     :> Int[ExpandIntegrand[Sin[c + d*x], (a + b*x^n)^p, x], x];
+
+// Int[(a_ + b_.*x_^n_)^p_.*Cos[c_. + d_.*x_], x_?IsSymbol]
+//     /; FreeOf[(a, b, c, d, n), x] && IGtQ[p, 0]
+//     :> Int[ExpandIntegrand[Cos[c + d*x], (a + b*x^n)^p, x], x];
+
+// Int[(a_ + b_.*x_^n_)^p_*Sin[c_. + d_.*x_], x_?IsSymbol]
+//     /; FreeOf[(a, b, c, d), x] && ILtQ[p, -1] && IGtQ[n, 2]
+//     :> x^(-n + 1)*(a + b*x^n)^(p + 1)*Sin[c + d*x]/(b*n*(p + 1)) - (-n + 1)/(b*n*(p + 1))* Int[x^(-n)*(a + b*x^n)^(p + 1)*Sin[c + d*x], x] - d/(b*n*(p + 1))* Int[x^(-n + 1)*(a + b*x^n)^(p + 1)*Cos[c + d*x], x];
+
+// Int[(a_ + b_.*x_^n_)^p_*Cos[c_. + d_.*x_], x_?IsSymbol]
+//     /; FreeOf[(a, b, c, d), x] && ILtQ[p, -1] && IGtQ[n, 2]
+//     :> x^(-n + 1)*(a + b*x^n)^(p + 1)*Cos[c + d*x]/(b*n*(p + 1)) - (-n + 1)/(b*n*(p + 1))* Int[x^(-n)*(a + b*x^n)^(p + 1)*Cos[c + d*x], x] + d/(b*n*(p + 1))* Int[x^(-n + 1)*(a + b*x^n)^(p + 1)*Sin[c + d*x], x];
+
+// Int[(a_ + b_.*x_^n_)^p_*Sin[c_. + d_.*x_], x_?IsSymbol]
+//     /; FreeOf[(a, b, c, d), x] && ILtQ[p, 0] && IGtQ[n, 0] && (n == 2 || p == -1 )
+//     :> Int[ExpandIntegrand[Sin[c + d*x], (a + b*x^n)^p, x], x];
+
+// Int[(a_ + b_.*x_^n_)^p_*Cos[c_. + d_.*x_], x_?IsSymbol]
+//     /; FreeOf[(a, b, c, d), x] && ILtQ[p, 0] && IGtQ[n, 0] && (n == 2 || p == -1 )
+//     :> Int[ExpandIntegrand[Cos[c + d*x], (a + b*x^n)^p, x], x];
+
+// Int[(a_ + b_.*x_^n_)^p_*Sin[c_. + d_.*x_], x_?IsSymbol]
+//     /; FreeOf[(a, b, c, d), x] && ILtQ[p, 0] && ILtQ[n, 0]
+//     :> Int[x^(n*p)*(b + a*x^(-n))^p*Sin[c + d*x], x];
+
+// Int[(a_ + b_.*x_^n_)^p_*Cos[c_. + d_.*x_], x_?IsSymbol]
+//     /; FreeOf[(a, b, c, d), x] && ILtQ[p, 0] && ILtQ[n, 0]
+//     :> Int[x^(n*p)*(b + a*x^(-n))^p*Cos[c + d*x], x];
+
+// Int[(a_ + b_.*x_^n_)^p_*Sin[c_. + d_.*x_], x_?IsSymbol]
+//     /; FreeOf[(a, b, c, d, n, p), x]
+//     :> Unintegrable[(a + b*x^n)^p*Sin[c + d*x], x];
+
+// Int[(a_ + b_.*x_^n_)^p_*Cos[c_. + d_.*x_], x_?IsSymbol]
+//     /; FreeOf[(a, b, c, d, n, p), x]
+//     :> Unintegrable[(a + b*x^n)^p*Cos[c + d*x], x];
+
+// Int[(e_.*x_)^m_.*(a_ + b_.*x_^n_)^p_.*Sin[c_. + d_.*x_], x_?IsSymbol]
+//     /; FreeOf[(a, b, c, d, e, m, n), x] && IGtQ[p, 0]
+//     :> Int[ExpandIntegrand[Sin[c + d*x], (e*x)^m*(a + b*x^n)^p, x], x];
+
+// Int[(e_.*x_)^m_.*(a_ + b_.*x_^n_)^p_.*Cos[c_. + d_.*x_], x_?IsSymbol]
+//     /; FreeOf[(a, b, c, d, e, m, n), x] && IGtQ[p, 0]
+//     :> Int[ExpandIntegrand[Cos[c + d*x], (e*x)^m*(a + b*x^n)^p, x], x];
+
+// Int[(e_.*x_)^m_.*(a_ + b_.*x_^n_)^p_*Sin[c_. + d_.*x_], x_?IsSymbol]
+//     /; FreeOf[(a, b, c, d, e, m, n), x] && ILtQ[p, -1] && m == n - 1 && (IsInteger[n] || e > 0 )
+//     :> e^m*(a + b*x^n)^(p + 1)*Sin[c + d*x]/(b*n*(p + 1)) - d*e^m/(b*n*(p + 1))*Int[(a + b*x^n)^(p + 1)*Cos[c + d*x], x];
+
+// Int[(e_.*x_)^m_.*(a_ + b_.*x_^n_)^p_*Cos[c_. + d_.*x_], x_?IsSymbol]
+//     /; FreeOf[(a, b, c, d, e, m, n), x] && ILtQ[p, -1] && m == n - 1 && (IsInteger[n] || e > 0 )
+//     :> e^m*(a + b*x^n)^(p + 1)*Cos[c + d*x]/(b*n*(p + 1)) + d*e^m/(b*n*(p + 1))*Int[(a + b*x^n)^(p + 1)*Sin[c + d*x], x];
+
+// Int[x_^m_.*(a_ + b_.*x_^n_)^p_*Sin[c_. + d_.*x_], x_?IsSymbol]
+//     /; FreeOf[(a, b, c, d, m), x] && ILtQ[p, -1] && IGtQ[n, 0] && (m - n + 1 > 0 || n > 2 ) && IsRational[m]
+//     :> x^(m - n + 1)*(a + b*x^n)^(p + 1)*Sin[c + d*x]/(b*n*(p + 1)) - (m - n + 1)/(b*n*(p + 1))* Int[x^(m - n)*(a + b*x^n)^(p + 1)*Sin[c + d*x], x] - d/(b*n*(p + 1))* Int[x^(m - n + 1)*(a + b*x^n)^(p + 1)*Cos[c + d*x], x];
+
+// Int[x_^m_.*(a_ + b_.*x_^n_)^p_*Cos[c_. + d_.*x_], x_?IsSymbol]
+//     /; FreeOf[(a, b, c, d, m), x] && ILtQ[p, -1] && IGtQ[n, 0] && (m - n + 1 > 0 || n > 2 ) && IsRational[m]
+//     :> x^(m - n + 1)*(a + b*x^n)^(p + 1)*Cos[c + d*x]/(b*n*(p + 1)) - (m - n + 1)/(b*n*(p + 1))* Int[x^(m - n)*(a + b*x^n)^(p + 1)*Cos[c + d*x], x] + d/(b*n*(p + 1))* Int[x^(m - n + 1)*(a + b*x^n)^(p + 1)*Sin[c + d*x], x];
+
+// Int[x_^m_.*(a_ + b_.*x_^n_)^p_*Sin[c_. + d_.*x_], x_?IsSymbol]
+//     /; FreeOf[(a, b, c, d, m), x] && ILtQ[p, 0] && IGtQ[n, 0] && (n == 2 || p == -1 ) && IsInteger[m]
+//     :> Int[ExpandIntegrand[Sin[c + d*x], x^m*(a + b*x^n)^p, x], x];
+
+// Int[x_^m_.*(a_ + b_.*x_^n_)^p_*Cos[c_. + d_.*x_], x_?IsSymbol]
+//     /; FreeOf[(a, b, c, d, m), x] && ILtQ[p, 0] && IGtQ[n, 0] && (n == 2 || p == -1 ) && IsInteger[m]
+//     :> Int[ExpandIntegrand[Cos[c + d*x], x^m*(a + b*x^n)^p, x], x];
+
+Int[x_^m_.*(a_ + b_.*x_^n_?IsInteger)^p_?IsInteger*Sin[c_. + d_.*x_], x_?IsSymbol]
+    /; FreeOf[(a, b, c, d, m), x] && p < 0 && n < 0
+    :> Int[x^(m + n*p)*(b + a*x^(-n))^p*Sin[c + d*x], x];
+
+Int[x_^m_.*(a_ + b_.*x_^n_?IsInteger)^p_?IsInteger*Cos[c_. + d_.*x_], x_?IsSymbol]
+    /; FreeOf[(a, b, c, d, m), x] && p < 0 && n < 0
+    :> Int[x^(m + n*p)*(b + a*x^(-n))^p*Cos[c + d*x], x];
+
+// Int[(e_.*x_)^m_.*(a_ + b_.*x_^n_)^p_.*Sin[c_. + d_.*x_], x_?IsSymbol]
+//     /; FreeOf[(a, b, c, d, e, m, n, p), x]
+//     :> Unintegrable[(e*x)^m*(a + b*x^n)^p*Sin[c + d*x], x];
+
+// Int[(e_.*x_)^m_.*(a_ + b_.*x_^n_)^p_.*Cos[c_. + d_.*x_], x_?IsSymbol]
+//     /; FreeOf[(a, b, c, d, e, m, n, p), x]
+//     :> Unintegrable[(e*x)^m*(a + b*x^n)^p*Cos[c + d*x], x];
