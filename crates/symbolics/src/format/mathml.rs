@@ -320,6 +320,20 @@ impl MathMlWriter {
             ExprKind::Atom {
                 entry: Atom::Symbol(name),
                 ..
+            } if name == builtins::symbols::PI => {
+                self.mi("𝛑");
+            }
+
+            ExprKind::Atom {
+                entry: Atom::Symbol(name),
+                ..
+            } if name == builtins::symbols::E => {
+                self.mi("𝐞");
+            }
+
+            ExprKind::Atom {
+                entry: Atom::Symbol(name),
+                ..
             } => self.mi(&greek_letter(name)),
 
             ExprKind::Atom {

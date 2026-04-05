@@ -4,3 +4,6 @@ pub const INFINITY: &str = "Infinity";
 
 pub const TRUE: &str = "True";
 pub const FALSE: &str = "False";
+
+pub const PI: &str = "Pi";
+pub const E: &str = "E";

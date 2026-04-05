@@ -7,7 +7,7 @@ build-wasm-kernel:
     @cargo test --features=ts export_bindings
 
 [working-directory('web/frontend')]
-serve-frontend-dev: build-wasm-kernel
+serve-frontend-dev:
     npm install
     npm run dev
 
